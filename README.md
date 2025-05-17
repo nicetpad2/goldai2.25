@@ -13,3 +13,6 @@ pip install -r requirements.txt
 ```bash
 pytest
 ```
+
+## Notes
+- The helper `extend_safe_import_for_studio` used during tests is defined directly in `test_gold_ai.py` and no longer imported from a separate module.
