@@ -13,3 +13,7 @@ pip install -r requirements.txt
 ```bash
 pytest
 ```
+
+### Test Helpers
+The helper function `extend_safe_import_for_studio` is defined inline within
+`test_gold_ai.py`. The old external patch module is no longer used.
