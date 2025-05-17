@@ -194,16 +194,12 @@ for fname_test in potential_script_names:
 
 if SCRIPT_FILE_PATH is None or MODULE_NAME is None: # pragma: no cover
     error_message_setup = (
-        f"ไม่พบไฟล์สคริปต์หลัก '{potential_script_names[0]}' ที่: {SCRIPT_PATH}. "
-        f"โปรดตรวจสอบว่าไฟล์ '{potential_script_names[0]}' อยู่ใน path ที่ถูกต้อง "
-        f"หรือแก้ไขตัวแปร SCRIPT_PATH ใน test_gold_ai.py ให้ถูกต้อง.\n"
-        f"Current SCRIPT_PATH: '{SCRIPT_PATH}'\n"
-        f"Potential script names checked: {potential_script_names}"
+        f"Script file not found in SCRIPT_PATH: '{SCRIPT_PATH}'. "
+        f"Checked the following names: {potential_script_names}"
     )
     test_setup_logger.critical(f"[TestGoldAISetup] {error_message_setup}")
     print(f"CRITICAL ERROR (Test Setup): {error_message_setup}", file=sys.stderr)
     pytest.exit(error_message_setup, returncode=2)
-
 test_setup_logger.debug(f"[TestGoldAISetup] Current sys.path (relevant entries before safe_import): {[p for p in sys.path if SCRIPT_PATH in p or 'site-packages' in p]}")
 
 gold_ai_module = None
