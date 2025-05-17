@@ -64,6 +64,22 @@ logger.info(f"Gold AI Script Version: {MINIMAL_SCRIPT_VERSION} - Logger Initiali
 logger.info("[Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.")
 logger.info("[Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.")
 
+# --- Custom Exceptions ---
+class GoldAIError(Exception):
+    """Base exception for Gold AI errors."""
+
+
+class DataLoadError(GoldAIError):
+    """Raised when load_data fails."""
+
+
+class SetupError(GoldAIError):
+    """Raised when output directory setup fails."""
+
+
+class DataPrepError(GoldAIError):
+    """Raised when prepare_datetime fails."""
+
 # --- Helper Function to Log Library Versions ---
 def log_library_version(library_name: str, library_module: Optional[Any]):
     log_ver_logger = logging.getLogger(f"{__name__}.log_library_version")
@@ -941,29 +957,31 @@ def safe_get_global(var_name, default_value):
 
 # --- Directory Setup Helper ---
 def setup_output_directory(base_dir: str, dir_name: str) -> str:
-    """
-    Creates the output directory if it doesn't exist and checks write permissions.
-    """
+    """Create the output directory and verify write permissions."""
     output_path = os.path.join(base_dir, dir_name)
-    # Using module-level logger here as this function might be called early.
     setup_dir_logger = logging.getLogger(f"{__name__}.setup_output_directory")
-    setup_dir_logger.info(f"   (Setup) กำลังตรวจสอบ/สร้าง Output Directory: {output_path}")
+    setup_dir_logger.info(f"   (Setup) Checking or creating: {output_path}")
     try:
         os.makedirs(output_path, exist_ok=True)
-        setup_dir_logger.info(f"      -> Directory exists or was created.")
         test_file_path = os.path.join(output_path, ".write_test")
-        with open(test_file_path, "w", encoding='utf-8') as f:
+        with open(test_file_path, "w", encoding="utf-8") as f:
             f.write("test")
         os.remove(test_file_path)
-        setup_dir_logger.info(f"      -> การเขียนไฟล์ทดสอบสำเร็จ.")
+        setup_dir_logger.info("      -> Write check succeeded.")
         return output_path
     except OSError as e:
-        setup_dir_logger.error(f"   (Error) ไม่สามารถสร้างหรือเขียนใน Output Directory '{output_path}': {e}", exc_info=True)
-        sys.exit(f"   ออก: ปัญหาการเข้าถึง Output Directory ({output_path}).")
+        setup_dir_logger.error(
+            f"   (Error) Cannot create/write to directory '{output_path}': {e}",
+            exc_info=True,
+        )
+        raise SetupError("Failed to create or write to output directory") from e
     except Exception as e:
-        setup_dir_logger.error(f"   (Error) เกิดข้อผิดพลาดที่ไม่คาดคิดระหว่างตั้งค่า Output Directory '{output_path}': {e}", exc_info=True)
-        sys.exit(f"   ออก: ข้อผิดพลาดร้ายแรงในการตั้งค่า Output Directory ({output_path}).")
-
+        setup_dir_logger.error(
+            f"   (Error) Unexpected error during directory setup: {e}",
+            exc_info=True,
+        )
+        raise SetupError("Unexpected error during directory setup") from e
+# --- Font Setup Helpers ---
 # --- Font Setup Helpers ---
 def set_thai_font(font_name: str = "Loma") -> bool:
     """
@@ -1248,27 +1266,26 @@ def load_data(file_path: str, timeframe_str: str = "", price_jump_threshold: flo
     load_data_logger = logging.getLogger(f"{__name__}.load_data")
     load_data_logger.info(f"(Loading) กำลังโหลดข้อมูล {timeframe_str} จาก: {file_path}")
     if not os.path.exists(file_path):
-        load_data_logger.critical(f"(Error) ไม่พบไฟล์: {file_path}")
-        sys.exit(f"ออก: ไม่พบไฟล์ข้อมูล {timeframe_str} ที่ {file_path}")
+        load_data_logger.critical("(Error) ไม่พบไฟล์ข้อมูล")
+        raise DataLoadError("ไม่พบไฟล์ข้อมูล")
 
     try:
         try:
             df_pd = pd.read_csv(file_path, low_memory=False, dtype=dtypes)
-            load_data_logger.info(f"   ไฟล์ดิบ {timeframe_str}: {df_pd.shape[0]} แถว")
+            load_data_logger.info(f"   ไฟล์ข้อมูล: {file_path}")
         except pd.errors.ParserError as e_parse:
-            load_data_logger.critical(f"(Error) ไม่สามารถ Parse ไฟล์ CSV '{file_path}': {e_parse}")
-            sys.exit(f"ออก: ปัญหาการ Parse ไฟล์ CSV {timeframe_str}")
+            load_data_logger.critical(f"(Error) ไม่สามารถ Parse ไฟล์: {e_parse}")
+            raise DataLoadError("ไม่สามารถ Parse ไฟล์") from e_parse
         except Exception as e_read:
-            load_data_logger.critical(f"(Error) ไม่สามารถอ่านไฟล์ CSV '{file_path}': {e_read}", exc_info=True)
-            sys.exit(f"ออก: ปัญหาการอ่านไฟล์ CSV {timeframe_str}")
-
+            load_data_logger.critical(f"(Error) ไม่สามารถอ่านไฟล์: {e_read}")
+            raise DataLoadError("ไม่สามารถอ่านไฟล์") from e_read
         required_cols_base = ["Date", "Timestamp", "Open", "High", "Low", "Close"]
         required_cols_check = list(dtypes.keys()) if dtypes else required_cols_base
         required_cols_check = sorted(list(set(required_cols_check + required_cols_base)))
         missing_req = [col for col in required_cols_check if col not in df_pd.columns]
         if missing_req:
-            load_data_logger.critical(f"(Error) ขาดคอลัมน์: {missing_req} ใน {file_path}")
-            sys.exit(f"ออก: ขาดคอลัมน์ที่จำเป็นในข้อมูล {timeframe_str}")
+            load_data_logger.critical("(Error) ขาดคอลัมน์สำคัญ")
+            raise DataLoadError("ขาดคอลัมน์สำคัญ")
 
         price_cols = ["Open", "High", "Low", "Close"]
         load_data_logger.debug(f"   Converting price columns {price_cols} to numeric (if not already specified in dtypes)...")
@@ -1339,11 +1356,9 @@ def load_data(file_path: str, timeframe_str: str = "", price_jump_threshold: flo
         load_data_logger.info(f"(Success) โหลดและตรวจสอบข้อมูล {timeframe_str} สำเร็จ: {df_pd.shape[0]} แถว")
         return df_pd
 
-    except SystemExit as se:
-        raise se
     except Exception as e:
         load_data_logger.critical(f"(Error) ไม่สามารถโหลดข้อมูล {timeframe_str}: {e}\n{traceback.format_exc()}", exc_info=True)
-        sys.exit(f"ออก: ข้อผิดพลาดร้ายแรงในการโหลดข้อมูล {timeframe_str}")
+        raise DataLoadError(f"ไม่สามารถโหลดข้อมูล {timeframe_str}") from e
     return None
 
 # --- Datetime Helper Functions ---
@@ -1475,7 +1490,7 @@ def prepare_datetime(df_pd: pd.DataFrame, timeframe_str: str = "", config: Optio
     try:
         if "Date" not in df_pd.columns or "Timestamp" not in df_pd.columns:
             prep_dt_logger.critical(f"(Error) ขาดคอลัมน์ 'Date'/'Timestamp' ใน {timeframe_str}.")
-            sys.exit(f"ออก ({timeframe_str}): ขาดคอลัมน์ Date/Timestamp ที่จำเป็นสำหรับการเตรียม Datetime.")
+            raise DataPrepError(f"ออก ({timeframe_str}): ขาดคอลัมน์ Date/Timestamp ที่จำเป็นสำหรับการเตรียม Datetime.")
 
         preview_datetime_format(df_pd)
 
@@ -1558,21 +1573,21 @@ def prepare_datetime(df_pd: pd.DataFrame, timeframe_str: str = "", config: Optio
             if nat_ratio == 1.0:
                 failed_strings = datetime_combined_str[df_pd["datetime_original"].isna()]
                 prep_dt_logger.critical(f"   (Error) พบค่า NaT 100% ใน {timeframe_str}. ไม่สามารถดำเนินการต่อได้. ตัวอย่าง: {failed_strings.iloc[0] if not failed_strings.empty else 'N/A'}")
-                sys.exit(f"   ออก ({timeframe_str}): ข้อมูล date/time ทั้งหมดไม่สามารถ parse ได้.")
+                raise DataPrepError(f"   ออก ({timeframe_str}): ข้อมูล date/time ทั้งหมดไม่สามารถ parse ได้.")
             elif nat_ratio >= max_nat_ratio_from_config:
                 prep_dt_logger.warning(f"   (Warning) สัดส่วน NaT ({nat_ratio:.1%}) เกินเกณฑ์ ({max_nat_ratio_from_config:.1%}) แต่ไม่ใช่ 100%.")
                 prep_dt_logger.warning(f"   (Warning) Fallback: ลบ {nat_count} แถว NaT และดำเนินการต่อ...")
                 df_pd.dropna(subset=["datetime_original"], inplace=True)
                 if df_pd.empty:
                     prep_dt_logger.critical(f"   (Error) ข้อมูล {timeframe_str} ทั้งหมดเป็น NaT หรือใช้ไม่ได้หลัง fallback (และ DataFrame ว่างเปล่า).")
-                    sys.exit(f"   ออก ({timeframe_str}): ข้อมูลว่างเปล่าหลังลบ NaT เกินเกณฑ์.")
+                    raise DataPrepError(f"   ออก ({timeframe_str}): ข้อมูลว่างเปล่าหลังลบ NaT เกินเกณฑ์.")
                 prep_dt_logger.info(f"   (Success) ดำเนินการต่อด้วย {len(df_pd)} แถวที่เหลือ ({timeframe_str}).")
             else:
                 prep_dt_logger.info(f"   กำลังลบ {nat_count} แถว NaT (ต่ำกว่าเกณฑ์).")
                 df_pd.dropna(subset=["datetime_original"], inplace=True)
                 if df_pd.empty:
                     prep_dt_logger.critical(f"   (Error) ข้อมูล {timeframe_str} ว่างเปล่าหลังลบ NaT จำนวนเล็กน้อย.")
-                    sys.exit(f"   ออก ({timeframe_str}): ข้อมูลว่างเปล่าหลังลบ NaT.")
+                    raise DataPrepError(f"   ออก ({timeframe_str}): ข้อมูลว่างเปล่าหลังลบ NaT.")
         else:
             prep_dt_logger.debug(f"   ไม่พบค่า NaT ใน {timeframe_str} หลังการ parse.")
         del datetime_combined_str
@@ -1583,11 +1598,11 @@ def prepare_datetime(df_pd: pd.DataFrame, timeframe_str: str = "", config: Optio
             df_pd = df_pd[~df_pd["datetime_original"].isna()]
             if df_pd.empty:
                 prep_dt_logger.critical(f"   (Error) ข้อมูล {timeframe_str} ว่างเปล่าหลังแปลง datetime_original และลบ NaT (ก่อน set_index).")
-                sys.exit(f"   ออก ({timeframe_str}): ข้อมูลว่างเปล่าหลังการเตรียม datetime.")
+                raise DataPrepError(f"   ออก ({timeframe_str}): ข้อมูลว่างเปล่าหลังการเตรียม datetime.")
             df_pd.set_index(pd.DatetimeIndex(df_pd["datetime_original"]), inplace=True)
         else:
             prep_dt_logger.critical(f"   (Error) คอลัมน์ 'datetime_original' หายไปก่อนการตั้งค่า Index ({timeframe_str}).")
-            sys.exit(f"   ออก ({timeframe_str}): ขาดคอลัมน์ 'datetime_original'.")
+            raise DataPrepError(f"   ออก ({timeframe_str}): ขาดคอลัมน์ 'datetime_original'.")
 
         df_pd.sort_index(inplace=True)
 
@@ -1604,7 +1619,7 @@ def prepare_datetime(df_pd: pd.DataFrame, timeframe_str: str = "", config: Optio
             prep_dt_logger.critical(f"   (CRITICAL WARNING) พบเวลาย้อนกลับใน Index ของ {timeframe_str} หลังการเรียงลำดับ!")
             prep_dt_logger.critical(f"      จำนวน: {len(negative_diffs)}")
             prep_dt_logger.critical(f"      ตัวอย่าง Index ที่มีปัญหา:\n{negative_diffs.head()}")
-            sys.exit(f"   ออก ({timeframe_str}): พบเวลาย้อนกลับในข้อมูล.")
+            raise DataPrepError(f"   ออก ({timeframe_str}): พบเวลาย้อนกลับในข้อมูล.")
         else:
             prep_dt_logger.debug("      Index is monotonic increasing.")
         del time_diffs, negative_diffs
@@ -1612,14 +1627,12 @@ def prepare_datetime(df_pd: pd.DataFrame, timeframe_str: str = "", config: Optio
         prep_dt_logger.info(f"(Success) เตรียม Datetime index ({timeframe_str}) สำเร็จ. Shape: {df_pd.shape}")
         return df_pd
 
-    except SystemExit as se:
-        raise se
     except ValueError as ve:
         prep_dt_logger.critical(f"   (Error) prepare_datetime: ValueError: {ve}", exc_info=True)
-        sys.exit(f"   ออก ({timeframe_str}): ปัญหาข้อมูล Date/time.")
+        raise DataPrepError(f"   ออก ({timeframe_str}): ปัญหาข้อมูล Date/time.")
     except Exception as e:
         prep_dt_logger.critical(f"(Error) ข้อผิดพลาดร้ายแรงใน prepare_datetime ({timeframe_str}): {e}", exc_info=True)
-        sys.exit(f"   ออก ({timeframe_str}): ข้อผิดพลาดร้ายแรงในการเตรียม datetime.")
+        raise DataPrepError(f"   ออก ({timeframe_str}): ข้อผิดพลาดร้ายแรงในการเตรียม datetime.")
     return df_pd
 # <<< END OF MODIFIED [Patch AI Studio v4.9.4] >>>
 
