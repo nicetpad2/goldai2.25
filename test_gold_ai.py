@@ -36,7 +36,12 @@ import traceback
 import importlib
 import logging
 import math
-import yaml
+try:
+    import yaml
+except ImportError:  # pragma: no cover - ensure tests run even without PyYAML
+    yaml = MagicMock(name="SafeMock_yaml_test_import")
+    yaml.safe_load = MagicMock(name="safe_load")
+    yaml.YAMLError = Exception
 import builtins
 import inspect
 
@@ -49,6 +54,7 @@ def extend_safe_import_for_studio(safe_mock_modules_dict):
         "matplotlib": MagicMock(name="SafeMock_matplotlib"),
         "matplotlib.pyplot": MagicMock(name="SafeMock_matplotlib_pyplot"),
         "scipy": MagicMock(name="SafeMock_scipy"),
+        "yaml": MagicMock(name="SafeMock_yaml"),
     }
     for mod_name, mock_obj in additional.items():
         mock_obj.__version__ = "0.0"
@@ -94,6 +100,7 @@ def safe_import_gold_ai_module(module_name_to_import, logger_instance):
         "google.colab": MagicMock(name="SafeMock_google_colab_in_func_ImportFix_v3"),
         "google.colab.drive": MagicMock(name="SafeMock_google_colab_drive_in_func_ImportFix_v3"),
         "requests": MagicMock(name="SafeMock_requests_in_func_ImportFix_v3"),
+        "yaml": MagicMock(name="SafeMock_yaml_in_func_ImportFix_v3"),
         # matplotlib and scipy will be added by extend_safe_import_for_studio
     }
 
@@ -101,6 +108,10 @@ def safe_import_gold_ai_module(module_name_to_import, logger_instance):
     for mock_obj in safe_mock_modules_dict.values():
         if not hasattr(mock_obj, "__version__"):
             mock_obj.__version__ = "0.0"
+
+    # Basic YAML mock configuration for tests if PyYAML is unavailable
+    safe_mock_modules_dict["yaml"].safe_load = MagicMock(name="SafeMock_yaml_safe_load")
+    safe_mock_modules_dict["yaml"].YAMLError = Exception
 
     # Configure torch mock
     safe_mock_modules_dict["torch"].library = MagicMock(name="SafeMock_torch_library_ImportFix_v3")
