@@ -17,7 +17,7 @@
 # <<< MODIFIED: [Patch G EXTENDED Final - Part 1 Update] Added torch mocking to safe_import_gold_ai_module. >>>
 # <<< MODIFIED: [Patch - IMPORT ERROR FIX - Step TestEnv & Step 6] Updated safe_import_gold_ai_module to mock more libraries including matplotlib. >>>
 # <<< MODIFIED: [Patch - IMPORT ERROR FIX - Step 7] Added __version__ attribute to all relevant mocks. >>>
-# <<< MODIFIED: [Patch - IMPORT ERROR FIX - Step 7 (Externalized)] Removed internal extend_safe_import_for_studio and __version__ loop, now imports from gold_ai_v4_9_25_patch_studio.py. >>>
+# <<< MODIFIED: [Patch - IMPORT ERROR FIX - Step 7 (Inline)] Removed external dependency and defined extend_safe_import_for_studio inline. >>>
 
 
 import pytest
@@ -40,26 +40,24 @@ import yaml
 import builtins
 import inspect
 
-# === [Patch - IMPORT ERROR FIX - Step 7 (Externalized)] Import the new extend function ===
-try:
-    from gold_ai_v4_9_25_patch_studio import extend_safe_import_for_studio
-    EXTEND_FUNC_IMPORTED = True
-    logging.getLogger("TestGoldAISetup_Patch_ImportErrorFix_v3").info(
-        "[Patch - IMPORT ERROR FIX - Step 7 (Externalized)] Successfully imported extend_safe_import_for_studio."
-    )
-except ImportError as e_extend_import: # pragma: no cover
-    EXTEND_FUNC_IMPORTED = False
-    logging.getLogger("TestGoldAISetup_Patch_ImportErrorFix_v3").error(
-        f"[Patch - IMPORT ERROR FIX - Step 7 (Externalized)] FAILED to import extend_safe_import_for_studio: {e_extend_import}. "
-        "Ensure gold_ai_v4_9_25_patch_studio.py is in the correct path."
-    )
-    # Define a dummy function if import fails to prevent NameError later, though tests might fail.
-    def extend_safe_import_for_studio(safe_mock_modules_dict):
-        logging.getLogger("extend_safe_import_for_studio_test_env_dummy").error(
-            "Dummy extend_safe_import_for_studio called. Real function import failed."
-        )
-        return safe_mock_modules_dict
-# === End of [Patch - IMPORT ERROR FIX - Step 7 (Externalized)] ===
+# === [Patch G: Final Inline Only] Use inline extend_safe_import_for_studio ===
+
+def extend_safe_import_for_studio(safe_mock_modules_dict):
+    """Add extra mocked modules required by the tests."""
+    logger = logging.getLogger("extend_safe_import_for_studio")
+    additional = {
+        "matplotlib": MagicMock(name="SafeMock_matplotlib"),
+        "matplotlib.pyplot": MagicMock(name="SafeMock_matplotlib_pyplot"),
+        "scipy": MagicMock(name="SafeMock_scipy"),
+    }
+    for mod_name, mock_obj in additional.items():
+        mock_obj.__version__ = "0.0"
+        safe_mock_modules_dict.setdefault(mod_name, mock_obj)
+    logger.info("Extended SafeImport mocks for studio environment.")
+    return safe_mock_modules_dict
+
+EXTEND_FUNC_IMPORTED = True  # Inline function defined above
+
 
 
 # === 1. เพิ่ม function ด้านบนสุดของไฟล์ (ก่อน import gold_ai2025) ===
@@ -128,16 +126,16 @@ def safe_import_gold_ai_module(module_name_to_import, logger_instance):
     # Configure IPython
     safe_mock_modules_dict["IPython"].get_ipython = MagicMock(name="SafeMock_get_ipython_ImportFix_v3", return_value=None) # Default to not in Colab
 
-    # === [Patch - IMPORT ERROR FIX - Step 7 (Externalized)] Call the imported extend function ===
+    # === [Patch - IMPORT ERROR FIX - Step 7 (Inline)] Call the inline extend function ===
     if EXTEND_FUNC_IMPORTED:
-        logger_instance.info("[Patch - IMPORT ERROR FIX - Step 7 (Externalized)] Calling extend_safe_import_for_studio to update mocks...")
+        logger_instance.info("[Patch - IMPORT ERROR FIX - Step 7 (Inline)] Calling extend_safe_import_for_studio to update mocks...")
         safe_mock_modules_dict = extend_safe_import_for_studio(safe_mock_modules_dict)
-        logger_instance.info("[Patch - IMPORT ERROR FIX - Step 7 (Externalized)] Mocks updated by extend_safe_import_for_studio.")
+        logger_instance.info("[Patch - IMPORT ERROR FIX - Step 7 (Inline)] Mocks updated by extend_safe_import_for_studio.")
     else: # pragma: no cover
-        logger_instance.error("[Patch - IMPORT ERROR FIX - Step 7 (Externalized)] extend_safe_import_for_studio was NOT imported. Mocks may be incomplete.")
-    # === End of [Patch - IMPORT ERROR FIX - Step 7 (Externalized)] ===
+        logger_instance.error("[Patch - IMPORT ERROR FIX - Step 7 (Inline)] extend_safe_import_for_studio was NOT available. Mocks may be incomplete.")
+    # === End of [Patch - IMPORT ERROR FIX - Step 7 (Inline)] ===
 
-    logger_instance.info(f"[SafeImportFunc - IMPORT ERROR FIX v3 - Externalized Extend] Applying SafeImport mocks for: {list(safe_mock_modules_dict.keys())}")
+    logger_instance.info(f"[SafeImportFunc - IMPORT ERROR FIX v3 - Inline Extend] Applying SafeImport mocks for: {list(safe_mock_modules_dict.keys())}")
 
     with mock.patch.dict(sys.modules, safe_mock_modules_dict, clear=False):
         try:
@@ -218,17 +216,17 @@ CatBoostClassifier_imported = None
 Pool_imported = None
 TA_AVAILABLE = False
 
-test_setup_logger.info(f"[TestGoldAISetup] Attempting to import module: '{MODULE_NAME}' using safe_import_gold_ai_module (with expanded mocks v3 and externalized extend function)...")
+test_setup_logger.info(f"[TestGoldAISetup] Attempting to import module: '{MODULE_NAME}' using safe_import_gold_ai_module (with expanded mocks v3 and inline extend function)...")
 try:
     gold_ai_module, IMPORT_SUCCESS = safe_import_gold_ai_module(MODULE_NAME, test_setup_logger)
 
     if IMPORT_SUCCESS and gold_ai_module is not None:
-        test_setup_logger.info(f"[TestGoldAISetup - IMPORT ERROR FIX v3 - Externalized Extend] Successfully imported/reloaded module '{MODULE_NAME}' via safe_import_gold_ai_module. Type: {type(gold_ai_module)}")
+        test_setup_logger.info(f"[TestGoldAISetup - IMPORT ERROR FIX v3 - Inline Extend] Successfully imported/reloaded module '{MODULE_NAME}' via safe_import_gold_ai_module. Type: {type(gold_ai_module)}")
     elif gold_ai_module is None: # pragma: no cover
-        test_setup_logger.error(f"[TestGoldAISetup - IMPORT ERROR FIX v3 - Externalized Extend] safe_import_gold_ai_module returned None for '{MODULE_NAME}'. IMPORT_SUCCESS was {IMPORT_SUCCESS}.")
+        test_setup_logger.error(f"[TestGoldAISetup - IMPORT ERROR FIX v3 - Inline Extend] safe_import_gold_ai_module returned None for '{MODULE_NAME}'. IMPORT_SUCCESS was {IMPORT_SUCCESS}.")
 
     if not IMPORT_SUCCESS or gold_ai_module is None: # pragma: no cover
-        raise ImportError(f"Module '{MODULE_NAME}' could not be imported/reloaded successfully even with expanded SafeImport v3 and externalized extend function.")
+        raise ImportError(f"Module '{MODULE_NAME}' could not be imported/reloaded successfully even with expanded SafeImport v3 and inline extend function.")
 
     StrategyConfig = getattr(gold_ai_module, 'StrategyConfig', None)
     RiskManager = getattr(gold_ai_module, 'RiskManager', None)
