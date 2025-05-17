@@ -160,7 +160,11 @@ def safe_import_gold_ai_module(module_name_to_import, logger_instance):
             return None, False
 
 # --- Test Setup ---
-SCRIPT_PATH = '/content/drive/MyDrive/new/'  # MODIFY THIS IF YOUR PATH IS DIFFERENT
+# Allow overriding the path via environment variable.  Defaults to the repository root.
+SCRIPT_PATH = os.getenv(
+    "GOLD_AI_SCRIPT_PATH",
+    os.path.dirname(os.path.abspath(__file__))
+)
 potential_script_names = ['gold_ai2025.py']
 
 SCRIPT_FILE_NAME = None
