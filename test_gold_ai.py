@@ -53,6 +53,7 @@ def extend_safe_import_for_studio(safe_mock_modules_dict):
     additional = {
         "matplotlib": MagicMock(name="SafeMock_matplotlib"),
         "matplotlib.pyplot": MagicMock(name="SafeMock_matplotlib_pyplot"),
+        "matplotlib.font_manager": MagicMock(name="SafeMock_matplotlib_font_manager"),
         "scipy": MagicMock(name="SafeMock_scipy"),
         "yaml": MagicMock(name="SafeMock_yaml"),
     }
