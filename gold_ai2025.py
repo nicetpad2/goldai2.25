@@ -64,6 +64,14 @@ logger.info(f"Gold AI Script Version: {MINIMAL_SCRIPT_VERSION} - Logger Initiali
 logger.info("[Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.")
 logger.info("[Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.")
 
+# --- Custom Exceptions ---
+class GoldAIError(Exception):
+    """Base exception for Gold AI errors."""
+
+
+class DataLoadError(GoldAIError):
+    """Raised when load_data fails."""
+
 # --- Helper Function to Log Library Versions ---
 def log_library_version(library_name: str, library_module: Optional[Any]):
     log_ver_logger = logging.getLogger(f"{__name__}.log_library_version")
@@ -1248,27 +1256,26 @@ def load_data(file_path: str, timeframe_str: str = "", price_jump_threshold: flo
     load_data_logger = logging.getLogger(f"{__name__}.load_data")
     load_data_logger.info(f"(Loading) กำลังโหลดข้อมูล {timeframe_str} จาก: {file_path}")
     if not os.path.exists(file_path):
-        load_data_logger.critical(f"(Error) ไม่พบไฟล์: {file_path}")
-        sys.exit(f"ออก: ไม่พบไฟล์ข้อมูล {timeframe_str} ที่ {file_path}")
+        load_data_logger.critical("(Error) ไม่พบไฟล์ข้อมูล")
+        raise DataLoadError("ไม่พบไฟล์ข้อมูล")
 
     try:
         try:
             df_pd = pd.read_csv(file_path, low_memory=False, dtype=dtypes)
-            load_data_logger.info(f"   ไฟล์ดิบ {timeframe_str}: {df_pd.shape[0]} แถว")
+            load_data_logger.info(f"   ไฟล์ข้อมูล: {file_path}")
         except pd.errors.ParserError as e_parse:
-            load_data_logger.critical(f"(Error) ไม่สามารถ Parse ไฟล์ CSV '{file_path}': {e_parse}")
-            sys.exit(f"ออก: ปัญหาการ Parse ไฟล์ CSV {timeframe_str}")
+            load_data_logger.critical(f"(Error) ไม่สามารถ Parse ไฟล์: {e_parse}")
+            raise DataLoadError("ไม่สามารถ Parse ไฟล์") from e_parse
         except Exception as e_read:
-            load_data_logger.critical(f"(Error) ไม่สามารถอ่านไฟล์ CSV '{file_path}': {e_read}", exc_info=True)
-            sys.exit(f"ออก: ปัญหาการอ่านไฟล์ CSV {timeframe_str}")
-
+            load_data_logger.critical(f"(Error) ไม่สามารถอ่านไฟล์: {e_read}")
+            raise DataLoadError("ไม่สามารถอ่านไฟล์") from e_read
         required_cols_base = ["Date", "Timestamp", "Open", "High", "Low", "Close"]
         required_cols_check = list(dtypes.keys()) if dtypes else required_cols_base
         required_cols_check = sorted(list(set(required_cols_check + required_cols_base)))
         missing_req = [col for col in required_cols_check if col not in df_pd.columns]
         if missing_req:
-            load_data_logger.critical(f"(Error) ขาดคอลัมน์: {missing_req} ใน {file_path}")
-            sys.exit(f"ออก: ขาดคอลัมน์ที่จำเป็นในข้อมูล {timeframe_str}")
+            load_data_logger.critical("(Error) ขาดคอลัมน์สำคัญ")
+            raise DataLoadError("ขาดคอลัมน์สำคัญ")
 
         price_cols = ["Open", "High", "Low", "Close"]
         load_data_logger.debug(f"   Converting price columns {price_cols} to numeric (if not already specified in dtypes)...")
@@ -1339,11 +1346,9 @@ def load_data(file_path: str, timeframe_str: str = "", price_jump_threshold: flo
         load_data_logger.info(f"(Success) โหลดและตรวจสอบข้อมูล {timeframe_str} สำเร็จ: {df_pd.shape[0]} แถว")
         return df_pd
 
-    except SystemExit as se:
-        raise se
     except Exception as e:
         load_data_logger.critical(f"(Error) ไม่สามารถโหลดข้อมูล {timeframe_str}: {e}\n{traceback.format_exc()}", exc_info=True)
-        sys.exit(f"ออก: ข้อผิดพลาดร้ายแรงในการโหลดข้อมูล {timeframe_str}")
+        raise DataLoadError(f"ไม่สามารถโหลดข้อมูล {timeframe_str}") from e
     return None
 
 # --- Datetime Helper Functions ---
