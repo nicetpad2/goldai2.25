@@ -13,3 +13,6 @@ pip install -r requirements.txt
 ```bash
 pytest
 ```
+
+`extend_safe_import_for_studio` is now defined inline within `test_gold_ai.py`.
+The previous helper module has been removed.
