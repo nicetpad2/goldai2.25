@@ -97,6 +97,11 @@ def safe_import_gold_ai_module(module_name_to_import, logger_instance):
         # matplotlib and scipy will be added by extend_safe_import_for_studio
     }
 
+    # Ensure all mocks provide a __version__ attribute to avoid AttributeError
+    for mock_obj in safe_mock_modules_dict.values():
+        if not hasattr(mock_obj, "__version__"):
+            mock_obj.__version__ = "0.0"
+
     # Configure torch mock
     safe_mock_modules_dict["torch"].library = MagicMock(name="SafeMock_torch_library_ImportFix_v3")
     safe_mock_modules_dict["torch"].library.Library = MagicMock(name="SafeMock_torch_library_LibraryClass_ImportFix_v3", side_effect=None)
