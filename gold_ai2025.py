@@ -72,6 +72,101 @@ class GoldAIError(Exception):
 class DataLoadError(GoldAIError):
     """Raised when load_data fails."""
 
+
+# --- Dummy Library Classes for Fallbacks ---
+class DummyPandas:
+    DataFrame = type('DummyDataFrame', (object,), {})
+    Series = type('DummySeries', (object,), {})
+    Timestamp = type('DummyTimestamp', (object,), {})
+    NaT = None
+    DatetimeIndex = type('DummyDatetimeIndex', (object,), {})
+
+    def to_datetime(self, *args, **kwargs):
+        return None
+
+    def read_csv(self, *args, **kwargs):
+        return self.DataFrame()
+
+    def merge_asof(self, *args, **kwargs):
+        return self.DataFrame()
+
+    def concat(self, *args, **kwargs):
+        return self.DataFrame()
+
+    class errors:
+        ParserError = type('DummyParserError', (Exception,), {})
+        EmptyDataError = type('DummyEmptyDataError', (Exception,), {})
+
+    class api:
+        class types:
+            @staticmethod
+            def is_datetime64_any_dtype(val):
+                return False
+
+            @staticmethod
+            def is_numeric_dtype(val):
+                return isinstance(val, (int, float))
+
+            @staticmethod
+            def is_integer_dtype(val):
+                return isinstance(val, int)
+
+            @staticmethod
+            def is_float_dtype(val):
+                return isinstance(val, float)
+
+
+class DummyNumpy:
+    nan = float('nan')
+    inf = float('inf')
+    integer = int
+    floating = float
+    bool_ = bool
+    ndarray = list
+
+    def array(self, *args, **kwargs):
+        return list(args[0]) if args and args[0] is not None else []
+
+    def mean(self, *args, **kwargs):
+        return 0.0
+
+    def std(self, *args, **kwargs):
+        return 0.0
+
+    def abs(self, val):
+        return abs(val) if isinstance(val, (int, float)) else ([abs(x) for x in val] if isinstance(val, list) else 0)
+
+    def where(self, condition, x, y):
+        return [x_val if c else y_val for c, x_val, y_val in zip(condition, x, y)]
+
+    def isinf(self, val):
+        return val == float('inf') or val == float('-inf')
+
+    def isnan(self, val):
+        return val != val
+
+    def maximum(self, *args, **kwargs):
+        return max(args) if args else 0
+
+    def minimum(self, *args, **kwargs):
+        return min(args) if args else 0
+
+    def sign(self, val):
+        return 0 if val == 0 else (1 if val > 0 else -1)
+
+    def clip(self, arr, min_val, max_val):
+        return [max(min_val, min(x, max_val)) for x in arr] if isinstance(arr, list) else max(min_val, min(arr, max_val))
+
+    class errstate:
+        def __init__(self, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
 # --- Helper Function to Log Library Versions ---
 def log_library_version(library_name: str, library_module: Optional[Any]):
     log_ver_logger = logging.getLogger(f"{__name__}.log_library_version")
@@ -156,132 +251,82 @@ def try_import_with_install(
                     import_helper_logger.info(f"   Assigned None for missing '{import_as_name}'.")
     return None
 
-# --- Import Core Libraries (More Robustly) ---
-logger.info("\n(Processing) Importing core libraries (with robust fallbacks)...")
-warnings.filterwarnings("ignore", category=UserWarning, module='sklearn')
-warnings.filterwarnings("ignore", category=FutureWarning, module='sklearn')
-warnings.filterwarnings("ignore", category=UserWarning, message="Could not infer format", module='pandas')
+# --- Import Core Libraries (Refactored) ---
+def import_core_libraries() -> None:
+    """Import core dependencies with graceful fallbacks."""
+    global pd, np, tqdm, ta, optuna
+    global CatBoostClassifier, Pool, EShapCalcType, EFeaturesSelectionAlgorithm
+    global shap, GPUtil, psutil, torch
 
-# Pandas and NumPy (critical, attempt import, log if fails but script might be unusable)
-# These are now imported via try_import_with_install for consistency and to allow pip fallback if needed
-# However, for critical libraries like pandas and numpy, it's often better to ensure they are pre-installed.
-# The dummy classes are a last resort to make the script *loadable* by pytest, not fully functional.
+    logger.info("\n(Processing) Importing core libraries (with robust fallbacks)...")
+    warnings.filterwarnings("ignore", category=UserWarning, module='sklearn')
+    warnings.filterwarnings("ignore", category=FutureWarning, module='sklearn')
+    warnings.filterwarnings("ignore", category=UserWarning, message="Could not infer format", module='pandas')
 
-pd = try_import_with_install("pandas", import_as_name="pd", success_flag_global_name="pandas_imported")
-if not pandas_imported: # pragma: no cover
-    logger.critical("[CRITICAL IMPORT FAIL] Pandas library could not be imported or installed. Many functionalities will fail.")
-    class DummyPandas:
-        DataFrame = type('DummyDataFrame', (object,), {})
-        Series = type('DummySeries', (object,), {})
-        Timestamp = type('DummyTimestamp', (object,), {})
-        NaT = None
-        DatetimeIndex = type('DummyDatetimeIndex', (object,), {}) # Added
-        def to_datetime(self, *args, **kwargs): return None
-        def read_csv(self, *args, **kwargs): return self.DataFrame()
-        def merge_asof(self, *args, **kwargs): return self.DataFrame()
-        def concat(self, *args, **kwargs): return self.DataFrame() # Added
-        class errors: # Added
-            ParserError = type('DummyParserError', (Exception,), {})
-            EmptyDataError = type('DummyEmptyDataError', (Exception,), {})
-        class api:
-            class types:
-                @staticmethod
-                def is_datetime64_any_dtype(val): return False
-                @staticmethod
-                def is_numeric_dtype(val): return isinstance(val, (int, float))
-                @staticmethod
-                def is_integer_dtype(val): return isinstance(val, int)
-                @staticmethod
-                def is_float_dtype(val): return isinstance(val, float)
-    globals()['pd'] = DummyPandas()
+    pd = try_import_with_install("pandas", import_as_name="pd", success_flag_global_name="pandas_imported")
+    if not pandas_imported:
+        logger.critical("[CRITICAL IMPORT FAIL] Pandas library could not be imported or installed. Many functionalities will fail.")
+        globals()['pd'] = DummyPandas()
 
-np = try_import_with_install("numpy", import_as_name="np", success_flag_global_name="numpy_imported")
-if not numpy_imported: # pragma: no cover
-    logger.critical("[CRITICAL IMPORT FAIL] NumPy library could not be imported or installed. Many functionalities will fail.")
-    class DummyNumpy:
-        nan = float('nan') # Use float('nan') for better compatibility
-        inf = float('inf')
-        integer = int
-        floating = float
-        bool_ = bool
-        ndarray = list # Treat ndarray as list for dummy
-        def array(self, *args, **kwargs): return list(args[0]) if args and args[0] is not None else []
-        def mean(self, *args, **kwargs): return 0.0
-        def std(self, *args, **kwargs): return 0.0
-        def abs(self, val): return abs(val) if isinstance(val, (int, float)) else ([abs(x) for x in val] if isinstance(val, list) else 0)
-        def where(self, condition, x, y): return [x_val if c else y_val for c, x_val, y_val in zip(condition, x, y)] # Simplified
-        def isinf(self, val): return val == float('inf') or val == float('-inf')
-        def isnan(self, val): return val != val # Standard way to check for float NaN
-        def maximum(self, *args, **kwargs): return max(args) if args else 0
-        def minimum(self, *args, **kwargs): return min(args) if args else 0
-        def sign(self, val): return 0 if val == 0 else (1 if val > 0 else -1)
-        def clip(self, arr, min_val, max_val): return [max(min_val, min(x, max_val)) for x in arr] if isinstance(arr, list) else max(min_val, min(arr, max_val))
-        class errstate:
-            def __init__(self, **kwargs): pass
-            def __enter__(self): return self
-            def __exit__(self, *args): pass
-    globals()['np'] = DummyNumpy()
+    np = try_import_with_install("numpy", import_as_name="np", success_flag_global_name="numpy_imported")
+    if not numpy_imported:
+        logger.critical("[CRITICAL IMPORT FAIL] NumPy library could not be imported or installed. Many functionalities will fail.")
+        globals()['np'] = DummyNumpy()
 
+    tqdm_module = try_import_with_install("tqdm.notebook", pip_install_name="tqdm", import_as_name="tqdm", success_flag_global_name="tqdm_imported", log_name="TQDM.NOTEBOOK")
+    if not tqdm_imported or tqdm_module is None:
+        tqdm = lambda x, *args, **kwargs: x
+        logger.warning("   (Fallback) Using dummy tqdm as tqdm.notebook import failed.")
+    else:
+        tqdm = tqdm_module
 
-# tqdm (with fallback)
-tqdm_module = try_import_with_install("tqdm.notebook", pip_install_name="tqdm", import_as_name="tqdm", success_flag_global_name="tqdm_imported", log_name="TQDM.NOTEBOOK")
-if not tqdm_imported or tqdm_module is None: # pragma: no cover
-    tqdm = lambda x, *args, **kwargs: x 
-    logger.warning("   (Fallback) Using dummy tqdm as tqdm.notebook import failed.")
-else:
-    tqdm = tqdm_module
+    ta = try_import_with_install("ta", success_flag_global_name="ta_imported")
 
-# ta (Technical Analysis Library)
-ta = try_import_with_install("ta", success_flag_global_name="ta_imported")
+    optuna = try_import_with_install("optuna", success_flag_global_name="optuna_imported")
+    if optuna_imported and optuna:
+        try:
+            optuna.logging.set_verbosity(optuna.logging.WARNING)
+        except Exception as e_optuna_log:
+            logger.warning(f"   (Warning) Could not set Optuna verbosity: {e_optuna_log}")
 
-# Optuna (Hyperparameter Optimization)
-optuna = try_import_with_install("optuna", success_flag_global_name="optuna_imported")
-if optuna_imported and optuna: # pragma: no cover
+    CatBoostClassifier = None
+    Pool = None
+    EShapCalcType = None
+    EFeaturesSelectionAlgorithm = None
+    catboost_module = try_import_with_install("catboost", success_flag_global_name="catboost_imported")
+    if catboost_imported and catboost_module:
+        try:
+            CatBoostClassifier = getattr(catboost_module, 'CatBoostClassifier')
+            Pool = getattr(catboost_module, 'Pool')
+            EShapCalcType = getattr(catboost_module, 'EShapCalcType', None)
+            EFeaturesSelectionAlgorithm = getattr(catboost_module, 'EFeaturesSelectionAlgorithm', None)
+            logger.info(f"   (Success) CatBoost components (Classifier, Pool) loaded. EShapCalcType: {'Found' if EShapCalcType else 'Not Found'}, EFeaturesSelectionAlgorithm: {'Found' if EFeaturesSelectionAlgorithm else 'Not Found'}")
+        except AttributeError as e_cat_attr:
+            logger.error(f"   (Error) Could not get CatBoost components from module: {e_cat_attr}")
+            catboost_imported = False
+            CatBoostClassifier = None
+            Pool = None
+            EShapCalcType = None
+            EFeaturesSelectionAlgorithm = None
+
+    shap = try_import_with_install("shap", success_flag_global_name="shap_imported")
+    GPUtil = try_import_with_install("GPUtil", import_as_name="GPUtil", success_flag_global_name="gputil_imported")
+    psutil = try_import_with_install("psutil", success_flag_global_name="psutil_imported")
+
+    torch = None
     try:
-        optuna.logging.set_verbosity(optuna.logging.WARNING)
-    except Exception as e_optuna_log:
-        logger.warning(f"   (Warning) Could not set Optuna verbosity: {e_optuna_log}")
+        import torch as torch_lib
+        torch = torch_lib
+        torch_imported = True
+        log_library_version("PyTorch", torch)
+    except ImportError:  # pragma: no cover
+        logger.warning("PyTorch not found. GPU acceleration will be disabled if it was intended.")
+        torch_imported = False
+    except Exception as e_torch_import:  # pragma: no cover
+        logger.error(f"Error importing PyTorch: {e_torch_import}. GPU acceleration might be affected.")
+        torch_imported = False
 
-# CatBoost
-CatBoostClassifier = None
-Pool = None
-EShapCalcType = None
-EFeaturesSelectionAlgorithm = None
-catboost_module = try_import_with_install("catboost", success_flag_global_name="catboost_imported")
-if catboost_imported and catboost_module: # pragma: no cover
-    try:
-        CatBoostClassifier = getattr(catboost_module, 'CatBoostClassifier')
-        Pool = getattr(catboost_module, 'Pool')
-        EShapCalcType = getattr(catboost_module, 'EShapCalcType', None)
-        EFeaturesSelectionAlgorithm = getattr(catboost_module, 'EFeaturesSelectionAlgorithm', None)
-        logger.info(f"   (Success) CatBoost components (Classifier, Pool) loaded. EShapCalcType: {'Found' if EShapCalcType else 'Not Found'}, EFeaturesSelectionAlgorithm: {'Found' if EFeaturesSelectionAlgorithm else 'Not Found'}")
-    except AttributeError as e_cat_attr:
-        logger.error(f"   (Error) Could not get CatBoost components from module: {e_cat_attr}")
-        catboost_imported = False
-        CatBoostClassifier = None; Pool = None; EShapCalcType = None; EFeaturesSelectionAlgorithm = None
-
-# SHAP (Explainable AI)
-shap = try_import_with_install("shap", success_flag_global_name="shap_imported")
-
-# GPUtil (GPU Monitoring)
-GPUtil = try_import_with_install("GPUtil", import_as_name="GPUtil", success_flag_global_name="gputil_imported")
-
-# psutil (System Utilities)
-psutil = try_import_with_install("psutil", success_flag_global_name="psutil_imported")
-
-# PyTorch (Deep Learning, GPU check)
-torch = None
-try:
-    import torch
-    torch_imported = True
-    log_library_version("PyTorch", torch)
-except ImportError: # pragma: no cover
-    logger.warning("PyTorch not found. GPU acceleration will be disabled if it was intended.")
-    torch_imported = False
-except Exception as e_torch_import: # pragma: no cover
-    logger.error(f"Error importing PyTorch: {e_torch_import}. GPU acceleration might be affected.")
-    torch_imported = False
-
+import_core_libraries()
 
 # --- Environment Setup (Colab, GPU) ---
 logger.info("\n(Processing) Setting up environment (Colab, GPU)...")
