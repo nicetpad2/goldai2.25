@@ -73,24 +73,33 @@ class DataLoadError(GoldAIError):
     """Raised when load_data fails."""
 
 
-# [Patch AI Studio v4.9.29] Robust isinstance type guard for dynamic type-checking
+# [Patch AI Studio v4.9.28] Robust isinstance for test/type-guard coverage
 def _isinstance_safe(obj, expected_type):
     """Safe isinstance wrapper for dynamic expected_type.
 
-    Returns True if expected_type is None.
-    Returns isinstance(obj, expected_type) if expected_type is a type or a tuple of types.
-    Logs and returns False otherwise to avoid TypeError in edge cases.
+    - expected_type can be a type, tuple of types, or an instance (fallback to type(expected_type)).
+    - If invalid expected_type, logs warning and returns False instead of raising TypeError.
     """
-    if expected_type is None:
-        return True
-    if isinstance(expected_type, type):
+    import logging
+    logger = logging.getLogger()
+
+    if isinstance(expected_type, type) or (
+        isinstance(expected_type, tuple) and all(isinstance(t, type) for t in expected_type)
+    ):
         return isinstance(obj, expected_type)
-    if isinstance(expected_type, tuple) and all(isinstance(t, type) for t in expected_type):
-        return isinstance(obj, expected_type)
-    logging.error(
-        f"[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: {expected_type!r}"
-    )
-    return False
+    elif expected_type is None:
+        logger.error("[Patch AI Studio v4.9.28] expected_type is None in _isinstance_safe. Returning False.")
+        return False
+    else:
+        logger.error(
+            f"[Patch AI Studio v4.9.28] expected_type argument for isinstance is not a type or tuple of types. Got: {expected_type} ({type(expected_type)}). Fallback to type(expected_type)."
+        )
+        try:
+            fallback_type = type(expected_type)
+            return isinstance(obj, fallback_type)
+        except Exception as ex:
+            logger.error(f"[Patch AI Studio v4.9.28] _isinstance_safe fallback failed: {ex}")
+            return False
 
 
 # --- Dummy Library Classes for Fallbacks ---
