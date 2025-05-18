@@ -12,6 +12,9 @@ pip install -r requirements.txt
 
 ```bash
 pytest
+
+# View coverage information
+pytest --cov=gold_ai2025 --cov-report=term-missing
 ```
 
 ## Notes

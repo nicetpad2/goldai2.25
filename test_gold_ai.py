@@ -425,4 +425,16 @@ class TestGoldAI2025(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    try:
+        import coverage
+        cov = coverage.Coverage()
+        cov.start()
+    except Exception:
+        cov = None
+
+    unittest.main(exit=False)
+
+    if cov:
+        cov.stop()
+        cov.save()
+        cov.report()
