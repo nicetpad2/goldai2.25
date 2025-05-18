@@ -6629,12 +6629,15 @@ part14_logger = logging.getLogger(f"{__name__}.Part14_FutureAdditions")
 part14_logger.debug("Part 14: Placeholder for Future Additions reached.")
 
 # --- Simplified Helper Functions for Unit Tests ---
+
 def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig') -> Tuple[list, list, dict]:
-    """Simplified trade simulator with basic BE-SL and kill switch logic."""
+    """Simplified trade simulator with basic multi-order and BE-SL logic."""
     sim_logger = logging.getLogger(f"{__name__}.simulate_trades")
+    sim_logger.info("[Patch AI Studio v4.9.26] simulate_trades start")
+
     trade_log: list = []
     equity_curve: list = []
-    run_summary: dict = {}
+    run_summary: dict = {"kill_switch_active": False, "hard_kill_triggered": False}
 
     if df is None or df.empty:
         return trade_log, equity_curve, run_summary
@@ -6642,119 +6645,106 @@ def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig') -> Tuple[list, l
     equity = getattr(config, "initial_capital", 0.0)
     drawdown_peak = equity
     consec_losses = 0
-    active_trade = None
+    active_orders: list = []
 
-    for idx, row in df.iterrows():
+    for bar_i, (idx, row) in enumerate(df.iterrows()):
         equity_curve.append(equity)
+        current_time = idx
 
         open_signal = row.get("Entry_Long", 0) or row.get("Entry_Short", 0)
+        side = "BUY" if row.get("Entry_Long", 0) else ("SELL" if row.get("Entry_Short", 0) else None)
 
-        if active_trade is None and open_signal:
-            side = "BUY" if row.get("Entry_Long", 0) else "SELL"
+        if open_signal and (not active_orders or getattr(config, "use_reentry", False)):
             open_price = pd.to_numeric(row.get("Open"), errors="coerce")
             atr = pd.to_numeric(row.get("ATR_14_Shifted"), errors="coerce")
-            if pd.isna(open_price) or pd.isna(atr):
+            if not pd.isna(open_price) and not pd.isna(atr):
+                risk = atr * getattr(config, "default_sl_multiplier", 1.0)
+                sl_price = open_price - risk if side == "BUY" else open_price + risk
+                tp_price = open_price + risk * getattr(config, "base_tp_multiplier", 2.0) if side == "BUY" else open_price - risk * getattr(config, "base_tp_multiplier", 2.0)
+                active_orders.append({
+                    "entry_idx": bar_i,
+                    "entry_time": current_time,
+                    "entry_price": open_price,
+                    "stop_loss": sl_price,
+                    "take_profit": tp_price,
+                    "side": side,
+                })
+
+        for order in list(active_orders):
+            entry_price = order["entry_price"]
+            tp = order["take_profit"]
+            sl = order["stop_loss"]
+            be_sl_thresh = getattr(config, "base_be_sl_r_threshold", 1.0)
+            enable_be_sl = getattr(config, "enable_be_sl", True)
+
+            if enable_be_sl and ((row["High"] - entry_price) >= (tp - entry_price) * be_sl_thresh):
+                if row["Low"] <= entry_price:
+                    order["exit_price"] = entry_price
+                    order["exit_reason"] = "BE-SL"
+                    order["exit_idx"] = bar_i
+                    order["exit_time"] = current_time
+                    order["pnl_usd_net"] = 0.0
+                    trade_log.append(order.copy())
+                    active_orders.remove(order)
+                    print("[Debug BE-SL] Triggered BE-SL:", order)
+                    continue
+
+            if row["Low"] <= sl:
+                order["exit_price"] = sl
+                order["exit_reason"] = "SL"
+                order["exit_idx"] = bar_i
+                order["exit_time"] = current_time
+                order["pnl_usd_net"] = sl - entry_price if order.get("side", "BUY") == "BUY" else entry_price - sl
+                trade_log.append(order.copy())
+                active_orders.remove(order)
+                print("[Debug SL] Triggered SL:", order)
                 continue
-            risk = atr * getattr(config, "default_sl_multiplier", 1.0)
-            sl_price = open_price - risk if side == "BUY" else open_price + risk
-            tp_price = open_price + risk * getattr(config, "base_tp_multiplier", 2.0) if side == "BUY" else open_price - risk * getattr(config, "base_tp_multiplier", 2.0)
-            be_trigger = open_price + risk * getattr(config, "base_be_sl_r_threshold", 1.0) if side == "BUY" else open_price - risk * getattr(config, "base_be_sl_r_threshold", 1.0)
-            active_trade = {
-                "entry_idx": idx,
-                "side": side,
-                "entry_price": open_price,
-                "sl_price": sl_price,
-                "tp_price": tp_price,
-                "be_trigger_level": be_trigger,
-                "be_triggered": False,
-            }
-            continue
 
-        if active_trade is not None:
-            high = pd.to_numeric(row.get("High"), errors="coerce")
-            low = pd.to_numeric(row.get("Low"), errors="coerce")
-            close_price = pd.to_numeric(row.get("Close"), errors="coerce")
-            if pd.isna(high) or pd.isna(low) or pd.isna(close_price):
+            if row["High"] >= tp:
+                order["exit_price"] = tp
+                order["exit_reason"] = "TP"
+                order["exit_idx"] = bar_i
+                order["exit_time"] = current_time
+                order["pnl_usd_net"] = tp - entry_price if order.get("side", "BUY") == "BUY" else entry_price - tp
+                trade_log.append(order.copy())
+                active_orders.remove(order)
                 continue
 
-            if getattr(config, "enable_be_sl", False) and not active_trade["be_triggered"]:
-                if active_trade["side"] == "BUY" and high >= active_trade["be_trigger_level"]:
-                    active_trade["sl_price"] = active_trade["entry_price"]
-                    active_trade["be_triggered"] = True
-                elif active_trade["side"] == "SELL" and low <= active_trade["be_trigger_level"]:
-                    active_trade["sl_price"] = active_trade["entry_price"]
-                    active_trade["be_triggered"] = True
-
-            exit_reason = None
-            exit_price = None
-
-            if active_trade["side"] == "BUY":
-                if low <= active_trade["sl_price"]:
-                    exit_price = active_trade["sl_price"]
-                    exit_reason = "BE-SL" if active_trade["be_triggered"] and math.isclose(exit_price, active_trade["entry_price"]) else "SL"
-                elif high >= active_trade["tp_price"]:
-                    exit_price = active_trade["tp_price"]
-                    exit_reason = "TP"
+        for closed in [t for t in trade_log if t.get("exit_idx") == bar_i]:
+            pnl = closed.get("pnl_usd_net", 0.0)
+            equity += pnl
+            if pnl < 0:
+                consec_losses += 1
             else:
-                if high >= active_trade["sl_price"]:
-                    exit_price = active_trade["sl_price"]
-                    exit_reason = "BE-SL" if active_trade["be_triggered"] and math.isclose(exit_price, active_trade["entry_price"]) else "SL"
-                elif low <= active_trade["tp_price"]:
-                    exit_price = active_trade["tp_price"]
-                    exit_reason = "TP"
+                consec_losses = 0
 
-            if exit_reason is not None:
-                pnl = (exit_price - active_trade["entry_price"]) if active_trade["side"] == "BUY" else (active_trade["entry_price"] - exit_price)
-                equity += pnl
-                trade_log.append({"entry_idx": active_trade["entry_idx"], "exit_reason": exit_reason, "pnl_usd_net": pnl, "side": active_trade["side"]})
+            if equity > drawdown_peak:
+                drawdown_peak = equity
+            dd = (drawdown_peak - equity) / drawdown_peak if drawdown_peak else 0.0
+            if dd >= getattr(config, "kill_switch_dd", 1.0) or consec_losses >= getattr(config, "kill_switch_consecutive_losses", 999):
+                run_summary["kill_switch_active"] = True
+                run_summary["hard_kill_triggered"] = True
+                active_orders.clear()
+                break
 
-                if pnl < 0:
-                    consec_losses += 1
-                else:
-                    consec_losses = 0
+        if run_summary.get("kill_switch_active"):
+            break
 
-                if equity > drawdown_peak:
-                    drawdown_peak = equity
-                dd = (drawdown_peak - equity) / drawdown_peak if drawdown_peak else 0.0
-                if dd >= getattr(config, "kill_switch_dd", 1.0) or consec_losses >= getattr(config, "kill_switch_consecutive_losses", 999):
-                    run_summary["kill_switch_active"] = True
-                    active_trade = None
-                    break
-
-                active_trade = None
-
-                if getattr(config, "use_reentry", False) and open_signal:
-                    side = "BUY" if row.get("Entry_Long", 0) else "SELL"
-                    open_price = pd.to_numeric(row.get("Open"), errors="coerce")
-                    atr = pd.to_numeric(row.get("ATR_14_Shifted"), errors="coerce")
-                    if pd.isna(open_price) or pd.isna(atr):
-                        continue
-                    risk = atr * getattr(config, "default_sl_multiplier", 1.0)
-                    sl_price = open_price - risk if side == "BUY" else open_price + risk
-                    tp_price = open_price + risk * getattr(config, "base_tp_multiplier", 2.0) if side == "BUY" else open_price - risk * getattr(config, "base_tp_multiplier", 2.0)
-                    be_trigger = open_price + risk * getattr(config, "base_be_sl_r_threshold", 1.0) if side == "BUY" else open_price - risk * getattr(config, "base_be_sl_r_threshold", 1.0)
-                    active_trade = {
-                        "entry_idx": idx,
-                        "side": side,
-                        "entry_price": open_price,
-                        "sl_price": sl_price,
-                        "tp_price": tp_price,
-                        "be_trigger_level": be_trigger,
-                        "be_triggered": False,
-                    }
-            continue
-
-    if active_trade is not None and "kill_switch_active" not in run_summary:
+    if active_orders and not run_summary.get("kill_switch_active"):
         last_close = pd.to_numeric(df.iloc[-1].get("Close"), errors="coerce")
         if not pd.isna(last_close):
-            pnl = (last_close - active_trade["entry_price"]) if active_trade["side"] == "BUY" else (active_trade["entry_price"] - last_close)
-            exit_reason = "TP" if pnl > 0 else ("SL" if pnl < 0 else "BE")
-            equity += pnl
-            trade_log.append({"entry_idx": active_trade["entry_idx"], "exit_reason": exit_reason, "pnl_usd_net": pnl, "side": active_trade["side"]})
+            for order in active_orders:
+                pnl = last_close - order["entry_price"] if order.get("side", "BUY") == "BUY" else order["entry_price"] - last_close
+                exit_reason = "TP" if pnl > 0 else ("SL" if pnl < 0 else "BE")
+                trade_log.append({
+                    "entry_idx": order["entry_idx"],
+                    "exit_reason": exit_reason,
+                    "pnl_usd_net": pnl,
+                    "side": order.get("side", "BUY"),
+                })
 
     run_summary["num_trades"] = len(trade_log)
     return trade_log, equity_curve, run_summary
-
 
 def calculate_metrics(trade_log: list, fold_tag: str = "") -> Dict[str, Any]:
     """Calculate basic metrics for a list-based trade log."""
