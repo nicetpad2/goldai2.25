@@ -963,6 +963,68 @@ class TestTP2AndBESL(unittest.TestCase):
         self.assertGreaterEqual(len(trade_log), 1)
         self.assertIn(trade_log[0]["exit_reason"], {"BE-SL", "SL"})
 
+    def test_simulate_trades_tsl_tp_be_sl(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1000, 1005, 1010, 1007, 1004, 1002],
+            "High": [1005, 1010, 1015, 1011, 1006, 1004],
+            "Low": [999, 1002, 1008, 1005, 1002, 1000],
+            "Close": [1004, 1009, 1013, 1006, 1002, 1001],
+            "Entry_Long": [1, 0, 0, 0, 0, 0],
+            "ATR_14_Shifted": [1.0] * 6,
+            "Signal_Score": [2.0] * 6,
+            "Trade_Reason": ["test"] * 6,
+            "session": ["Asia"] * 6,
+            "Gain_Z": [0.3] * 6,
+            "MACD_hist_smooth": [0.1] * 6,
+            "RSI": [50] * 6,
+        }, index=self.ga.pd.date_range("2023-01-01", periods=6, freq="min"))
+
+        cfg = self.ga.StrategyConfig({
+            "risk_per_trade": 0.01,
+            "use_tsl": True,
+            "trailing_sl_distance": 1.5,
+            "base_tp_multiplier": 1.5,
+            "default_sl_multiplier": 1.0,
+            "base_be_sl_r_threshold": 1.0,
+            "enable_partial_tp": True,
+            "partial_tp_levels": [{"r_multiple": 0.5, "close_pct": 0.5}],
+            "partial_tp_move_sl_to_entry": True,
+        })
+
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        self.assertTrue(any(t["exit_reason"] in {"TSL", "TP", "BE-SL"} for t in trade_log))
+
+    def test_simulate_trades_with_kill_switch_activation(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1000, 995, 990, 985, 980],
+            "High": [1001, 996, 991, 986, 981],
+            "Low": [995, 990, 985, 980, 975],
+            "Close": [995, 990, 985, 980, 975],
+            "Entry_Long": [1, 0, 0, 0, 0],
+            "ATR_14_Shifted": [1.0] * 5,
+            "Signal_Score": [2.0] * 5,
+            "Trade_Reason": ["test"] * 5,
+            "session": ["Asia"] * 5,
+            "Gain_Z": [0.3] * 5,
+            "MACD_hist_smooth": [0.1] * 5,
+            "RSI": [50] * 5,
+        }, index=self.ga.pd.date_range("2023-01-01", periods=5, freq="min"))
+
+        cfg = self.ga.StrategyConfig({
+            "risk_per_trade": 0.5,
+            "initial_capital": 10.0,
+            "kill_switch_dd": 0.10,
+            "kill_switch_consecutive_losses": 1,
+            "recovery_mode_consecutive_losses": 1,
+        })
+
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        self.assertTrue(run_summary.get("hard_kill_triggered") or run_summary.get("kill_switch_active"))
+
 
 class TestWFVandLotSizingFix(unittest.TestCase):
     """Ensure reentry logic handles 0 cooldown correctly."""
