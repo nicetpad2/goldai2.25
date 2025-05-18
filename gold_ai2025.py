@@ -73,6 +73,26 @@ class DataLoadError(GoldAIError):
     """Raised when load_data fails."""
 
 
+# [Patch AI Studio v4.9.29] Robust isinstance type guard for dynamic type-checking
+def _isinstance_safe(obj, expected_type):
+    """Safe isinstance wrapper for dynamic expected_type.
+
+    Returns True if expected_type is None.
+    Returns isinstance(obj, expected_type) if expected_type is a type or a tuple of types.
+    Logs and returns False otherwise to avoid TypeError in edge cases.
+    """
+    if expected_type is None:
+        return True
+    if isinstance(expected_type, type):
+        return isinstance(obj, expected_type)
+    if isinstance(expected_type, tuple) and all(isinstance(t, type) for t in expected_type):
+        return isinstance(obj, expected_type)
+    logging.error(
+        f"[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: {expected_type!r}"
+    )
+    return False
+
+
 # --- Dummy Library Classes for Fallbacks ---
 class DummyPandas:
     __version__ = "0.0"
@@ -1958,13 +1978,10 @@ def tag_price_structure_patterns(
 
     # --- Robust type guard ---
     if expected_type is not None:
-        if not (
-            isinstance(expected_type, type)
-            or (isinstance(expected_type, tuple) and all(isinstance(x, type) for x in expected_type))
-        ):
-            raise TypeError(f"[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: {expected_type!r}")
-        if not isinstance(df, expected_type):
-            raise TypeError(f"[Patch] Input is not of type {expected_type!r}")
+        if not _isinstance_safe(df, expected_type):
+            raise TypeError(
+                f"[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: {expected_type!r}"
+            )
     required_cols = ["High", "Low", "Close"]
     if (
         df is None
@@ -1990,13 +2007,10 @@ def calculate_m15_trend_zone(
 
     # --- Robust type guard ---
     if expected_type is not None:
-        if not (
-            isinstance(expected_type, type)
-            or (isinstance(expected_type, tuple) and all(isinstance(x, type) for x in expected_type))
-        ):
-            raise TypeError(f"[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: {expected_type!r}")
-        if not isinstance(df, expected_type):
-            raise TypeError(f"[Patch] Input is not of type {expected_type!r}")
+        if not _isinstance_safe(df, expected_type):
+            raise TypeError(
+                f"[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: {expected_type!r}"
+            )
     required_cols = ["High", "Low", "Close"]
     if (
         df is None
