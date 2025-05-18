@@ -1702,12 +1702,12 @@ import gc  # For memory management
 # --- Indicator Calculation Functions (Unchanged in this refactor step, already robust) ---
 def ema(series: pd.Series | Any, period: int) -> pd.Series:
     """Calculates Exponential Moving Average."""
+    import numpy as np
+    import pandas as pd
     ema_logger = logging.getLogger(f"{__name__}.ema")
     if series is None or (hasattr(series, "__len__") and len(series) == 0):
-        ema_logger.debug("Input series is None or empty, returning empty series.")
-        dtype = getattr(series, "dtype", "float32")
-        index = getattr(series, "index", None)
-        return pd.Series([], dtype=dtype, index=index)
+        ema_logger.debug("[Patch AI Studio v4.9.26] Empty input detected in ema, returning empty pd.Series")
+        return pd.Series([], dtype=float)
     if not isinstance(series, pd.Series):
         ema_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
@@ -1757,12 +1757,12 @@ def sma(series: pd.Series | Any, period: int) -> pd.Series:
 
 def rsi(series: pd.Series | Any, period: int = 14) -> pd.Series:
     """Calculates Relative Strength Index."""
+    import numpy as np
+    import pandas as pd
     rsi_logger = logging.getLogger(f"{__name__}.rsi")
     if series is None or (hasattr(series, "__len__") and len(series) == 0):
-        rsi_logger.debug("Input series is None or empty, returning empty series.")
-        dtype = getattr(series, "dtype", "float32")
-        index = getattr(series, "index", None)
-        return pd.Series([], dtype=dtype, index=index)
+        rsi_logger.debug("[Patch AI Studio v4.9.26] Empty input detected in rsi, returning empty pd.Series")
+        return pd.Series([], dtype=float)
     if not isinstance(series, pd.Series):
         rsi_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
