@@ -75,6 +75,7 @@ class DataLoadError(GoldAIError):
 
 # --- Dummy Library Classes for Fallbacks ---
 class DummyPandas:
+    __version__ = "0.0"
     DataFrame = type('DummyDataFrame', (object,), {})
     Series = type('DummySeries', (object,), {})
     Timestamp = type('DummyTimestamp', (object,), {})
@@ -117,6 +118,7 @@ class DummyPandas:
 
 
 class DummyNumpy:
+    __version__ = "0.0"
     nan = float('nan')
     inf = float('inf')
     integer = int
