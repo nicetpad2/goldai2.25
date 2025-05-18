@@ -672,6 +672,152 @@ class TestEdgeCases(unittest.TestCase):
         self.assertIn("run_summary", result)
 
 
+class TestWFVandLotSizing(unittest.TestCase):
+    """Additional tests for multi-order simulation, WFV, and lot sizing."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ga = safe_import_gold_ai()
+        try:
+            import pandas as real_pd
+            cls.ga.pd = real_pd
+            cls.pandas_available = True
+        except Exception:
+            cls.ga.pd = cls.ga.DummyPandas()
+            cls.ga.pd.isna = lambda x: x is None
+            cls.pandas_available = False
+        try:
+            import numpy as real_np
+            cls.ga.np = real_np
+            cls.numpy_available = True
+        except Exception:
+            cls.ga.np = cls.ga.DummyNumpy()
+            cls.numpy_available = False
+        cls.ga.datetime = datetime
+
+    def test_simulate_trades_multi_order_with_reentry(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1000.0, 1000.5],
+            "High": [1001.0, 1001.5],
+            "Low": [999.5, 1000.0],
+            "Close": [1001.0, 1002.0],
+            "Entry_Long": [1, 1],
+            "ATR_14_Shifted": [1.0, 1.0],
+            "Signal_Score": [2.0, 2.0],
+            "Trade_Reason": ["test", "test"],
+            "session": ["Asia", "Asia"],
+            "Gain_Z": [0.3, 0.3],
+            "MACD_hist_smooth": [0.1, 0.1],
+            "RSI": [50, 50],
+        })
+        ts = [self.ga.datetime.datetime(2023, 1, 1, 0, 0)] * 2
+        df.index = self.ga.pd.to_datetime(ts)
+        cfg = self.ga.StrategyConfig({
+            "use_reentry": True,
+            "reentry_cooldown_bars": 0,
+            "initial_capital": 100.0,
+        })
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        self.assertEqual(len(trade_log), 2)
+        self.assertEqual(trade_log[0]["exit_reason"], "TP")
+        self.assertEqual(trade_log[1]["exit_reason"], "TP")
+        allowed = self.ga.is_reentry_allowed(
+            cfg,
+            df.iloc[1],
+            "BUY",
+            [],
+            0,
+            df.index[0],
+            0.6,
+        )
+        self.assertTrue(allowed)
+
+    def test_calculate_lot_by_fund_mode_bounds(self):
+        cfg = self.ga.StrategyConfig({"min_lot": 0.01, "max_lot": 0.1, "point_value": 0.1})
+        lot = self.ga.calculate_lot_by_fund_mode(cfg, "balanced", 0.02, 50000.0, 1.0, 1.0)
+        self.assertLessEqual(lot, cfg.max_lot)
+        lot_zero = self.ga.calculate_lot_by_fund_mode(cfg, "balanced", 0.02, 0.0, 1.0, 1.0)
+        self.assertEqual(lot_zero, cfg.min_lot)
+        lot_tight_sl = self.ga.calculate_lot_by_fund_mode(cfg, "balanced", 0.02, 1000.0, 1.0, 0.0)
+        self.assertEqual(lot_tight_sl, cfg.min_lot)
+
+    def test_run_all_folds_with_threshold_mocked(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+
+        df = self.ga.pd.DataFrame({
+            "Open": [1.0, 2.0, 3.0, 4.0],
+            "High": [1.5, 2.5, 3.5, 4.5],
+            "Low": [0.5, 1.5, 2.5, 3.5],
+            "Close": [1.2, 2.2, 3.2, 4.2],
+            "Gain_Z": [0.3, 0.4, 0.5, 0.6],
+            "RSI": [50, 51, 52, 53],
+            "Pattern_Label": ["Breakout"] * 4,
+            "Volatility_Index": [1.0] * 4,
+        })
+        df.index = self.ga.pd.date_range("2023-01-01", periods=4, freq="min")
+
+        cfg = self.ga.StrategyConfig({"n_walk_forward_splits": 2, "initial_capital": 100.0})
+        rm = self.ga.RiskManager(cfg)
+        tm = self.ga.TradeManager(cfg, rm)
+
+        class DummyTS:
+            def __init__(self, n_splits):
+                self.n_splits = n_splits
+
+            def split(self, data):
+                n = len(data)
+                splits = [
+                    (list(range(0, 2)), list(range(2, 3))),
+                    (list(range(0, 3)), list(range(3, 4))),
+                ]
+                for tr, te in splits[: self.n_splits]:
+                    yield tr, te
+
+        def fake_calc(df_m1, fold_specific_config=None, strategy_config=None):
+            df2 = df_m1.copy()
+            df2["Entry_Long"] = 1
+            df2["Entry_Short"] = 0
+            df2["Signal_Score"] = 2.0
+            df2["Trade_Reason"] = "MOCK"
+            df2["Trade_Tag"] = "T"
+            return df2
+
+        def fake_run(*args, **kwargs):
+            data = kwargs.get("df_m1_segment_pd") or args[0]
+            side = kwargs.get("side", "BUY")
+            trade_log = self.ga.pd.DataFrame([
+                {"entry_idx": 0, "exit_reason": "TP", "pnl_usd_net": 1.0, "side": side}
+            ])
+            return (
+                data,
+                trade_log,
+                kwargs.get("initial_capital_segment", 100.0) + 1.0,
+                {data.index[0]: 100.0},
+                0.0,
+                {"total_ib_lot_accumulator": 1.0},
+                [],
+                "L1",
+                "L2",
+                False,
+                0,
+                1.0,
+            )
+
+        with patch.object(self.ga, "TimeSeriesSplit", DummyTS), \
+             patch.object(self.ga, "calculate_m1_entry_signals", side_effect=fake_calc), \
+             patch.object(self.ga, "_run_backtest_simulation_v34_full", side_effect=fake_run), \
+             patch.object(self.ga, "export_run_summary_to_json"), \
+             patch.object(self.ga, "export_trade_log_to_csv"), \
+             patch.object(self.ga, "plot_equity_curve"):
+            result = self.ga.run_all_folds_with_threshold(cfg, rm, tm, df, "/tmp")
+
+        self.assertIsInstance(result[0], dict)
+        self.assertIsInstance(result[2], self.ga.pd.DataFrame)
+
+
 if __name__ == "__main__":
     if cov:
         cov.start()
