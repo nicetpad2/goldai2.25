@@ -679,6 +679,9 @@ class StrategyConfig:
         # --- Base TP/BE parameters ---
         self.base_tp_multiplier: float = config_dict.get("base_tp_multiplier", 1.8)
         self.base_be_sl_r_threshold: float = config_dict.get("base_be_sl_r_threshold", 1.0)
+        self.enable_be_sl: bool = config_dict.get("enable_be_sl", True)
+        self.trailing_be_sl: bool = config_dict.get("trailing_be_sl", False)
+        self.be_sl_buffer: float = config_dict.get("be_sl_buffer", 0.0)
         self.default_sl_multiplier: float = config_dict.get("default_sl_multiplier", 1.5)
 
         # --- Min signal score ---
@@ -6674,26 +6677,48 @@ def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig') -> Tuple[list, l
             entry_price = order["entry_price"]
             tp = order["take_profit"]
             sl = order["stop_loss"]
-            be_sl_thresh = getattr(config, "base_be_sl_r_threshold", 1.0)
-            enable_be_sl = getattr(config, "enable_be_sl", True)
 
-            be_sl_trigger = (
-                enable_be_sl
-                and (row["High"] - entry_price) >= (tp - entry_price) * be_sl_thresh
-                and row["Low"] <= entry_price
-            )
+            side = order.get("side", "BUY")
+            if side == "BUY":
+                move_price = row["High"]
+                current_price = row["Low"]
+                risk = entry_price - sl
+                r_multiple = (move_price - entry_price) / risk if risk else 0.0
+            else:
+                move_price = row["Low"]
+                current_price = row["High"]
+                risk = sl - entry_price
+                r_multiple = (entry_price - move_price) / risk if risk else 0.0
+
+            enable_be_sl = getattr(config, "enable_be_sl", True)
+            be_sl_r_threshold = getattr(config, "base_be_sl_r_threshold", 1.0)
+            trailing_be_sl = getattr(config, "trailing_be_sl", False)
+            be_sl_buffer = getattr(config, "be_sl_buffer", 0.0)
+
+            is_be_sl_trigger = False
+            if enable_be_sl and r_multiple >= be_sl_r_threshold:
+                if side == "BUY" and current_price <= entry_price + be_sl_buffer:
+                    is_be_sl_trigger = True
+                elif side == "SELL" and current_price >= entry_price - be_sl_buffer:
+                    is_be_sl_trigger = True
+                if trailing_be_sl:
+                    pass
+
             tp_trigger = row["High"] >= tp
             sl_trigger = row["Low"] <= sl
 
-            if be_sl_trigger:
-                order["exit_price"] = entry_price
+            if is_be_sl_trigger:
+                order["exit_price"] = current_price
                 order["exit_reason"] = "BE-SL"
                 order["exit_idx"] = bar_i
                 order["exit_time"] = current_time
                 order["pnl_usd_net"] = 0.0
                 trade_log.append(order.copy())
                 active_orders.remove(order)
-                sim_logger.debug("[Patch AI Studio v4.9.27] Triggered BE-SL: %s", order)
+                sim_logger.debug(
+                    f"[Patch AI Studio v4.9.28] Triggered BE-SL: OrderIdx:{order.get('entry_idx','')}, "
+                    f"Side:{side}, Entry:{entry_price}, Exit:{current_price}, PNL:0.0"
+                )
                 continue
             elif tp_trigger:
                 order["exit_price"] = tp
