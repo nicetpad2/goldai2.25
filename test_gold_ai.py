@@ -279,6 +279,49 @@ class TestGoldAI2025(unittest.TestCase):
         rm.soft_kill_active = False
         self.assertTrue(rm.is_trading_allowed())
 
+    def test_print_gpu_utilization_and_show_system_status(self):
+        mod = self.gold_ai
+
+        mod.psutil_imported = True
+        mod.psutil = MagicMock()
+        mod.psutil.virtual_memory.return_value = types.SimpleNamespace(
+            percent=75.0,
+            used=8 * 1024**3,
+            total=16 * 1024**3,
+        )
+
+        util = types.SimpleNamespace(gpu=50, memory=40)
+        mem = types.SimpleNamespace(used=512 * 1024**2, total=2048 * 1024**2)
+        mod.pynvml = types.SimpleNamespace(
+            nvmlDeviceGetUtilizationRates=lambda handle: util,
+            nvmlDeviceGetMemoryInfo=lambda handle: mem,
+            NVMLError=Exception,
+            nvmlShutdown=lambda: None,
+        )
+        mod.nvml_handle = object()
+        mod.USE_GPU_ACCELERATION = True
+
+        with self.assertLogs(f"{mod.__name__}.print_gpu_utilization", level="INFO") as cm:
+            mod.print_gpu_utilization("Test")
+        self.assertTrue(any("GPU Util" in msg for msg in cm.output))
+
+        mod.gputil_imported = True
+        mod.GPUtil = types.SimpleNamespace(
+            getGPUs=lambda: [
+                types.SimpleNamespace(
+                    id=0,
+                    name="TestGPU",
+                    load=0.5,
+                    memoryUtil=0.4,
+                    memoryUsed=1024,
+                    memoryTotal=2048,
+                )
+            ]
+        )
+        with self.assertLogs(f"{mod.__name__}.show_system_status", level="INFO") as cm2:
+            mod.show_system_status("Demo")
+        self.assertTrue(any("TestGPU" in msg for msg in cm2.output))
+
 
 if __name__ == "__main__":
     unittest.main()
