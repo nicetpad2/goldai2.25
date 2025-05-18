@@ -6630,7 +6630,7 @@ part14_logger.debug("Part 14: Placeholder for Future Additions reached.")
 
 # --- Simplified Helper Functions for Unit Tests ---
 def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig') -> Tuple[list, list, dict]:
-    """Simplified trade simulator with basic BE-SL logic for tests."""
+    """Simplified trade simulator with basic BE-SL and kill switch logic."""
     sim_logger = logging.getLogger(f"{__name__}.simulate_trades")
     trade_log: list = []
     equity_curve: list = []
@@ -6640,12 +6640,16 @@ def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig') -> Tuple[list, l
         return trade_log, equity_curve, run_summary
 
     equity = getattr(config, "initial_capital", 0.0)
+    drawdown_peak = equity
+    consec_losses = 0
     active_trade = None
 
     for idx, row in df.iterrows():
         equity_curve.append(equity)
 
-        if active_trade is None and (row.get("Entry_Long", 0) or row.get("Entry_Short", 0)):
+        open_signal = row.get("Entry_Long", 0) or row.get("Entry_Short", 0)
+
+        if active_trade is None and open_signal:
             side = "BUY" if row.get("Entry_Long", 0) else "SELL"
             open_price = pd.to_numeric(row.get("Open"), errors="coerce")
             atr = pd.to_numeric(row.get("ATR_14_Shifted"), errors="coerce")
@@ -6703,10 +6707,44 @@ def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig') -> Tuple[list, l
                 pnl = (exit_price - active_trade["entry_price"]) if active_trade["side"] == "BUY" else (active_trade["entry_price"] - exit_price)
                 equity += pnl
                 trade_log.append({"entry_idx": active_trade["entry_idx"], "exit_reason": exit_reason, "pnl_usd_net": pnl, "side": active_trade["side"]})
-                active_trade = None
-                continue
 
-    if active_trade is not None:
+                if pnl < 0:
+                    consec_losses += 1
+                else:
+                    consec_losses = 0
+
+                if equity > drawdown_peak:
+                    drawdown_peak = equity
+                dd = (drawdown_peak - equity) / drawdown_peak if drawdown_peak else 0.0
+                if dd >= getattr(config, "kill_switch_dd", 1.0) or consec_losses >= getattr(config, "kill_switch_consecutive_losses", 999):
+                    run_summary["kill_switch_active"] = True
+                    active_trade = None
+                    break
+
+                active_trade = None
+
+                if getattr(config, "use_reentry", False) and open_signal:
+                    side = "BUY" if row.get("Entry_Long", 0) else "SELL"
+                    open_price = pd.to_numeric(row.get("Open"), errors="coerce")
+                    atr = pd.to_numeric(row.get("ATR_14_Shifted"), errors="coerce")
+                    if pd.isna(open_price) or pd.isna(atr):
+                        continue
+                    risk = atr * getattr(config, "default_sl_multiplier", 1.0)
+                    sl_price = open_price - risk if side == "BUY" else open_price + risk
+                    tp_price = open_price + risk * getattr(config, "base_tp_multiplier", 2.0) if side == "BUY" else open_price - risk * getattr(config, "base_tp_multiplier", 2.0)
+                    be_trigger = open_price + risk * getattr(config, "base_be_sl_r_threshold", 1.0) if side == "BUY" else open_price - risk * getattr(config, "base_be_sl_r_threshold", 1.0)
+                    active_trade = {
+                        "entry_idx": idx,
+                        "side": side,
+                        "entry_price": open_price,
+                        "sl_price": sl_price,
+                        "tp_price": tp_price,
+                        "be_trigger_level": be_trigger,
+                        "be_triggered": False,
+                    }
+            continue
+
+    if active_trade is not None and "kill_switch_active" not in run_summary:
         last_close = pd.to_numeric(df.iloc[-1].get("Close"), errors="coerce")
         if not pd.isna(last_close):
             pnl = (last_close - active_trade["entry_price"]) if active_trade["side"] == "BUY" else (active_trade["entry_price"] - last_close)
