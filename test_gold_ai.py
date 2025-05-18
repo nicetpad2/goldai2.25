@@ -1064,6 +1064,13 @@ class TestWFVandLotSizingFix(unittest.TestCase):
         except Exception:
             cls.ga.pd = cls.ga.DummyPandas()
             cls.pandas_available = False
+        try:
+            import numpy as real_np
+            cls.ga.np = real_np
+            cls.numpy_available = True
+        except Exception:
+            cls.ga.np = cls.ga.DummyNumpy()
+            cls.numpy_available = False
         cls.ga.datetime = datetime
 
     def test_simulate_trades_multi_order_with_reentry_fixed(self):
@@ -1133,6 +1140,106 @@ class TestWFVandLotSizingFix(unittest.TestCase):
         self.assertGreaterEqual(len(trade_log), 2)
         self.assertIn(trade_log[0]["exit_reason"], {"TP", "TSL", "BE-SL", "SL"})
         self.assertIn(trade_log[1]["exit_reason"], {"TP", "TSL", "BE-SL", "SL"})
+
+    def test_simulate_trades_multi_order_strict(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1000, 1001, 1002],
+            "High": [1003, 1004, 1005],
+            "Low": [999, 1000, 1001],
+            "Close": [1002, 1003, 1004],
+            "Entry_Long": [1, 1, 0],
+            "ATR_14_Shifted": [1.0, 1.0, 1.0],
+            "Signal_Score": [2.0, 2.0, 0.0],
+            "Trade_Reason": ["test", "test", ""],
+            "session": ["Asia", "Asia", "Asia"],
+            "Gain_Z": [0.3, 0.3, 0.3],
+            "MACD_hist_smooth": [0.1, 0.1, 0.1],
+            "RSI": [50, 50, 50],
+        })
+        df.index = self.ga.pd.to_datetime([
+            "2023-01-01 00:00:00",
+            "2023-01-01 00:01:00",
+            "2023-01-01 00:02:00",
+        ])
+        cfg = self.ga.StrategyConfig({
+            "use_reentry": True,
+            "reentry_cooldown_bars": 0,
+            "reentry_cooldown_after_tp_minutes": 0,
+            "initial_capital": 100.0,
+            "risk_per_trade": 0.01,
+        })
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        self.assertGreaterEqual(len(trade_log), 2)
+        exit_reasons = set(t['exit_reason'] for t in trade_log)
+        self.assertTrue(all(reason in {"TP", "SL", "BE-SL", "TSL"} for reason in exit_reasons))
+
+    def test_simulate_trades_reentry_strict(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1000, 1002, 1004],
+            "High": [1003, 1005, 1006],
+            "Low": [999, 1001, 1003],
+            "Close": [1002, 1004, 1005],
+            "Entry_Long": [1, 0, 1],
+            "ATR_14_Shifted": [1.0, 1.0, 1.0],
+            "Signal_Score": [2.0, 0.0, 2.0],
+            "Trade_Reason": ["test", "", "test"],
+            "session": ["Asia", "Asia", "Asia"],
+            "Gain_Z": [0.3, 0.3, 0.3],
+            "MACD_hist_smooth": [0.1, 0.1, 0.1],
+            "RSI": [50, 50, 50],
+        })
+        df.index = self.ga.pd.to_datetime([
+            "2023-01-01 00:00:00",
+            "2023-01-01 00:01:00",
+            "2023-01-01 00:02:00",
+        ])
+        cfg = self.ga.StrategyConfig({
+            "use_reentry": True,
+            "reentry_cooldown_bars": 0,
+            "reentry_cooldown_after_tp_minutes": 0,
+            "initial_capital": 100.0,
+            "risk_per_trade": 0.01,
+        })
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        self.assertGreaterEqual(len(trade_log), 2)
+        times = [t['entry_time'] for t in trade_log]
+        self.assertEqual(len(times), len(set(times)))
+
+    def test_simulate_trades_BE_SL_multi(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1000, 1002, 1004],
+            "High": [1003, 1005, 1006],
+            "Low": [999, 1001, 1003],
+            "Close": [999, 1001, 1003],
+            "Entry_Long": [1, 1, 1],
+            "ATR_14_Shifted": [1.0, 1.0, 1.0],
+            "Signal_Score": [2.0, 2.0, 2.0],
+            "Trade_Reason": ["test", "test", "test"],
+            "session": ["Asia", "Asia", "Asia"],
+            "Gain_Z": [0.3, 0.3, 0.3],
+            "MACD_hist_smooth": [0.1, 0.1, 0.1],
+            "RSI": [50, 50, 50],
+        })
+        df.index = self.ga.pd.to_datetime([
+            "2023-01-01 00:00:00",
+            "2023-01-01 00:01:00",
+            "2023-01-01 00:02:00",
+        ])
+        cfg = self.ga.StrategyConfig({
+            "use_reentry": True,
+            "reentry_cooldown_bars": 0,
+            "reentry_cooldown_after_tp_minutes": 0,
+            "initial_capital": 100.0,
+            "risk_per_trade": 0.01,
+        })
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        self.assertTrue(all(t['exit_reason'] in {"BE-SL", "SL", "TP"} for t in trade_log))
 
 
 class TestWarningEdgeCases(unittest.TestCase):
