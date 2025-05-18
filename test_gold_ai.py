@@ -1184,6 +1184,175 @@ class TestWarningEdgeCases(unittest.TestCase):
             mock_rc.assert_called()
 
 
+class TestFeatureEngineeringCoverage:
+    """Coverage for key feature engineering functions."""
+
+    def setup_method(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("numpy")
+        import pandas as pd
+        import numpy as np
+
+        self.ga = safe_import_gold_ai()
+        self.ga.pd = pd
+        self.ga.np = np
+
+        self.df = pd.DataFrame({
+            "Open": [1, 2, 3, 4, 5],
+            "High": [2, 3, 4, 5, 6],
+            "Low": [0, 1, 2, 3, 4],
+            "Close": [1.5, 2.5, 3.5, 4.5, 5.5],
+        })
+        self.config = self.ga.StrategyConfig({})
+
+    def test_ema_normal(self):
+        result = self.ga.ema(self.df["Close"], 3)
+        assert isinstance(result, self.ga.pd.Series)
+        assert result.isnull().sum() == 0
+
+    def test_ema_empty(self):
+        empty = self.ga.pd.Series([], dtype="float32")
+        result = self.ga.ema(empty, 5)
+        assert result.empty
+
+    def test_sma_normal(self):
+        s = self.df["Close"]
+        result = self.ga.sma(s, 3)
+        assert isinstance(result, self.ga.pd.Series)
+
+    def test_sma_invalid_period(self):
+        s = self.df["Close"]
+        result = self.ga.sma(s, 0)
+        assert result.isnull().all()
+
+    def test_rsi_normal(self):
+        s = self.df["Close"]
+        out = self.ga.rsi(s, 3)
+        assert isinstance(out, self.ga.pd.Series)
+
+    def test_rsi_empty(self):
+        s = self.ga.pd.Series([], dtype="float32")
+        out = self.ga.rsi(s, 5)
+        assert out.empty
+
+    def test_atr_valid(self):
+        out = self.ga.atr(self.df, 3)
+        assert "ATR_3" in out.columns
+
+    def test_atr_missing_cols(self):
+        df = self.ga.pd.DataFrame({"Close": [1, 2, 3]})
+        out = self.ga.atr(df, 3)
+        assert "ATR_3" in out.columns
+
+    def test_macd_normal(self):
+        s = self.df["Close"]
+        macd_line, macd_signal, macd_hist = self.ga.macd(s)
+        assert isinstance(macd_line, self.ga.pd.Series)
+
+    def test_macd_empty(self):
+        s = self.ga.pd.Series([], dtype="float32")
+        macd_line, macd_signal, macd_hist = self.ga.macd(s)
+        assert macd_line.empty
+
+    def test_rolling_zscore_short_series(self):
+        s = self.ga.pd.Series([1])
+        z = self.ga.rolling_zscore(s, 5)
+        assert (z == 0.0).all()
+
+    def test_tag_price_structure_patterns_missing_col(self):
+        df = self.ga.pd.DataFrame({"Gain_Z": [1, -1]})
+        res = self.ga.tag_price_structure_patterns(df, self.config)
+        assert "Pattern_Label" in res.columns
+
+    def test_calculate_m15_trend_zone_minimal(self):
+        df = self.ga.pd.DataFrame({"Close": [1, 2, 3, 4, 5]})
+        res = self.ga.calculate_m15_trend_zone(df, self.config)
+        assert "Trend_Zone" in res.columns
+
+    def test_get_session_tag_na(self):
+        tag = self.ga.get_session_tag(self.ga.pd.NaT, self.config.session_times_utc)
+        assert tag == "N/A"
+
+    def test_get_session_tag_zones(self):
+        session_times = self.config.session_times_utc
+        dt_asia = self.ga.pd.Timestamp("2023-01-01 02:00:00")
+        dt_london = self.ga.pd.Timestamp("2023-01-01 08:00:00")
+        dt_ny = self.ga.pd.Timestamp("2023-01-01 18:00:00")
+        assert self.ga.get_session_tag(dt_asia, session_times) in ("Asia", "London", "NY", "N/A")
+        assert self.ga.get_session_tag(dt_london, session_times) in ("Asia", "London", "NY", "N/A")
+        assert self.ga.get_session_tag(dt_ny, session_times) in ("Asia", "London", "NY", "N/A")
+
+    def test_engineer_m1_features_empty(self):
+        df = self.ga.pd.DataFrame()
+        res = self.ga.engineer_m1_features(df, self.config)
+        assert res.empty
+
+    def test_clean_m1_data_empty(self):
+        df = self.ga.pd.DataFrame()
+        clean, feats = self.ga.clean_m1_data(df, self.config)
+        assert clean.empty
+        assert feats == []
+
+
+class TestBranchAndErrorPathCoverage:
+    """Additional branch and error handling coverage."""
+
+    def test_ema_negative_period(self):
+        pytest.importorskip("pandas")
+        import pandas as pd
+        ga = safe_import_gold_ai()
+        ga.pd = pd
+        s = pd.Series([1, 2, 3])
+        with pytest.raises(Exception):
+            ga.ema(s, -1)
+
+    def test_sma_not_series(self):
+        ga = safe_import_gold_ai()
+        with pytest.raises(Exception):
+            ga.sma([1, 2, 3], 2)
+
+    def test_rsi_not_series(self):
+        ga = safe_import_gold_ai()
+        with pytest.raises(Exception):
+            ga.rsi([1, 2, 3], 2)
+
+    def test_atr_invalid_type(self):
+        ga = safe_import_gold_ai()
+        with pytest.raises(Exception):
+            ga.atr([1, 2, 3], 2)
+
+    def test_macd_invalid_type(self):
+        ga = safe_import_gold_ai()
+        with pytest.raises(Exception):
+            ga.macd([1, 2, 3])
+
+    def test_rolling_zscore_nan(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("numpy")
+        import pandas as pd
+        import numpy as np
+        ga = safe_import_gold_ai()
+        ga.pd = pd
+        ga.np = np
+        s = pd.Series([np.nan, np.nan])
+        z = ga.rolling_zscore(s, 5)
+        assert (z == 0.0).all()
+
+    def test_tag_price_structure_patterns_empty(self):
+        ga = safe_import_gold_ai()
+        df = ga.pd.DataFrame()
+        config = ga.StrategyConfig({})
+        res = ga.tag_price_structure_patterns(df, config)
+        assert isinstance(res, ga.pd.DataFrame)
+
+    def test_calculate_m15_trend_zone_empty(self):
+        ga = safe_import_gold_ai()
+        df = ga.pd.DataFrame()
+        config = ga.StrategyConfig({})
+        res = ga.calculate_m15_trend_zone(df, config)
+        assert isinstance(res, ga.pd.DataFrame)
+
+
 if __name__ == "__main__":
     if cov:
         cov.start()
