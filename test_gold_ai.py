@@ -95,8 +95,10 @@ def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
                 lines = [ln for ln in f.readlines() if ln.strip() != "import_core_libraries()"]
                 source = "".join(lines)
             module = types.ModuleType(module_name)
+            module.__file__ = file_path
             sys.modules[module_name] = module
-            exec(source, module.__dict__)
+            code_obj = compile(source, file_path, "exec")
+            exec(code_obj, module.__dict__)
             return module
 
 
