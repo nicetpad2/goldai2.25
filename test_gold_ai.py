@@ -5,6 +5,7 @@ import unittest
 import os
 import json
 import datetime
+import logging
 from unittest.mock import patch, mock_open, MagicMock
 
 
@@ -321,6 +322,51 @@ class TestGoldAI2025(unittest.TestCase):
         with self.assertLogs(f"{mod.__name__}.show_system_status", level="INFO") as cm2:
             mod.show_system_status("Demo")
         self.assertTrue(any("TestGPU" in msg for msg in cm2.output))
+
+    def test_check_margin_call(self):
+        self.assertTrue(self.gold_ai.check_margin_call(-1.0, 0.0))
+        self.assertTrue(self.gold_ai.check_margin_call(5.0, 5.0))
+        self.assertFalse(self.gold_ai.check_margin_call(10.0, 0.0))
+
+    def test_check_kill_switch_logic(self):
+        cfg = self.gold_ai.StrategyConfig({})
+        log_parent = logging.getLogger("test_kill")
+        now = datetime.datetime(2021, 1, 1)
+        res = self.gold_ai._check_kill_switch(80.0, 100.0, 0.1, 5, 0, False, now, cfg, log_parent)
+        self.assertEqual(res, (True, True))
+        res = self.gold_ai._check_kill_switch(100.0, 100.0, 0.5, 3, 4, False, now, cfg, log_parent)
+        self.assertEqual(res, (True, True))
+        res = self.gold_ai._check_kill_switch(90.0, 100.0, 0.5, 5, 1, False, now, cfg, log_parent)
+        self.assertEqual(res, (False, False))
+
+    def test_spike_guard_and_reentry(self):
+        pd_dummy = self.gold_ai.DummyPandas()
+        pd_dummy.isna = lambda x: x is None
+        pd_dummy.notna = lambda x: not pd_dummy.isna(x)
+        self.gold_ai.pd = pd_dummy
+        cfg = self.gold_ai.StrategyConfig({})
+        cfg.enable_spike_guard = True
+        cfg.spike_guard_score_threshold = 0.5
+        cfg.spike_guard_london_patterns = ["Breakout"]
+        row = {"spike_score": 0.6, "Pattern_Label": "Breakout"}
+        self.assertTrue(self.gold_ai.spike_guard_blocked(row, "London", cfg))
+        self.assertFalse(self.gold_ai.spike_guard_blocked(row, "Asia", cfg))
+        cfg.use_reentry = True
+        cfg.reentry_cooldown_bars = 3
+        cfg.reentry_min_proba_thresh = 0.5
+        cfg.reentry_cooldown_after_tp_minutes = 1
+        row_ns = types.SimpleNamespace(name=datetime.datetime(2021, 1, 1, 0, 10))
+        active_orders = []
+        self.assertFalse(self.gold_ai.is_reentry_allowed(cfg, row_ns, "BUY", active_orders, 1, None, 0.6))
+        self.assertTrue(self.gold_ai.is_reentry_allowed(
+            cfg,
+            types.SimpleNamespace(name=datetime.datetime(2021, 1, 1, 0, 15)),
+            "BUY",
+            [],
+            5,
+            datetime.datetime(2021, 1, 1, 0, 0),
+            0.6,
+        ))
 
 
 if __name__ == "__main__":
