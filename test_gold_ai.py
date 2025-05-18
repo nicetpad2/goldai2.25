@@ -1096,6 +1096,37 @@ class TestWFVandLotSizingFix(unittest.TestCase):
         allowed = is_reentry_allowed(cfg, df.iloc[1], "BUY", [], 0, df.index[0], 0.6)
         self.assertTrue(allowed)
 
+    def test_multi_order_reentry_succeeds(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1000.0, 1001.0],
+            "High": [1005.0, 1006.0],
+            "Low": [995.0, 1000.0],
+            "Close": [1004.0, 1002.0],
+            "Entry_Long": [1, 1],
+            "ATR_14_Shifted": [1.0, 1.0],
+            "Signal_Score": [2.0, 2.0],
+            "Trade_Reason": ["test", "test"],
+            "session": ["Asia", "Asia"],
+            "Gain_Z": [0.3, 0.3],
+            "MACD_hist_smooth": [0.1, 0.1],
+            "RSI": [50, 50],
+        }, index=self.ga.pd.date_range("2023-01-01", periods=2, freq="min"))
+
+        cfg = self.ga.StrategyConfig({
+            "use_reentry": True,
+            "reentry_cooldown_bars": 0,
+            "reentry_cooldown_after_tp_minutes": 0,
+            "initial_capital": 100.0,
+            "risk_per_trade": 0.01,
+        })
+
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        self.assertEqual(len(trade_log), 2)
+        self.assertEqual(trade_log[0]["exit_reason"], "TP")
+        self.assertEqual(trade_log[1]["exit_reason"], "TP")
+
 
 class TestWarningEdgeCases(unittest.TestCase):
     """Additional coverage for warning and failure scenarios."""
