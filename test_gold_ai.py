@@ -975,6 +975,9 @@ class TestTP2AndBESL(unittest.TestCase):
             "RSI": [50] * 7,
         }, index=self.ga.pd.date_range("2023-01-01", periods=7, freq="min"))
         trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        print("=== trade_log for BE-SL debug ===")
+        for t in trade_log:
+            print(t)
         self.assertTrue(any(t["exit_reason"] in {"BE-SL", "SL"} for t in trade_log))
 
     def test_simulate_trades_tsl_tp_be_sl(self):
