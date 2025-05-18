@@ -803,11 +803,14 @@ class TestWFVandLotSizing(unittest.TestCase):
             "MACD_hist_smooth": [0.1, 0.1],
             "RSI": [50, 50],
         })
-        ts = [self.ga.datetime.datetime(2023, 1, 1, 0, 0)] * 2
-        df.index = self.ga.pd.to_datetime(ts)
+        df.index = self.ga.pd.to_datetime([
+            "2023-01-01 00:00:00",
+            "2023-01-01 00:01:00",
+        ])
         cfg = self.ga.StrategyConfig({
             "use_reentry": True,
             "reentry_cooldown_bars": 0,
+            "reentry_cooldown_after_tp_minutes": 0,
             "initial_capital": 100.0,
         })
         trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
@@ -997,7 +1000,7 @@ class TestWFVandLotSizingFix(unittest.TestCase):
         })
         df.index = self.ga.pd.to_datetime(["2023-01-01 00:00:00", "2023-01-01 00:01:00"])
 
-        cfg = StrategyConfig({
+
             "use_reentry": True,
             "reentry_cooldown_bars": 0,
             "reentry_cooldown_after_tp_minutes": 0,
