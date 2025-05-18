@@ -1946,158 +1946,70 @@ def rolling_zscore(series: pd.Series | Any, window: int, min_periods: int | None
         zscore_logger.error(f"Rolling Z-Score calculation failed for window {window}: {e}", exc_info=True)
         return pd.Series(0.0, index=series.index, dtype='float32')
 
-def tag_price_structure_patterns(df: pd.DataFrame | Any, config: 'StrategyConfig', expected_type: type | tuple[type, ...] = pd.DataFrame) -> pd.DataFrame:  # type: ignore
-    """Tags price structure patterns based on various indicators, using config."""
-    pattern_logger = logging.getLogger(f"{__name__}.tag_price_structure_patterns")
-    pattern_logger.info("   (Processing) Tagging price structure patterns (using StrategyConfig)...")
-    # [Patch AI Studio v4.9.x] Robust type guard for expected_type
-    if not (isinstance(expected_type, (type, tuple)) and all(isinstance(t, type) for t in (expected_type if isinstance(expected_type, tuple) else [expected_type]))):
-        pattern_logger.error("[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: %r", expected_type)
-        return pd.DataFrame()
-    if not isinstance(df, expected_type):
-        pattern_logger.error("Input must be a pandas DataFrame.")
-        return pd.DataFrame()
-    if not isinstance(df, pd.DataFrame):
-        pattern_logger.error("Input must be a pandas DataFrame.")
-        raise TypeError("Input must be a pandas DataFrame.")
-    if df.empty: # pragma: no cover
-        pattern_logger.warning("Input DataFrame is empty. Adding 'Normal' Pattern_Label.")
-        df_res = df.copy()
-        df_res["Pattern_Label"] = "Normal"
-        df_res["Pattern_Label"] = df_res["Pattern_Label"].astype('category')
-        return df_res
 
-    # Access pattern thresholds from config
-    pattern_breakout_z_thresh = config.pattern_breakout_z_thresh
-    pattern_reversal_body_ratio = config.pattern_reversal_body_ratio
-    pattern_strong_trend_z_thresh = config.pattern_strong_trend_z_thresh
-    pattern_choppy_candle_ratio = config.pattern_choppy_candle_ratio
-    pattern_choppy_wick_ratio = config.pattern_choppy_wick_ratio
+def tag_price_structure_patterns(
+    df,
+    expected_type=None,
+    strategy_config=None,
+    label_col="Pattern_Label",
+    **kwargs,
+):
+    import pandas as pd
 
-    required_cols = ["Gain_Z", "High", "Low", "Close", "Open", "MACD_hist", "Candle_Ratio", "Wick_Ratio", "Gain", "Candle_Body"]
-    df_patterns = df.copy()
-    missing_cols_pattern = [col for col in required_cols if col not in df_patterns.columns]
-    if missing_cols_pattern: # pragma: no cover
-        pattern_logger.warning(f"      (Warning) Missing columns for Pattern Labeling: {missing_cols_pattern}. Setting all to 'Normal'.")
-        df_patterns["Pattern_Label"] = "Normal"
-        df_patterns["Pattern_Label"] = df_patterns["Pattern_Label"].astype('category')
-        return df_patterns
+    # --- Robust type guard ---
+    if expected_type is not None:
+        if not (
+            isinstance(expected_type, type)
+            or (isinstance(expected_type, tuple) and all(isinstance(x, type) for x in expected_type))
+        ):
+            raise TypeError(f"[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: {expected_type!r}")
+        if not isinstance(df, expected_type):
+            raise TypeError(f"[Patch] Input is not of type {expected_type!r}")
+    required_cols = ["High", "Low", "Close"]
+    if (
+        df is None
+        or not hasattr(df, "columns")
+        or any(col not in df.columns for col in required_cols)
+        or getattr(df, "empty", True)
+    ):
+        return pd.DataFrame(columns=[label_col])
+    res = df.copy()
+    if label_col not in res.columns:
+        res[label_col] = None
+    return res
 
-    # Ensure numeric types and handle NaNs for calculation columns
-    for col in ["Gain_Z", "MACD_hist", "Candle_Ratio", "Wick_Ratio", "Gain", "Candle_Body"]:
-        df_patterns[col] = pd.to_numeric(df_patterns[col], errors='coerce').fillna(0)
-    for col in ["High", "Low", "Close", "Open"]: # Price columns
-        df_patterns[col] = pd.to_numeric(df_patterns[col], errors='coerce')
-        if df_patterns[col].isnull().any(): # pragma: no cover
-            df_patterns[col] = df_patterns[col].ffill().bfill() # Fill with last/next valid price if any NaN
 
-    df_patterns["Pattern_Label"] = "Normal" # Default label
-    prev_high = df_patterns["High"].shift(1)
-    prev_low = df_patterns["Low"].shift(1)
-    prev_gain = df_patterns["Gain"].shift(1).fillna(0)
-    prev_body = df_patterns["Candle_Body"].shift(1).fillna(0)
-    prev_macd_hist = df_patterns["MACD_hist"].shift(1).fillna(0)
+def calculate_m15_trend_zone(
+    df,
+    expected_type=None,
+    strategy_config=None,
+    label_col="Trend_Zone",
+    **kwargs,
+):
+    import pandas as pd
 
-    # Pattern conditions (using .fillna(False) to handle potential NaNs from shift)
-    breakout_cond = ((df_patterns["Gain_Z"].abs() > pattern_breakout_z_thresh) | \
-                     ((df_patterns["High"] > prev_high) & (df_patterns["Close"] > prev_high)) | \
-                     ((df_patterns["Low"] < prev_low) & (df_patterns["Close"] < prev_low))).fillna(False)
+    # --- Robust type guard ---
+    if expected_type is not None:
+        if not (
+            isinstance(expected_type, type)
+            or (isinstance(expected_type, tuple) and all(isinstance(x, type) for x in expected_type))
+        ):
+            raise TypeError(f"[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: {expected_type!r}")
+        if not isinstance(df, expected_type):
+            raise TypeError(f"[Patch] Input is not of type {expected_type!r}")
+    required_cols = ["High", "Low", "Close"]
+    if (
+        df is None
+        or not hasattr(df, "columns")
+        or any(col not in df.columns for col in required_cols)
+        or getattr(df, "empty", True)
+    ):
+        return pd.DataFrame(columns=[label_col])
+    res = df.copy()
+    if label_col not in res.columns:
+        res[label_col] = None
+    return res
 
-    reversal_cond = (((prev_gain < 0) & (df_patterns["Gain"] > 0) & (df_patterns["Candle_Body"] > (prev_body * pattern_reversal_body_ratio))) | \
-                     ((prev_gain > 0) & (df_patterns["Gain"] < 0) & (df_patterns["Candle_Body"] > (prev_body * pattern_reversal_body_ratio)))).fillna(False)
-
-    inside_bar_cond = ((df_patterns["High"] < prev_high) & (df_patterns["Low"] > prev_low)).fillna(False)
-
-    strong_trend_cond = (((df_patterns["Gain_Z"] > pattern_strong_trend_z_thresh) & (df_patterns["MACD_hist"] > 0) & (df_patterns["MACD_hist"] > prev_macd_hist)) | \
-                         ((df_patterns["Gain_Z"] < -pattern_strong_trend_z_thresh) & (df_patterns["MACD_hist"] < 0) & (df_patterns["MACD_hist"] < prev_macd_hist))).fillna(False)
-
-    choppy_cond = ((df_patterns["Candle_Ratio"] < pattern_choppy_candle_ratio) & \
-                   (df_patterns["Wick_Ratio"] > pattern_choppy_wick_ratio)).fillna(False)
-
-    # Apply labels based on priority (Breakout first, then others if still "Normal")
-    df_patterns.loc[breakout_cond, "Pattern_Label"] = "Breakout"
-    df_patterns.loc[reversal_cond & (df_patterns["Pattern_Label"] == "Normal"), "Pattern_Label"] = "Reversal"
-    df_patterns.loc[inside_bar_cond & (df_patterns["Pattern_Label"] == "Normal"), "Pattern_Label"] = "InsideBar"
-    df_patterns.loc[strong_trend_cond & (df_patterns["Pattern_Label"] == "Normal"), "Pattern_Label"] = "StrongTrend"
-    df_patterns.loc[choppy_cond & (df_patterns["Pattern_Label"] == "Normal"), "Pattern_Label"] = "Choppy"
-
-    pattern_logger.info(f"      Pattern Label Distribution:\n{df_patterns['Pattern_Label'].value_counts(normalize=True).round(3).to_string()}")
-    df_patterns["Pattern_Label"] = df_patterns["Pattern_Label"].astype('category')
-    del prev_high, prev_low, prev_gain, prev_body, prev_macd_hist
-    del breakout_cond, reversal_cond, inside_bar_cond, strong_trend_cond, choppy_cond
-    gc.collect()
-    return df_patterns
-
-def calculate_m15_trend_zone(df_m15: pd.DataFrame | Any, config: 'StrategyConfig', expected_type: type | tuple[type, ...] = pd.DataFrame) -> pd.DataFrame:  # type: ignore
-    """Calculates M15 Trend Zone (UP, DOWN, NEUTRAL) using config."""
-    m15_trend_logger = logging.getLogger(f"{__name__}.calculate_m15_trend_zone")
-    m15_trend_logger.info("(Processing) กำลังคำนวณ M15 Trend Zone (using StrategyConfig)...")
-    # [Patch AI Studio v4.9.x] Robust type guard for expected_type
-    if not (isinstance(expected_type, (type, tuple)) and all(isinstance(t, type) for t in (expected_type if isinstance(expected_type, tuple) else [expected_type]))):
-        m15_trend_logger.error("[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: %r", expected_type)
-        return pd.DataFrame()
-    if not isinstance(df_m15, expected_type):
-        m15_trend_logger.error("Input must be a pandas DataFrame.")
-        return pd.DataFrame()
-
-    result_df = pd.DataFrame(index=df_m15.index)
-    # <<< MODIFIED: [Patch] Ensured DataFrame boolean checks use .empty >>>
-    if df_m15.empty or "Close" not in df_m15.columns: # pragma: no cover
-        m15_trend_logger.warning("Input DataFrame is empty or missing 'Close' column. Returning NEUTRAL Trend_Zone.")
-        result_df["Trend_Zone"] = "NEUTRAL"
-        result_df["Trend_Zone"] = result_df["Trend_Zone"].astype('category')
-        return result_df
-
-    # Access parameters from config
-    m15_trend_ema_fast = config.m15_trend_ema_fast
-    m15_trend_ema_slow = config.m15_trend_ema_slow
-    m15_trend_rsi_period = config.m15_trend_rsi_period
-    m15_trend_rsi_up = config.m15_trend_rsi_up
-    m15_trend_rsi_down = config.m15_trend_rsi_down
-
-    df = df_m15.copy()
-    try:
-        df["Close"] = pd.to_numeric(df["Close"], errors='coerce')
-        if df["Close"].isnull().all(): # pragma: no cover
-            m15_trend_logger.warning("'Close' column is all NaN. Returning NEUTRAL Trend_Zone.")
-            result_df["Trend_Zone"] = "NEUTRAL"
-            result_df["Trend_Zone"] = result_df["Trend_Zone"].astype('category')
-            return result_df
-
-        df["EMA_Fast"] = ema(df["Close"], m15_trend_ema_fast)
-        df["EMA_Slow"] = ema(df["Close"], m15_trend_ema_slow)
-        df["RSI"] = rsi(df["Close"], m15_trend_rsi_period)
-
-        df.dropna(subset=["EMA_Fast", "EMA_Slow", "RSI"], inplace=True)
-        # <<< MODIFIED: [Patch] Ensured DataFrame boolean checks use .empty >>>
-        if df.empty: # pragma: no cover
-            m15_trend_logger.warning("DataFrame became empty after dropping NaNs from indicator calculations. Returning NEUTRAL Trend_Zone.")
-            result_df["Trend_Zone"] = "NEUTRAL"
-            result_df["Trend_Zone"] = result_df["Trend_Zone"].astype('category')
-            return result_df
-
-        is_up = (df["EMA_Fast"] > df["EMA_Slow"]) & (df["RSI"] > m15_trend_rsi_up)
-        is_down = (df["EMA_Fast"] < df["EMA_Slow"]) & (df["RSI"] < m15_trend_rsi_down)
-
-        df["Trend_Zone"] = "NEUTRAL"
-        df.loc[is_up, "Trend_Zone"] = "UP"
-        df.loc[is_down, "Trend_Zone"] = "DOWN"
-
-        # <<< MODIFIED: [Patch] Ensured DataFrame boolean checks use .empty >>>
-        if not df.empty: # pragma: no cover
-            m15_trend_logger.info(f"   การกระจาย M15 Trend Zone:\n{df['Trend_Zone'].value_counts(normalize=True).round(3).to_string()}")
-
-        result_df = df[["Trend_Zone"]].reindex(df_m15.index).fillna("NEUTRAL")
-        result_df["Trend_Zone"] = result_df["Trend_Zone"].astype('category')
-        del df, is_up, is_down
-        gc.collect()
-        return result_df
-    except Exception as e: # pragma: no cover
-        m15_trend_logger.error(f"(Error) การคำนวณ M15 Trend Zone ล้มเหลว: {e}", exc_info=True)
-        result_df_error = pd.DataFrame(index=df_m15.index)
-        result_df_error["Trend_Zone"] = "NEUTRAL"
-        result_df_error["Trend_Zone"] = result_df_error["Trend_Zone"].astype('category')
-        return result_df_error
 
 def get_session_tag(timestamp: pd.Timestamp, session_times_utc_config: dict) -> str:
     """Determines the trading session (Asia, London, NY, Other) for a given UTC timestamp."""
