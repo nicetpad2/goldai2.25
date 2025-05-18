@@ -552,6 +552,66 @@ class TestEdgeCases(unittest.TestCase):
             self.assertIsInstance(df_loaded, self.ga.pd.DataFrame)
             self.assertFalse(df_loaded.empty)
 
+    def test_simulate_trades_minimal(self):
+        if not self.pandas_available or not self.numpy_available:
+            self.skipTest("pandas/numpy not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1800.0, 1801.0],
+            "High": [1805.0, 1803.0],
+            "Low": [1795.0, 1798.0],
+            "Close": [1802.0, 1800.0],
+            "Entry_Long": [1, 0],
+            "ATR_14_Shifted": [1.0, 1.0],
+            "Signal_Score": [2.0, 0.0],
+            "Trade_Reason": ["test", ""],
+            "session": ["Asia", "Asia"],
+            "Gain_Z": [0.3, 0.1],
+            "MACD_hist_smooth": [0.1, 0.1],
+            "RSI": [50, 50],
+        })
+        df.index = self.ga.pd.date_range("2023-01-01", periods=2, freq="min")
+        cfg = self.ga.StrategyConfig({"risk_per_trade": 0.01})
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        self.assertIsInstance(trade_log, list)
+        self.assertIsInstance(equity_curve, list)
+        self.assertIsInstance(run_summary, dict)
+
+    def test_calculate_metrics_basic(self):
+        trades = [
+            {"entry_idx": 0, "exit_reason": "TP", "pnl_usd_net": 20.0, "side": "BUY"},
+            {"entry_idx": 1, "exit_reason": "SL", "pnl_usd_net": -10.0, "side": "SELL"},
+            {"entry_idx": 2, "exit_reason": "BE-SL", "pnl_usd_net": 0.0, "side": "BUY"},
+        ]
+        summary = self.ga.calculate_metrics(trades, fold_tag="test")
+        self.assertEqual(summary["fold_tag"], "test")
+        self.assertEqual(summary["num_trades"], 3)
+        self.assertEqual(summary["num_tp"], 1)
+        self.assertEqual(summary["num_sl"], 1)
+        self.assertEqual(summary["num_be"], 1)
+
+    def test_run_backtest_simulation_v34_minimal(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1800.0] * 10,
+            "High": [1805.0] * 10,
+            "Low": [1795.0] * 10,
+            "Close": [1802.0] * 10,
+            "Entry_Long": [0] * 10,
+            "ATR_14_Shifted": [1.0] * 10,
+            "Signal_Score": [2.0] * 10,
+            "Trade_Reason": ["test"] * 10,
+            "session": ["Asia"] * 10,
+            "Gain_Z": [0.3] * 10,
+            "MACD_hist_smooth": [0.1] * 10,
+            "RSI": [50] * 10,
+        })
+        df.index = self.ga.pd.date_range("2023-01-01", periods=10, freq="min")
+        result = self.ga.run_backtest_simulation_v34(df)
+        self.assertIsInstance(result, dict)
+        self.assertIn("trade_log", result)
+        self.assertIn("run_summary", result)
+
 
 if __name__ == "__main__":
     unittest.main(exit=False)
