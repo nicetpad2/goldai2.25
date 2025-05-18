@@ -959,6 +959,7 @@ class TestTP2AndBESL(unittest.TestCase):
             "enable_be_sl": True,
             "enable_partial_tp": False,
         })
+        # sequence designed to hit BE-SL threshold
         df = self.ga.pd.DataFrame({
             "Open": [1000, 1010, 1020, 1025, 1015, 1000, 995],
             "High": [1015, 1025, 1030, 1035, 1020, 1005, 1001],
@@ -1012,6 +1013,7 @@ class TestTP2AndBESL(unittest.TestCase):
     def test_simulate_trades_with_kill_switch_activation(self):
         if not self.pandas_available:
             self.skipTest("pandas not available")
+        # six-bar declining market to trip kill switch logic
         df = self.ga.pd.DataFrame({
             "Open": [1000, 995, 990, 985, 980, 975],
             "High": [1001, 996, 991, 986, 981, 976],
@@ -1100,6 +1102,7 @@ class TestWFVandLotSizingFix(unittest.TestCase):
     def test_multi_order_reentry_succeeds(self):
         if not self.pandas_available:
             self.skipTest("pandas not available")
+        # dataset expanded to four bars to validate reentry handling
         df = self.ga.pd.DataFrame({
             "Open": [1000.0, 1005.0, 1003.0, 1004.0],
             "High": [1006.0, 1010.0, 1005.0, 1006.0],
