@@ -4,6 +4,7 @@ import types
 import unittest
 import os
 import json
+import datetime
 from unittest.mock import patch, mock_open, MagicMock
 
 
@@ -122,6 +123,179 @@ class TestGoldAI2025(unittest.TestCase):
         self.assertFalse(func(5, 1, -1))
         self.assertTrue(func(10, 5, 3))
         self.assertFalse(func(6, 5, 3))
+
+    def test_log_library_version_none(self):
+        with self.assertLogs(f"{self.gold_ai.__name__}.log_library_version", level="WARNING") as cm:
+            self.gold_ai.log_library_version("dummy", None)
+        self.assertTrue(any("dummy" in msg.lower() for msg in cm.output))
+
+    def test_log_library_version_info(self):
+        mod = types.ModuleType("dummy")
+        mod.__version__ = "1.0"
+        with self.assertLogs(f"{self.gold_ai.__name__}.log_library_version", level="INFO") as cm:
+            self.gold_ai.log_library_version("dummy", mod)
+        self.assertTrue(any("1.0" in msg for msg in cm.output))
+
+    def test_try_import_with_install_success(self):
+        mod = types.ModuleType("foo")
+        mod.__version__ = "0.1"
+        with patch("importlib.import_module", return_value=mod):
+            result = self.gold_ai.try_import_with_install(
+                "foo", import_as_name="foo", success_flag_global_name="foo_imported"
+            )
+        self.assertIs(result, mod)
+        self.assertTrue(self.gold_ai.foo_imported)
+        self.assertIs(self.gold_ai.foo, mod)
+
+    def test_try_import_with_install_after_install(self):
+        mod = types.ModuleType("bar")
+        mod.__version__ = "0.2"
+        original_import = importlib.import_module
+
+        def side_effect(name, *args, **kwargs):
+            if name == "bar" and side_effect.calls == 0:
+                side_effect.calls += 1
+                raise ImportError("missing")
+            if name == "bar":
+                return mod
+            return original_import(name, *args, **kwargs)
+
+        side_effect.calls = 0
+        with patch.object(self.gold_ai.subprocess, "run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            with patch.object(self.gold_ai.importlib, "import_module", side_effect=side_effect):
+                result = self.gold_ai.try_import_with_install(
+                    "bar",
+                    pip_install_name="bar",
+                    import_as_name="bar",
+                    success_flag_global_name="bar_imported",
+                )
+        self.assertIs(result, mod)
+        self.assertTrue(self.gold_ai.bar_imported)
+        self.assertIs(self.gold_ai.bar, mod)
+
+    def test_safe_get_global(self):
+        self.gold_ai.some_var = 123
+        self.assertEqual(self.gold_ai.safe_get_global("some_var", 0), 123)
+        self.assertEqual(self.gold_ai.safe_get_global("missing", 99), 99)
+
+    def test_minimal_test_function(self):
+        out = self.gold_ai.minimal_test_function()
+        self.assertIn("executed successfully", out)
+
+    def test_load_app_config_success(self):
+        script_dir = os.getcwd()
+        cfg_path = os.path.join(script_dir, "cfg.json")
+        with patch("os.path.exists", side_effect=lambda p: p == cfg_path):
+            with patch("builtins.open", mock_open(read_data="{\"a\":1}")):
+                data = self.gold_ai.load_app_config("cfg.json")
+        self.assertEqual(data, {"a": 1})
+
+    def test_load_app_config_not_found(self):
+        with patch("os.path.exists", return_value=False):
+            data = self.gold_ai.load_app_config("nofile.json")
+        self.assertEqual(data, {})
+
+    def test_simple_converter(self):
+        self.gold_ai.np = self.gold_ai.DummyNumpy()
+        pd_dummy = self.gold_ai.DummyPandas()
+        pd_dummy.isna = lambda x: x is None
+        self.gold_ai.pd = pd_dummy
+        self.gold_ai.datetime = datetime
+
+        self.assertEqual(self.gold_ai.simple_converter(5), 5)
+        self.assertEqual(self.gold_ai.simple_converter(3.5), 3.5)
+        self.assertIsNone(self.gold_ai.simple_converter(float("nan")))
+        self.assertEqual(self.gold_ai.simple_converter(float("inf")), "Infinity")
+        self.assertTrue(self.gold_ai.simple_converter(True))
+        self.assertEqual(
+            self.gold_ai.simple_converter(datetime.datetime(2020, 1, 1)),
+            "2020-01-01T00:00:00",
+        )
+        self.assertEqual(self.gold_ai.simple_converter("text"), "text")
+        obj = object()
+        self.assertEqual(self.gold_ai.simple_converter(obj), str(obj))
+
+    def test_safe_load_csv_auto(self):
+        pd_dummy = self.gold_ai.DummyPandas()
+        self.gold_ai.pd = pd_dummy
+        with patch("os.path.exists", return_value=False):
+            self.assertIsNone(self.gold_ai.safe_load_csv_auto("missing.csv"))
+
+        with patch("os.path.exists", return_value=True):
+            with patch.object(pd_dummy, "read_csv", return_value="df") as mock_rc:
+                res = self.gold_ai.safe_load_csv_auto("data.csv")
+                self.assertEqual(res, "df")
+                mock_rc.assert_called_with(
+                    "data.csv", index_col=0, parse_dates=False, low_memory=False
+                )
+
+        with patch("os.path.exists", return_value=True):
+            import io
+
+            fake_file = io.StringIO("x")
+            m = MagicMock()
+            m.return_value.__enter__.return_value = fake_file
+            with patch.object(self.gold_ai.gzip, "open", m):
+                with patch.object(pd_dummy, "read_csv", return_value="df2") as mrc:
+                    res = self.gold_ai.safe_load_csv_auto("data.csv.gz")
+                    self.assertEqual(res, "df2")
+                    m.assert_called_with("data.csv.gz", "rt", encoding="utf-8")
+                    mrc.assert_called()
+
+    def test_set_thai_font_success(self):
+        plt = self.gold_ai.plt
+        fm = self.gold_ai.fm
+        with patch.object(fm, "findfont", return_value="/tmp/font.ttf") as ff, \
+             patch.object(self.gold_ai.os.path, "exists", return_value=True), \
+             patch.object(fm, "FontProperties") as FP, \
+             patch.object(plt, "rcParams", {}), \
+             patch.object(plt, "subplots", return_value=(MagicMock(), MagicMock())) as subp, \
+             patch.object(plt, "close") as close:
+            FP.return_value.get_name.return_value = "Loma"
+            result = self.gold_ai.set_thai_font("Loma")
+        self.assertTrue(result)
+        ff.assert_called()
+        subp.assert_called_once()
+        close.assert_called()
+
+    def test_set_thai_font_not_found(self):
+        fm = self.gold_ai.fm
+        with patch.object(fm, "findfont", side_effect=ValueError("no")):
+            result = self.gold_ai.set_thai_font("NonExist")
+        self.assertFalse(result)
+
+    def test_setup_fonts_calls_set_thai_font(self):
+        with patch.object(self.gold_ai, "get_ipython", return_value=None), \
+             patch.object(self.gold_ai, "set_thai_font", return_value=True) as stf, \
+             patch.object(self.gold_ai.subprocess, "run") as sub_run:
+            self.gold_ai.setup_fonts()
+        stf.assert_called()
+        sub_run.assert_not_called()
+
+    def test_print_gpu_utilization_no_gpu(self):
+        class VM:
+            percent = 50.0
+            used = 4 * 1024 ** 3
+            total = 8 * 1024 ** 3
+
+        self.gold_ai.psutil = types.SimpleNamespace(virtual_memory=lambda: VM())
+        with self.assertLogs(f"{self.gold_ai.__name__}.print_gpu_utilization", level="INFO") as cm:
+            self.gold_ai.print_gpu_utilization()
+        self.assertTrue(any("RAM:" in msg for msg in cm.output[0:1]))
+
+    def test_show_system_status_basic(self):
+        class VM:
+            percent = 60.0
+            used = 2 * 1024 ** 3
+            total = 4 * 1024 ** 3
+
+        gpu_mod = types.SimpleNamespace(getGPUs=lambda: [])
+        self.gold_ai.psutil = types.SimpleNamespace(virtual_memory=lambda: VM())
+        self.gold_ai.GPUtil = gpu_mod
+        with self.assertLogs(f"{self.gold_ai.__name__}.show_system_status", level="INFO") as cm:
+            self.gold_ai.show_system_status()
+        self.assertTrue(any("RAM:" in msg for msg in cm.output))
 
 
 if __name__ == "__main__":
