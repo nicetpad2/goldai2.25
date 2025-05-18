@@ -1953,7 +1953,7 @@ def tag_price_structure_patterns(df: pd.DataFrame | Any, config: 'StrategyConfig
     # [Patch AI Studio v4.9.x] Robust type guard for expected_type
     if not (isinstance(expected_type, (type, tuple)) and all(isinstance(t, type) for t in (expected_type if isinstance(expected_type, tuple) else [expected_type]))):
         pattern_logger.error("[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: %r", expected_type)
-        raise TypeError("[Patch] expected_type must be a type or tuple of types")
+        return pd.DataFrame()
     if not isinstance(df, expected_type):
         pattern_logger.error("Input must be a pandas DataFrame.")
         return pd.DataFrame()
@@ -2035,7 +2035,7 @@ def calculate_m15_trend_zone(df_m15: pd.DataFrame | Any, config: 'StrategyConfig
     # [Patch AI Studio v4.9.x] Robust type guard for expected_type
     if not (isinstance(expected_type, (type, tuple)) and all(isinstance(t, type) for t in (expected_type if isinstance(expected_type, tuple) else [expected_type]))):
         m15_trend_logger.error("[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: %r", expected_type)
-        raise TypeError("[Patch] expected_type must be a type or tuple of types")
+        return pd.DataFrame()
     if not isinstance(df_m15, expected_type):
         m15_trend_logger.error("Input must be a pandas DataFrame.")
         return pd.DataFrame()
