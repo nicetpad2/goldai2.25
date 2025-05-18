@@ -1000,7 +1000,7 @@ class TestWFVandLotSizingFix(unittest.TestCase):
         })
         df.index = self.ga.pd.to_datetime(["2023-01-01 00:00:00", "2023-01-01 00:01:00"])
 
-        cfg = self.ga.StrategyConfig({
+
             "use_reentry": True,
             "reentry_cooldown_bars": 0,
             "reentry_cooldown_after_tp_minutes": 0,
