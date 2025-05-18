@@ -35,7 +35,7 @@ def _create_mock_module(name: str) -> types.ModuleType:
     return module
 
 
-def safe_import_gold_ai() -> types.ModuleType:
+def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
     """Import gold_ai2025 with heavy dependencies mocked."""
     mock_modules = {
         "torch": _create_mock_module("torch"),
@@ -72,10 +72,13 @@ def safe_import_gold_ai() -> types.ModuleType:
     mock_modules["catboost"] = catboost_mod
 
     ipython_mod = _create_mock_module("IPython")
-    ipython_mod.get_ipython = lambda: None
+    ipython_mod.get_ipython = lambda: ipython_ret
     mock_modules["IPython"] = ipython_mod
-    mock_modules["google.colab"] = _create_mock_module("google.colab")
-    mock_modules["google.colab.drive"] = _create_mock_module("google.colab.drive")
+    google_colab_mod = _create_mock_module("google.colab")
+    drive_module = drive_mod or _create_mock_module("google.colab.drive")
+    google_colab_mod.drive = drive_module
+    mock_modules["google.colab"] = google_colab_mod
+    mock_modules["google.colab.drive"] = drive_module
 
     with patch("subprocess.run") as _:
         with patch.dict(sys.modules, mock_modules):
@@ -89,6 +92,20 @@ def safe_import_gold_ai() -> types.ModuleType:
             exec(source, module.__dict__)
             return module
 
+
+class TestGoldAIPart1SetupAndEnv(unittest.TestCase):
+    def test_environment_is_colab_drive_mount_succeeds(self):
+        mount_mock = MagicMock()
+        drive_module = types.ModuleType("google.colab.drive")
+        drive_module.mount = mount_mock
+        class DummyIPy:
+            def __str__(self):
+                return "google.colab"
+
+        ipy = DummyIPy()
+        mod = safe_import_gold_ai(ipython_ret=ipy, drive_mod=drive_module)
+        self.assertTrue(mod.IN_COLAB)
+        mount_mock.assert_called()
 
 class TestGoldAI2025(unittest.TestCase):
     @classmethod
@@ -148,7 +165,7 @@ class TestGoldAI2025(unittest.TestCase):
         self.assertTrue(self.gold_ai.foo_imported)
         self.assertIs(self.gold_ai.foo, mod)
 
-    def test_try_import_with_install_after_install(self):
+    def test_library_import_fails_install_succeeds(self):
         mod = types.ModuleType("bar")
         mod.__version__ = "0.2"
         original_import = importlib.import_module
@@ -174,6 +191,20 @@ class TestGoldAI2025(unittest.TestCase):
         self.assertIs(result, mod)
         self.assertTrue(self.gold_ai.bar_imported)
         self.assertIs(self.gold_ai.bar, mod)
+
+    def test_library_already_imported(self):
+        mod = types.ModuleType("baz")
+        mod.__version__ = "1.0"
+        with patch("importlib.import_module", return_value=mod) as mock_import:
+            with patch.object(self.gold_ai.subprocess, "run") as mock_run:
+                result = self.gold_ai.try_import_with_install(
+                    "baz", pip_install_name="baz", import_as_name="baz", success_flag_global_name="baz_imported"
+                )
+        self.assertIs(result, mod)
+        self.assertTrue(self.gold_ai.baz_imported)
+        self.assertIs(self.gold_ai.baz, mod)
+        mock_import.assert_called_once_with("baz")
+        mock_run.assert_not_called()
 
     def test_safe_get_global(self):
         self.gold_ai.some_var = 123
@@ -367,6 +398,30 @@ class TestGoldAI2025(unittest.TestCase):
             datetime.datetime(2021, 1, 1, 0, 0),
             0.6,
         ))
+
+    def test_all_module_functions_present(self):
+        funcs = [n for n, o in vars(self.gold_ai).items() if callable(o) and getattr(o, "__module__", None) == self.gold_ai.__name__]
+        self.assertTrue(len(funcs) > 0)
+
+    def test_set_thai_font_and_setup_fonts(self):
+        mod = self.gold_ai
+        rc_params = {}
+        mod.plt = types.SimpleNamespace(
+            rcParams=rc_params,
+            subplots=lambda figsize=None: (MagicMock(), MagicMock()),
+            close=lambda fig=None: None,
+        )
+        mod.fm = types.SimpleNamespace(
+            findfont=lambda *args, **kwargs: "/tmp/font.ttf",
+            FontProperties=lambda fname=None: types.SimpleNamespace(get_name=lambda: "Loma"),
+            _load_fontmanager=lambda try_read_cache=False: None,
+        )
+        mod.get_ipython = lambda: types.SimpleNamespace(__str__=lambda self: "google.colab")
+        with patch.object(mod.subprocess, "run") as mock_run, \
+             patch("os.path.exists", return_value=True):
+            mock_run.return_value = MagicMock(returncode=0, stderr="")
+            self.assertTrue(mod.set_thai_font("Loma"))
+            mod.setup_fonts()
 
 
 if __name__ == "__main__":
