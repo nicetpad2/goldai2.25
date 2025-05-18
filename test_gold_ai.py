@@ -120,6 +120,25 @@ def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
             return module
 
 
+def generate_df_tp2_besl(pd_module):
+    """Create DataFrame for TP2/BE-SL tests."""
+    index = pd_module.date_range("2023-01-01", periods=6, freq="min")
+    return pd_module.DataFrame({
+        "Open": [1000, 1005, 1010, 1015, 1013, 1008],
+        "High": [1005, 1012, 1018, 1025, 1020, 1010],
+        "Low": [999, 1002, 1008, 1010, 1005, 1000],
+        "Close": [1004, 1010, 1015, 1020, 1010, 1005],
+        "Entry_Long": [1, 0, 0, 0, 0, 0],
+        "ATR_14_Shifted": [1.0] * 6,
+        "Signal_Score": [2.0] * 6,
+        "Trade_Reason": ["test"] * 6,
+        "session": ["Asia"] * 6,
+        "Gain_Z": [0.3] * 6,
+        "MACD_hist_smooth": [0.1] * 6,
+        "RSI": [50] * 6,
+    }, index=index)
+
+
 class TestGoldAIPart1SetupAndEnv(unittest.TestCase):
     def test_environment_is_colab_drive_mount_succeeds(self):
         mount_mock = MagicMock()
@@ -888,6 +907,60 @@ class TestWFVandLotSizing(unittest.TestCase):
 
         self.assertIsInstance(result[0], dict)
         self.assertIsInstance(result[2], self.ga.pd.DataFrame)
+
+
+class TestTP2AndBESL(unittest.TestCase):
+    """Tests for TP2 and BE-SL exit logic."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ga = safe_import_gold_ai()
+        try:
+            import pandas as real_pd
+            cls.ga.pd = real_pd
+            cls.pandas_available = True
+        except Exception:
+            cls.ga.pd = cls.ga.DummyPandas()
+            cls.pandas_available = False
+        cls.ga.datetime = datetime
+
+    def test_partial_tp2_trigger(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        cfg = self.ga.StrategyConfig({
+            "risk_per_trade": 0.01,
+            "enable_partial_tp": True,
+            "partial_tp_levels": [
+                {"r_multiple": 0.8, "close_pct": 0.5},
+                {"r_multiple": 1.2, "close_pct": 0.5},
+            ],
+            "partial_tp_move_sl_to_entry": False,
+            "base_tp_multiplier": 2.0,
+            "default_sl_multiplier": 1.0,
+        })
+        df = generate_df_tp2_besl(self.ga.pd)
+        trade_log, equity, summary = self.ga.simulate_trades(df.copy(), cfg)
+        self.assertGreaterEqual(len(trade_log), 1)
+        self.assertIn(
+            trade_log[0]["exit_reason"], {"TP", "SL", "PartialTP", "BE-SL"}
+        )
+
+    def test_besl_trigger(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        cfg = self.ga.StrategyConfig({
+            "risk_per_trade": 0.01,
+            "base_tp_multiplier": 1.5,
+            "base_be_sl_r_threshold": 1.0,
+            "default_sl_multiplier": 1.0,
+        })
+        df = generate_df_tp2_besl(self.ga.pd)
+        df.loc[df.index[3], "Close"] = 1010
+        df.loc[df.index[4], "Low"] = 1002
+        df.loc[df.index[4], "Close"] = 1002
+        trade_log, equity, summary = self.ga.simulate_trades(df.copy(), cfg)
+        self.assertGreaterEqual(len(trade_log), 1)
+        self.assertIn(trade_log[0]["exit_reason"], {"BE-SL", "SL"})
 
 
 class TestWarningEdgeCases(unittest.TestCase):
