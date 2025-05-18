@@ -1137,11 +1137,12 @@ def safe_load_csv_auto(file_path: str) -> pd.DataFrame | None:
     """
     read_csv_kwargs = {"index_col": 0, "parse_dates": False, "low_memory": False}
     load_logger = logging.getLogger(f"{__name__}.safe_load_csv_auto")
-    load_logger.info(f"      (safe_load) Attempting to load: {os.path.basename(file_path)}")
 
     if not isinstance(file_path, str) or not file_path:
         load_logger.error("         (Error) Invalid file path provided to safe_load_csv_auto.")
         return None
+
+    load_logger.info(f"      (safe_load) Attempting to load: {os.path.basename(file_path)}")
     if not os.path.exists(file_path):
         load_logger.error(f"         (Error) File not found: {file_path}")
         return None

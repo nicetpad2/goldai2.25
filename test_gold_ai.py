@@ -6,6 +6,7 @@ import os
 import json
 import datetime
 import logging
+import tempfile
 from unittest.mock import patch, mock_open, MagicMock
 
 
@@ -422,6 +423,127 @@ class TestGoldAI2025(unittest.TestCase):
             mock_run.return_value = MagicMock(returncode=0, stderr="")
             self.assertTrue(mod.set_thai_font("Loma"))
             mod.setup_fonts()
+
+
+class TestEdgeCases(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ga = safe_import_gold_ai()
+        try:
+            import pandas as real_pd
+            cls.ga.pd = real_pd
+            cls.pandas_available = True
+        except Exception:
+            cls.ga.pd = cls.ga.DummyPandas()
+            cls.ga.pd.isna = lambda x: x is None
+            cls.pandas_available = False
+        try:
+            import numpy as real_np
+            cls.ga.np = real_np
+            cls.numpy_available = True
+        except Exception:
+            cls.ga.np = cls.ga.DummyNumpy()
+            cls.numpy_available = False
+        cls.ga.datetime = datetime
+
+    def test_simple_converter_edge_cases(self):
+        self.assertEqual(self.ga.simple_converter(self.ga.np.inf), "Infinity")
+        self.assertEqual(self.ga.simple_converter(-self.ga.np.inf), "-Infinity")
+        self.assertEqual(
+            self.ga.simple_converter(datetime.date(2024, 12, 31)), "2024-12-31"
+        )
+        self.assertIsInstance(self.ga.simple_converter(set([1, 2])), str)
+        self.assertIsInstance(self.ga.simple_converter(complex(2, 3)), str)
+
+    def test_setup_output_directory_permission_error(self):
+        with patch("os.makedirs", side_effect=PermissionError("Read-only file system")):
+            with self.assertRaises(SystemExit):
+                self.ga.setup_output_directory("/root", "unwritable")
+
+    def test_log_library_version_none_and_missing(self):
+        self.ga.log_library_version("DUMMY_NONE", None)
+        dummy_module = types.SimpleNamespace()
+        if hasattr(dummy_module, "__version__"):
+            delattr(dummy_module, "__version__")
+        self.ga.log_library_version("DUMMY_MISSING", dummy_module)
+
+    def test_safe_load_csv_auto_invalid_path_type(self):
+        self.assertIsNone(self.ga.safe_load_csv_auto(None))
+        self.assertIsNone(self.ga.safe_load_csv_auto(123))
+
+    def test_safe_load_csv_auto_empty_file(self):
+        with patch("os.path.exists", return_value=True), \
+             patch("builtins.open", mock_open(read_data="")), \
+             patch.object(self.ga.pd, "read_csv", side_effect=self.ga.pd.errors.EmptyDataError):
+            df = self.ga.safe_load_csv_auto("empty.csv")
+            self.assertIsInstance(df, self.ga.pd.DataFrame)
+            self.assertTrue(getattr(df, "empty", True))
+
+    def test_safe_load_csv_auto_gz_corrupt(self):
+        with patch("os.path.exists", return_value=True), \
+             patch("gzip.open", side_effect=OSError("gzip error")):
+            df = self.ga.safe_load_csv_auto("corrupt.csv.gz")
+            self.assertIsNone(df)
+
+    def test_strategy_config_custom_values(self):
+        config = self.ga.StrategyConfig(
+            {
+                "risk_per_trade": 0.02,
+                "max_lot": 10.0,
+                "kill_switch_dd": 0.25,
+                "enable_spike_guard": False,
+            }
+        )
+        self.assertEqual(config.risk_per_trade, 0.02)
+        self.assertEqual(config.max_lot, 10.0)
+        self.assertEqual(config.kill_switch_dd, 0.25)
+        self.assertFalse(config.enable_spike_guard)
+
+    def test_prepare_datetime_all_nat(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame(
+            {
+                "Date": ["0000" for _ in range(5)],
+                "Timestamp": ["99:99:99" for _ in range(5)],
+                "Open": [1] * 5,
+                "High": [1] * 5,
+                "Low": [1] * 5,
+                "Close": [1] * 5,
+            }
+        )
+        with self.assertRaises(SystemExit):
+            self.ga.prepare_datetime(df, timeframe_str="ALL_NAT_TEST")
+
+    def test_load_data_missing_columns(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df_mock = self.ga.pd.DataFrame({"Date": ["20240101"], "Open": [1], "High": [1]})
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "invalid.csv")
+            df_mock.to_csv(path, index=False)
+            with self.assertRaises(Exception):
+                self.ga.load_data(path)
+
+    def test_load_data_valid(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df_mock = self.ga.pd.DataFrame(
+            {
+                "Date": ["20240101"] * 3,
+                "Timestamp": ["00:00:00", "00:01:00", "00:02:00"],
+                "Open": [1.0, 1.2, 1.3],
+                "High": [1.5, 1.4, 1.6],
+                "Low": [0.9, 1.1, 1.2],
+                "Close": [1.3, 1.2, 1.5],
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "valid.csv")
+            df_mock.to_csv(path, index=False)
+            df_loaded = self.ga.load_data(path)
+            self.assertIsInstance(df_loaded, self.ga.pd.DataFrame)
+            self.assertFalse(df_loaded.empty)
 
 
 if __name__ == "__main__":
