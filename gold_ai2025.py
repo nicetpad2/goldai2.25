@@ -1700,15 +1700,17 @@ import gc  # For memory management
 # They are accessed via the `config: StrategyConfig` object passed to relevant functions.
 
 # --- Indicator Calculation Functions (Unchanged in this refactor step, already robust) ---
-def ema(series: pd.Series, period: int) -> pd.Series:
+def ema(series: pd.Series | Any, period: int) -> pd.Series:
     """Calculates Exponential Moving Average."""
     ema_logger = logging.getLogger(f"{__name__}.ema")
+    if series is None or (hasattr(series, "__len__") and len(series) == 0):
+        ema_logger.debug("Input series is None or empty, returning empty series.")
+        dtype = getattr(series, "dtype", "float32")
+        index = getattr(series, "index", None)
+        return pd.Series([], dtype=dtype, index=index)
     if not isinstance(series, pd.Series):
         ema_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
-    if series.empty:
-        ema_logger.debug("Input series is empty, returning empty series.")
-        return pd.Series(dtype='float32')
     series_numeric = pd.to_numeric(series, errors='coerce').replace([np.inf, -np.inf], np.nan).dropna()
     if series_numeric.empty: # pragma: no cover
         ema_logger.warning("Series contains only NaN/Inf values or is empty after cleaning.")
@@ -1724,15 +1726,17 @@ def ema(series: pd.Series, period: int) -> pd.Series:
         ema_logger.error(f"EMA calculation failed for period {period}: {e}", exc_info=True)
         return pd.Series(np.nan, index=series.index, dtype='float32')
 
-def sma(series: pd.Series, period: int) -> pd.Series:
+def sma(series: pd.Series | Any, period: int) -> pd.Series:
     """Calculates Simple Moving Average."""
     sma_logger = logging.getLogger(f"{__name__}.sma")
+    if series is None or (hasattr(series, "__len__") and len(series) == 0):
+        sma_logger.debug("Input series is None or empty, returning empty series.")
+        dtype = getattr(series, "dtype", "float32")
+        index = getattr(series, "index", None)
+        return pd.Series([], dtype=dtype, index=index)
     if not isinstance(series, pd.Series):
         sma_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
-    if series.empty:
-        sma_logger.debug("Input series is empty, returning empty series.")
-        return pd.Series(dtype='float32')
     if not isinstance(period, int) or period <= 0: # pragma: no cover
         sma_logger.error(f"Invalid period ({period}). Must be a positive integer.")
         return pd.Series(np.nan, index=series.index, dtype='float32')
@@ -1751,15 +1755,17 @@ def sma(series: pd.Series, period: int) -> pd.Series:
         sma_logger.error(f"SMA calculation failed for period {period}: {e}", exc_info=True)
         return pd.Series(np.nan, index=series.index, dtype='float32')
 
-def rsi(series: pd.Series, period: int = 14) -> pd.Series:
+def rsi(series: pd.Series | Any, period: int = 14) -> pd.Series:
     """Calculates Relative Strength Index."""
     rsi_logger = logging.getLogger(f"{__name__}.rsi")
+    if series is None or (hasattr(series, "__len__") and len(series) == 0):
+        rsi_logger.debug("Input series is None or empty, returning empty series.")
+        dtype = getattr(series, "dtype", "float32")
+        index = getattr(series, "index", None)
+        return pd.Series([], dtype=dtype, index=index)
     if not isinstance(series, pd.Series):
         rsi_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
-    if series.empty:
-        rsi_logger.debug("Input series is empty, returning empty series.")
-        return pd.Series(dtype='float32')
     if 'ta' not in globals() or ta is None: # pragma: no cover
         rsi_logger.error("   (Error) RSI calculation failed: 'ta' library not loaded.")
         return pd.Series(np.nan, index=series.index, dtype='float32')
@@ -1778,24 +1784,23 @@ def rsi(series: pd.Series, period: int = 14) -> pd.Series:
         rsi_logger.error(f"   (Error) RSI calculation error for period {period}: {e}.", exc_info=True)
         return pd.Series(np.nan, index=series.index, dtype='float32')
 
-def atr(df_in: pd.DataFrame, period: int = 14) -> pd.DataFrame:
+def atr(df_in: pd.DataFrame | Any, period: int = 14) -> pd.DataFrame:
     """Calculates Average True Range and adds ATR_{period} and ATR_{period}_Shifted columns."""
     atr_logger = logging.getLogger(f"{__name__}.atr")
+    atr_col_name = f"ATR_{period}"
+    atr_shifted_col_name = f"ATR_{period}_Shifted"
+    if df_in is None or (hasattr(df_in, "__len__") and len(df_in) == 0):
+        atr_logger.debug("Input DataFrame is None or empty, returning empty DataFrame with ATR columns.")
+        index = getattr(df_in, "index", None)
+        return pd.DataFrame({
+            atr_col_name: pd.Series([], dtype="float32", index=index),
+            atr_shifted_col_name: pd.Series([], dtype="float32", index=index),
+        })
     if not isinstance(df_in, pd.DataFrame):
         atr_logger.error(f"Input must be a pandas DataFrame, got {type(df_in)}")
         raise TypeError("Input must be a pandas DataFrame.")
 
-    atr_col_name = f"ATR_{period}"
-    atr_shifted_col_name = f"ATR_{period}_Shifted"
     df_result = df_in.copy()
-
-    if df_in.empty:
-        atr_logger.debug("Input DataFrame is empty. Returning with NaN ATR columns.")
-        df_result[atr_col_name] = np.nan
-        df_result[atr_shifted_col_name] = np.nan
-        df_result[atr_col_name] = df_result[atr_col_name].astype('float32')
-        df_result[atr_shifted_col_name] = df_result[atr_shifted_col_name].astype('float32')
-        return df_result
 
     df_temp = df_in.copy()
     required_price_cols = ["High", "Low", "Close"]
@@ -1856,16 +1861,18 @@ def atr(df_in: pd.DataFrame, period: int = 14) -> pd.DataFrame:
     gc.collect()
     return df_result
 
-def macd(series: pd.Series, window_slow: int = 26, window_fast: int = 12, window_sign: int = 9) -> tuple[pd.Series, pd.Series, pd.Series]:
+def macd(series: pd.Series | Any, window_slow: int = 26, window_fast: int = 12, window_sign: int = 9) -> tuple[pd.Series, pd.Series, pd.Series]:
     """Calculates MACD line, signal line, and histogram."""
     macd_logger = logging.getLogger(f"{__name__}.macd")
+    if series is None or (hasattr(series, "__len__") and len(series) == 0):
+        macd_logger.debug("Input series is None or empty, returning empty series for MACD components.")
+        dtype = getattr(series, "dtype", "float32")
+        index = getattr(series, "index", None)
+        empty = pd.Series([], dtype=dtype, index=index)
+        return empty, empty.copy(), empty.copy()
     if not isinstance(series, pd.Series):
         macd_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
-    if series.empty:
-        macd_logger.debug("Input series is empty, returning empty series for MACD components.")
-        nan_series = pd.Series(dtype='float32')
-        return nan_series, nan_series.copy(), nan_series.copy()
 
     nan_series_indexed = pd.Series(np.nan, index=series.index, dtype='float32')
     series_numeric = pd.to_numeric(series, errors='coerce').replace([np.inf, -np.inf], np.nan).dropna()
@@ -1889,15 +1896,17 @@ def macd(series: pd.Series, window_slow: int = 26, window_fast: int = 12, window
         macd_logger.error(f"   (Error) MACD calculation error: {e}.", exc_info=True)
         return nan_series_indexed, nan_series_indexed.copy(), nan_series_indexed.copy()
 
-def rolling_zscore(series: pd.Series, window: int, min_periods: int | None = None) -> pd.Series:
+def rolling_zscore(series: pd.Series | Any, window: int, min_periods: int | None = None) -> pd.Series:
     """Calculates Rolling Z-Score."""
     zscore_logger = logging.getLogger(f"{__name__}.rolling_zscore")
+    if series is None or (hasattr(series, "__len__") and len(series) == 0):
+        zscore_logger.debug("Input series is None or empty, returning empty series.")
+        dtype = getattr(series, "dtype", "float32")
+        index = getattr(series, "index", None)
+        return pd.Series([], dtype=dtype, index=index)
     if not isinstance(series, pd.Series):
         zscore_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
-    if series.empty:
-        zscore_logger.debug("Input series empty, returning empty series.")
-        return pd.Series(dtype='float32')
     if len(series) < 2: # Z-score needs at least 2 points to calculate std
         zscore_logger.debug("Input series too short (< 2), returning zeros.")
         return pd.Series(0.0, index=series.index, dtype='float32')
