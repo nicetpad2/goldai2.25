@@ -890,6 +890,55 @@ class TestWFVandLotSizing(unittest.TestCase):
         self.assertIsInstance(result[2], self.ga.pd.DataFrame)
 
 
+class TestWarningEdgeCases(unittest.TestCase):
+    """Additional coverage for warning and failure scenarios."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ga = safe_import_gold_ai()
+        try:
+            import pandas as real_pd
+            cls.ga.pd = real_pd
+        except Exception:
+            cls.ga.pd = cls.ga.DummyPandas()
+
+    def test_safe_load_csv_auto_corrupt_encoding(self):
+        with patch("os.path.exists", return_value=True), \
+             patch("builtins.open", mock_open(read_data="\xff\xfe\xfd")), \
+             patch.object(self.ga.pd, "read_csv", side_effect=UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")):
+            result = self.ga.safe_load_csv_auto("bad_encoding.csv")
+            self.assertIsNone(result)
+
+    def test_safe_load_csv_auto_permission_denied(self):
+        with patch("os.makedirs"), \
+             patch("os.path.exists", return_value=True), \
+             patch("builtins.open", side_effect=PermissionError("Permission denied")):
+            with self.assertRaises(SystemExit):
+                self.ga.setup_output_directory("/root", "denied")
+
+    def test_set_thai_font_without_matplotlib(self):
+        with patch.object(self.ga.fm, "findfont", side_effect=ImportError("matplotlib not available")):
+            try:
+                self.ga.set_thai_font("Loma")
+            except Exception as e:
+                self.fail(f"set_thai_font raised unexpected error without matplotlib: {e}")
+
+    def test_safe_load_csv_auto_gz_with_corrupt_content(self):
+        with patch("os.path.exists", return_value=True), \
+             patch.object(self.ga.gzip, "open", side_effect=OSError("corrupt gzip")):
+            result = self.ga.safe_load_csv_auto("bad_file.csv.gz")
+            self.assertIsNone(result)
+
+    def test_safe_load_csv_auto_utf8_bom_file(self):
+        csv_data = '\ufeffDate,Open,High,Low,Close\n20240101,1000,1005,995,1001\n'
+        with patch("os.path.exists", return_value=True), \
+             patch("builtins.open", mock_open(read_data=csv_data)), \
+             patch.object(self.ga.pd, "read_csv", return_value="df") as mock_rc:
+            result = self.ga.safe_load_csv_auto("bom_file.csv")
+            self.assertEqual(result, "df")
+            mock_rc.assert_called()
+
+
 if __name__ == "__main__":
     if cov:
         cov.start()
