@@ -6677,34 +6677,43 @@ def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig') -> Tuple[list, l
             be_sl_thresh = getattr(config, "base_be_sl_r_threshold", 1.0)
             enable_be_sl = getattr(config, "enable_be_sl", True)
 
-            if enable_be_sl and ((row["High"] - entry_price) >= (tp - entry_price) * be_sl_thresh):
-                if row["Low"] <= entry_price:
-                    order["exit_price"] = entry_price
-                    order["exit_reason"] = "BE-SL"
-                    order["exit_idx"] = bar_i
-                    order["exit_time"] = current_time
-                    order["pnl_usd_net"] = 0.0
-                    trade_log.append(order.copy())
-                    active_orders.remove(order)
-                    sim_logger.debug("[Patch AI Studio v4.9.27] Triggered BE-SL: %s", order)
-                    continue
+            be_sl_trigger = (
+                enable_be_sl
+                and (row["High"] - entry_price) >= (tp - entry_price) * be_sl_thresh
+                and row["Low"] <= entry_price
+            )
+            tp_trigger = row["High"] >= tp
+            sl_trigger = row["Low"] <= sl
 
-            if row["High"] >= tp:
+            if be_sl_trigger:
+                order["exit_price"] = entry_price
+                order["exit_reason"] = "BE-SL"
+                order["exit_idx"] = bar_i
+                order["exit_time"] = current_time
+                order["pnl_usd_net"] = 0.0
+                trade_log.append(order.copy())
+                active_orders.remove(order)
+                sim_logger.debug("[Patch AI Studio v4.9.27] Triggered BE-SL: %s", order)
+                continue
+            elif tp_trigger:
                 order["exit_price"] = tp
                 order["exit_reason"] = "TP"
                 order["exit_idx"] = bar_i
                 order["exit_time"] = current_time
-                order["pnl_usd_net"] = tp - entry_price if order.get("side", "BUY") == "BUY" else entry_price - tp
+                order["pnl_usd_net"] = (
+                    tp - entry_price if order.get("side", "BUY") == "BUY" else entry_price - tp
+                )
                 trade_log.append(order.copy())
                 active_orders.remove(order)
                 continue
-
-            if row["Low"] <= sl:
+            elif sl_trigger:
                 order["exit_price"] = sl
                 order["exit_reason"] = "SL"
                 order["exit_idx"] = bar_i
                 order["exit_time"] = current_time
-                order["pnl_usd_net"] = sl - entry_price if order.get("side", "BUY") == "BUY" else entry_price - sl
+                order["pnl_usd_net"] = (
+                    sl - entry_price if order.get("side", "BUY") == "BUY" else entry_price - sl
+                )
                 trade_log.append(order.copy())
                 active_orders.remove(order)
                 sim_logger.debug("[Patch AI Studio v4.9.26] Triggered SL: %s", order)
