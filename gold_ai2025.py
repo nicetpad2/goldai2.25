@@ -230,13 +230,13 @@ def try_import_with_install(
                 # End of Patch
                 return imported_module_after_install
             except subprocess.CalledProcessError as e_install: # pragma: no cover
-                import_helper_logger.error(f"   (Error) ไม่สามารถติดตั้ง {actual_log_name} (pip error): {e_install.stderr[:200]}...")
+                import_helper_logger.error(f"   (Error) ไม่สามารถติดตั้ง {actual_pip_name}: {e_install}")
             except ImportError: # pragma: no cover
-                import_helper_logger.error(f"   (Error) ไม่สามารถ Import {actual_log_name} ได้ แม้หลังจากการติดตั้ง.")
+                import_helper_logger.error(f"   (Error) ไม่สามารถ Import {actual_log_name} ได้ แม้หลังติดตั้ง")
             except Exception as e_generic_install: # pragma: no cover
-                 import_helper_logger.error(f"   (Error) เกิดข้อผิดพลาดระหว่างติดตั้ง/Import {actual_log_name}: {e_generic_install}", exc_info=True)
+                import_helper_logger.error(f"   (Error) เกิดข้อผิดพลาดระหว่างติดตั้ง {actual_pip_name}: {e_generic_install}", exc_info=True)
         else: # pragma: no cover
-            import_helper_logger.warning(f"   (Warning) ไม่ได้ระบุชื่อ Pip สำหรับ {actual_log_name}. ไม่สามารถติดตั้งได้.")
+            import_helper_logger.warning(f"   (Warning) ไม่ได้ระบุชื่อ pip package สำหรับ {actual_log_name}. ข้ามการติดตั้ง.")
     except Exception as e_outer_import: # pragma: no cover
         import_helper_logger.error(f"   (Error) Unexpected error during initial import of {actual_log_name}: {e_outer_import}", exc_info=True)
 
@@ -420,7 +420,7 @@ def setup_gpu_acceleration():
         globals()['pynvml'] = None
         nvml_handle = None
     except Exception as e_gpu_setup: # pragma: no cover
-        gpu_setup_logger.error(f"   (Error) เกิดข้อผิดพลาดระหว่างตรวจสอบ GPU: {e_gpu_setup}. GPU Acceleration ปิดใช้งาน.", exc_info=True)
+        gpu_setup_logger.error(f"   (Error) GPU setup failed: {e_gpu_setup}", exc_info=True)
         USE_GPU_ACCELERATION = False
         globals()['pynvml'] = None
         nvml_handle = None
@@ -1013,10 +1013,10 @@ def setup_output_directory(base_dir: str, dir_name: str) -> str:
         setup_dir_logger.info(f"      -> การเขียนไฟล์ทดสอบสำเร็จ.")
         return output_path
     except OSError as e:
-        setup_dir_logger.error(f"   (Error) ไม่สามารถสร้างหรือเขียนใน Output Directory '{output_path}': {e}", exc_info=True)
+        setup_dir_logger.error(f"   (Error) ไม่สามารถสร้างหรือเข้าถึง Output Directory '{output_path}': {e}", exc_info=True)
         sys.exit(f"   ออก: ปัญหาการเข้าถึง Output Directory ({output_path}).")
     except Exception as e:
-        setup_dir_logger.error(f"   (Error) เกิดข้อผิดพลาดที่ไม่คาดคิดระหว่างตั้งค่า Output Directory '{output_path}': {e}", exc_info=True)
+        setup_dir_logger.error(f"   (Error) เกิดข้อผิดพลาดไม่ทราบสาเหตุใน Output Directory '{output_path}': {e}", exc_info=True)
         sys.exit(f"   ออก: ข้อผิดพลาดร้ายแรงในการตั้งค่า Output Directory ({output_path}).")
 
 # --- Font Setup Helpers ---
@@ -1321,8 +1321,8 @@ def load_data(file_path: str, timeframe_str: str = "", price_jump_threshold: flo
         required_cols_check = sorted(list(set(required_cols_check + required_cols_base)))
         missing_req = [col for col in required_cols_check if col not in df_pd.columns]
         if missing_req:
-            load_data_logger.critical("(Error) ขาดคอลัมน์สำคัญ")
-            raise DataLoadError("ขาดคอลัมน์สำคัญ")
+            load_data_logger.critical(f"(Error) ขาดคอลัมน์ที่จำเป็น: {missing_req}")
+            raise DataLoadError("ขาดคอลัมน์ที่จำเป็น")
 
         price_cols = ["Open", "High", "Low", "Close"]
         load_data_logger.debug(f"   Converting price columns {price_cols} to numeric (if not already specified in dtypes)...")
@@ -1365,7 +1365,7 @@ def load_data(file_path: str, timeframe_str: str = "", price_jump_threshold: flo
             else:
                 load_data_logger.debug("      ไม่พบ Duplicates (Date & Timestamp).")
         else:
-            load_data_logger.warning(f"   (Warning) ขาดคอลัมน์ {duplicate_cols} สำหรับตรวจสอบ Duplicates.")
+            load_data_logger.warning(f"   (Warning) ขาดคอลัมน์สำหรับตรวจสอบ Duplicates: {duplicate_cols}")
 
         load_data_logger.info(f"   [Data Quality] ตรวจสอบ Price Jumps (Threshold > {price_jump_threshold:.1%})...")
         if 'Close' in df_pd.columns and len(df_pd) > 1:
@@ -1526,8 +1526,8 @@ def prepare_datetime(df_pd: pd.DataFrame, timeframe_str: str = "", config: Optio
 
     try:
         if "Date" not in df_pd.columns or "Timestamp" not in df_pd.columns:
-            prep_dt_logger.critical(f"(Error) ขาดคอลัมน์ 'Date'/'Timestamp' ใน {timeframe_str}.")
-            sys.exit(f"ออก ({timeframe_str}): ขาดคอลัมน์ Date/Timestamp ที่จำเป็นสำหรับการเตรียม Datetime.")
+            prep_dt_logger.critical(f"(Error) ขาดคอลัมน์ Date/Timestamp ใน {timeframe_str}.")
+            sys.exit(f"ออก ({timeframe_str}): ขาดคอลัมน์ Date/Timestamp")
 
         preview_datetime_format(df_pd)
 
@@ -1638,8 +1638,8 @@ def prepare_datetime(df_pd: pd.DataFrame, timeframe_str: str = "", config: Optio
                 sys.exit(f"   ออก ({timeframe_str}): ข้อมูลว่างเปล่าหลังการเตรียม datetime.")
             df_pd.set_index(pd.DatetimeIndex(df_pd["datetime_original"]), inplace=True)
         else:
-            prep_dt_logger.critical(f"   (Error) คอลัมน์ 'datetime_original' หายไปก่อนการตั้งค่า Index ({timeframe_str}).")
-            sys.exit(f"   ออก ({timeframe_str}): ขาดคอลัมน์ 'datetime_original'.")
+            prep_dt_logger.critical("   (Error) คอลัมน์ datetime_original ไม่พบ")
+            sys.exit(f"   ออก ({timeframe_str}): ขาดคอลัมน์ datetime_original")
 
         df_pd.sort_index(inplace=True)
 
@@ -2124,7 +2124,7 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
     df = df_m1.copy()
     price_cols = ["Open", "High", "Low", "Close"]
     if any(col not in df.columns for col in price_cols): # pragma: no cover
-        eng_m1_logger.warning(f"   (Warning) ขาดคอลัมน์ราคา M1. บาง Features อาจเป็น NaN.")
+        eng_m1_logger.warning("   (Warning) ขาดคอลัมน์ราคาใน M1 Data. Filling with NaN.")
         # Define base features that might be missing if price columns are absent
         base_feature_cols = ["Candle_Body", "Candle_Range", "Gain", "Candle_Ratio", "Upper_Wick", "Lower_Wick", "Wick_Length", "Wick_Ratio", "Gain_Z", "MACD_line", "MACD_signal", "MACD_hist", "MACD_hist_smooth", "ATR_14", "ATR_14_Shifted", "ATR_14_Rolling_Avg", "Candle_Speed", 'Volatility_Index', 'ADX', 'RSI', 'cluster', 'spike_score', 'session', 'Pattern_Label', 'model_tag']
         for col in base_feature_cols:
@@ -2336,7 +2336,7 @@ def clean_m1_data(df_m1: pd.DataFrame, config: 'StrategyConfig') -> tuple[pd.Dat
                 elif pd.api.types.is_float_dtype(df_cleaned[col_clean_type].dtype) and df_cleaned[col_clean_type].dtype != 'float32':
                     df_cleaned[col_clean_type] = df_cleaned[col_clean_type].astype('float32')
         except Exception as e_clean_numeric: # pragma: no cover
-            clean_logger.error(f"   (Error) เกิดข้อผิดพลาดในการแปลงประเภทข้อมูลหรือเติม NaN/Inf: {e_clean_numeric}.", exc_info=True)
+            clean_logger.error(f"   (Error) เกิดข้อผิดพลาดระหว่างทำความสะอาดข้อมูลตัวเลข: {e_clean_numeric}", exc_info=True)
 
     # Convert known categorical columns
     categorical_cols_clean = ['Pattern_Label', 'session'] # Add other known categoricals if any
@@ -2348,7 +2348,7 @@ def clean_m1_data(df_m1: pd.DataFrame, config: 'StrategyConfig') -> tuple[pd.Dat
                 try:
                     df_cleaned[col_cat_clean] = df_cleaned[col_cat_clean].astype('category')
                 except Exception as e_cat_clean: # pragma: no cover
-                    clean_logger.warning(f"   (Warning) เกิดข้อผิดพลาดในการแปลง '{col_cat_clean}' เป็น category: {e_cat_clean}.")
+                    clean_logger.warning(f"   (Warning) เกิดข้อผิดพลาดขณะแปลงคอลัมน์ '{col_cat_clean}' เป็น category: {e_cat_clean}")
 
     clean_logger.info("(Success) กำหนด Features M1 และแปลงประเภท (using StrategyConfig) เสร็จสิ้น.")
     return df_cleaned, m1_features_for_drift_local_clean
@@ -2528,7 +2528,7 @@ def select_top_shap_features(shap_values_val: np.ndarray | list | None,
         selected_features_list = selected_features_df["Feature"].tolist()
 
         if not selected_features_list: # pragma: no cover
-            shap_select_logger.warning(f"      (Warning) ไม่มี Features ใดผ่านเกณฑ์ SHAP >= {shap_threshold:.4f}. คืนค่า List ว่าง.")
+            shap_select_logger.warning("      (Warning) ไม่มีคุณลักษณะที่ผ่านเกณฑ์ SHAP.")
             return []
         elif len(selected_features_list) < len(feature_names): # pragma: no cover
             removed_features = sorted(list(set(feature_names) - set(selected_features_list)))
@@ -2540,7 +2540,7 @@ def select_top_shap_features(shap_values_val: np.ndarray | list | None,
             shap_select_logger.info("      (Success) Features ทั้งหมดผ่านเกณฑ์ SHAP.") # All features kept
         return selected_features_list
     except Exception as e: # pragma: no cover
-        shap_select_logger.error(f"      (Error) เกิดข้อผิดพลาดระหว่างการเลือก Features ด้วย SHAP: {e}. คืนค่า Features เดิม.", exc_info=True)
+        shap_select_logger.error(f"      (Error) เกิดข้อผิดพลาดระหว่างคัดเลือกคุณลักษณะด้วย SHAP: {e}", exc_info=True)
         return feature_names
 
 # --- Model Quality Check Functions ---
@@ -3072,7 +3072,7 @@ def train_and_export_meta_model(
         if len(target_dist_train) < 2: train_logger.warning("   (Warning) Target มีเพียง Class เดียว. Model อาจไม่สามารถ Train ได้อย่างมีความหมาย.")
         if trade_log_df_train.empty: train_logger.error("(Error) ไม่มี Trades ที่ถูกต้องใน Log หลังการประมวลผล."); return None, []
         trade_log_df_train = trade_log_df_train.sort_values("entry_time"); train_logger.info(f"   ประมวลผล Trade Log สำเร็จ ({len(trade_log_df_train)} trades).")
-    except Exception as e_proc_log: train_logger.error(f"(Error) เกิดข้อผิดพลาดในการประมวลผล Trade Log: {e_proc_log}", exc_info=True); return None, []
+    except Exception as e_proc_log: train_logger.error(f"(Error) เกิดข้อผิดพลาดระหว่างประมวลผล trade log: {e_proc_log}", exc_info=True)
 
     m1_data_path_to_load = getattr(config, 'm1_data_path_train', m1_data_path if m1_data_path else DATA_FILE_PATH_M1) # type: ignore
     train_logger.info(f"   กำลังโหลด M1 Data: {m1_data_path_to_load}")
@@ -3122,7 +3122,7 @@ def train_and_export_meta_model(
             train_logger.info(f"   Sampling {sample_size_val} rows from merged data..."); merged_df_train = merged_df_train.sample(n=sample_size_val, random_state=42)
             train_logger.info(f"   (Success) Sampled data size: {len(merged_df_train)} rows.")
     except Exception as e_merge_data:
-        train_logger.error(f"(Error) เกิดข้อผิดพลาดระหว่างการรวมข้อมูล: {e_merge_data}", exc_info=True)
+        train_logger.error(f"(Error) เกิดข้อผิดพลาดระหว่างรวมข้อมูลสำหรับเทรน: {e_merge_data}", exc_info=True)
         if 'trade_log_df_train' in locals() and trade_log_df_train is not None: del trade_log_df_train
         if 'm1_df_for_train' in locals() and m1_df_for_train is not None: del m1_df_for_train
         if 'merged_df_train' in locals() and merged_df_train is not None: del merged_df_train
@@ -6582,7 +6582,7 @@ if __name__ == "__main__":
         main_entry_logger.critical(f"\n(Error) NameError in __main__ block: '{ne_main_block}'. Critical function or variable likely missing.", exc_info=True)
         traceback.print_exc()
     except Exception as e_main_general_block: # pragma: no cover
-        main_entry_logger.critical("\n(Error) เกิดข้อผิดพลาดที่ไม่คาดคิดใน __main__ block:", exc_info=True)
+        main_entry_logger.critical(f"\n(Error) เกิดข้อผิดพลาดไม่ทราบสาเหตุใน __main__: {e_main_general_block}", exc_info=True)
         traceback.print_exc()
     finally:
         end_time_script_entry = time.time()
