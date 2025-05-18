@@ -1695,6 +1695,7 @@ import ta  # Assumes 'ta' is imported and available (checked in Part 1)
 from sklearn.cluster import KMeans  # For context column calculation
 from sklearn.preprocessing import StandardScaler  # For context column calculation
 import gc  # For memory management
+import inspect
 
 # --- Feature Engineering Constants are NOW REMOVED FROM HERE ---
 # They are accessed via the `config: StrategyConfig` object passed to relevant functions.
@@ -1949,8 +1950,10 @@ def tag_price_structure_patterns(df: pd.DataFrame | Any, config: 'StrategyConfig
     """Tags price structure patterns based on various indicators, using config."""
     pattern_logger = logging.getLogger(f"{__name__}.tag_price_structure_patterns")
     pattern_logger.info("   (Processing) Tagging price structure patterns (using StrategyConfig)...")
-    if not isinstance(expected_type, (type, tuple)):
-        raise TypeError("expected_type must be a type or tuple")
+    # [Patch AI Studio v4.9.x] Robust type guard for expected_type
+    if not (isinstance(expected_type, (type, tuple)) and all(isinstance(t, type) for t in (expected_type if isinstance(expected_type, tuple) else [expected_type]))):
+        pattern_logger.error("[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: %r", expected_type)
+        raise TypeError("[Patch] expected_type must be a type or tuple of types")
     if not isinstance(df, expected_type):
         pattern_logger.error("Input must be a pandas DataFrame.")
         return pd.DataFrame()
@@ -2029,8 +2032,10 @@ def calculate_m15_trend_zone(df_m15: pd.DataFrame | Any, config: 'StrategyConfig
     """Calculates M15 Trend Zone (UP, DOWN, NEUTRAL) using config."""
     m15_trend_logger = logging.getLogger(f"{__name__}.calculate_m15_trend_zone")
     m15_trend_logger.info("(Processing) กำลังคำนวณ M15 Trend Zone (using StrategyConfig)...")
-    if not isinstance(expected_type, (type, tuple)):
-        raise TypeError("expected_type must be a type or tuple")
+    # [Patch AI Studio v4.9.x] Robust type guard for expected_type
+    if not (isinstance(expected_type, (type, tuple)) and all(isinstance(t, type) for t in (expected_type if isinstance(expected_type, tuple) else [expected_type]))):
+        m15_trend_logger.error("[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: %r", expected_type)
+        raise TypeError("[Patch] expected_type must be a type or tuple of types")
     if not isinstance(df_m15, expected_type):
         m15_trend_logger.error("Input must be a pandas DataFrame.")
         return pd.DataFrame()

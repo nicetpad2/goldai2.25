@@ -1508,10 +1508,26 @@ class TestBranchAndErrorPathCoverage:
         with pytest.raises(TypeError):
             ga.tag_price_structure_patterns([], ga.StrategyConfig({}), expected_type=123)
 
+    def test_tag_price_structure_patterns_expected_type_guard(self):
+        ga = safe_import_gold_ai()
+        cfg = ga.StrategyConfig({})
+        df = ga.pd.DataFrame()
+        with pytest.raises(TypeError):
+            ga.tag_price_structure_patterns(df, cfg, expected_type="notatype")
+        with pytest.raises(TypeError):
+            ga.tag_price_structure_patterns(df, cfg, expected_type=(str, "badtype"))
+
     def test_calculate_m15_trend_zone_empty_guard(self):
         ga = safe_import_gold_ai()
         with pytest.raises(TypeError):
             ga.calculate_m15_trend_zone({}, ga.StrategyConfig({}), expected_type=None)
+
+    def test_calculate_m15_trend_zone_expected_type_guard(self):
+        ga = safe_import_gold_ai()
+        cfg = ga.StrategyConfig({})
+        df = ga.pd.DataFrame()
+        with pytest.raises(TypeError):
+            ga.calculate_m15_trend_zone(df, cfg, expected_type=[])
 
 
 if __name__ == "__main__":
