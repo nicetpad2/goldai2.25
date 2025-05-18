@@ -6694,7 +6694,7 @@ def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig') -> Tuple[list, l
                     order["pnl_usd_net"] = 0.0
                     trade_log.append(order.copy())
                     active_orders.remove(order)
-                    print("[Debug BE-SL] Triggered BE-SL:", order)
+                    sim_logger.debug("[Patch AI Studio v4.9.26] Triggered BE-SL: %s", order)
                     continue
             if row["Low"] <= sl:
                 order["exit_price"] = sl
@@ -6704,7 +6704,7 @@ def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig') -> Tuple[list, l
                 order["pnl_usd_net"] = sl - entry_price if order.get("side", "BUY") == "BUY" else entry_price - sl
                 trade_log.append(order.copy())
                 active_orders.remove(order)
-                print("[Debug SL] Triggered SL:", order)
+                sim_logger.debug("[Patch AI Studio v4.9.26] Triggered SL: %s", order)
                 continue
 
         for closed in [t for t in trade_log if t.get("exit_idx") == bar_i]:
@@ -6722,6 +6722,7 @@ def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig') -> Tuple[list, l
                 run_summary["kill_switch_active"] = True
                 run_summary["hard_kill_triggered"] = True
                 active_orders.clear()
+                sim_logger.info("[Patch AI Studio v4.9.26] Kill switch activated at bar %s", bar_i)
                 break
 
         if run_summary.get("kill_switch_active"):
