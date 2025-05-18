@@ -10,6 +10,18 @@ import tempfile
 from unittest.mock import patch, mock_open, MagicMock
 
 try:
+    import pytest
+except Exception:  # pragma: no cover - pytest not installed
+    class DummyMark:
+        def __getattr__(self, name):
+            return lambda x: x
+
+    class DummyPytest:
+        mark = DummyMark()
+
+    pytest = DummyPytest()
+
+try:
     import coverage  # optional
     cov = coverage.Coverage(source=["gold_ai2025"], branch=True)
 except Exception:  # pragma: no cover - coverage library not installed
@@ -40,6 +52,12 @@ def _create_mock_module(name: str) -> types.ModuleType:
             return data
         module.safe_load = safe_load  # type: ignore
     return module
+
+
+# Helper to avoid DataFrame truth ambiguity when extracting kwargs in tests
+def safe_extract_df(kwargs, args):
+    """Return DataFrame argument regardless of truthiness."""
+    return kwargs["df_m1_segment_pd"] if "df_m1_segment_pd" in kwargs else args[0]
 
 
 def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
@@ -577,6 +595,60 @@ class TestEdgeCases(unittest.TestCase):
         self.assertIsInstance(equity_curve, list)
         self.assertIsInstance(run_summary, dict)
 
+    @pytest.mark.unit
+    def test_simulate_trades_tp1_sl(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1000, 1001, 1002, 1003],
+            "High": [1005, 1006, 1002.5, 1003.5],
+            "Low": [999, 1000, 999.5, 998.0],
+            "Close": [1001, 1005, 1000, 998],
+            "Entry_Long": [1, 0, 0, 0],
+            "ATR_14_Shifted": [1.0] * 4,
+            "Signal_Score": [2.0] * 4,
+            "Trade_Reason": ["test"] * 4,
+            "session": ["Asia"] * 4,
+            "Gain_Z": [0.3] * 4,
+            "MACD_hist_smooth": [0.1] * 4,
+            "RSI": [50] * 4,
+        }, index=self.ga.pd.date_range("2023-01-01", periods=4, freq="min"))
+
+        cfg = self.ga.StrategyConfig({"risk_per_trade": 0.01})
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+
+        self.assertGreaterEqual(len(trade_log), 1)
+        self.assertIn(trade_log[0]["exit_reason"], {"TP", "SL", "BE-SL"})
+
+    @pytest.mark.unit
+    def test_simulate_trades_tsl_behavior(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1000, 1005, 1010, 1007, 1004],
+            "High": [1005, 1010, 1015, 1011, 1006],
+            "Low": [999, 1002, 1008, 1005, 1001],
+            "Close": [1004, 1009, 1013, 1006, 1002],
+            "Entry_Long": [1, 0, 0, 0, 0],
+            "ATR_14_Shifted": [1.0] * 5,
+            "Signal_Score": [2.0] * 5,
+            "Trade_Reason": ["test"] * 5,
+            "session": ["Asia"] * 5,
+            "Gain_Z": [0.3] * 5,
+            "MACD_hist_smooth": [0.1] * 5,
+            "RSI": [50] * 5,
+        }, index=self.ga.pd.date_range("2023-01-01", periods=5, freq="min"))
+
+        cfg = self.ga.StrategyConfig({
+            "risk_per_trade": 0.01,
+            "use_tsl": True,
+            "trailing_sl_distance": 1.5,
+        })
+
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        self.assertEqual(len(trade_log), 1)
+        self.assertIn(trade_log[0]["exit_reason"], {"TSL", "TP", "BE-SL", "SL"})
+
     def test_calculate_metrics_basic(self):
         trades = [
             {"entry_idx": 0, "exit_reason": "TP", "pnl_usd_net": 20.0, "side": "BUY"},
@@ -786,7 +858,7 @@ class TestWFVandLotSizing(unittest.TestCase):
             return df2
 
         def fake_run(*args, **kwargs):
-            data = kwargs.get("df_m1_segment_pd") or args[0]
+            data = safe_extract_df(kwargs, args)
             side = kwargs.get("side", "BUY")
             trade_log = self.ga.pd.DataFrame([
                 {"entry_idx": 0, "exit_reason": "TP", "pnl_usd_net": 1.0, "side": side}
