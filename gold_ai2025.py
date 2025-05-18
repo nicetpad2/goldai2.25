@@ -1705,6 +1705,8 @@ def ema(series: pd.Series | Any, period: int) -> pd.Series:
     import numpy as np
     import pandas as pd
     ema_logger = logging.getLogger(f"{__name__}.ema")
+    if period < 0:
+        raise ValueError("EMA period must be non-negative")
     if series is None or (hasattr(series, "__len__") and len(series) == 0):
         ema_logger.debug("[Patch AI Studio v4.9.26] Empty input detected in ema, returning empty pd.Series")
         return pd.Series([], dtype=float)
@@ -1943,10 +1945,15 @@ def rolling_zscore(series: pd.Series | Any, window: int, min_periods: int | None
         zscore_logger.error(f"Rolling Z-Score calculation failed for window {window}: {e}", exc_info=True)
         return pd.Series(0.0, index=series.index, dtype='float32')
 
-def tag_price_structure_patterns(df: pd.DataFrame, config: 'StrategyConfig') -> pd.DataFrame:  # type: ignore
+def tag_price_structure_patterns(df: pd.DataFrame | Any, config: 'StrategyConfig', expected_type: type | tuple[type, ...] = pd.DataFrame) -> pd.DataFrame:  # type: ignore
     """Tags price structure patterns based on various indicators, using config."""
     pattern_logger = logging.getLogger(f"{__name__}.tag_price_structure_patterns")
     pattern_logger.info("   (Processing) Tagging price structure patterns (using StrategyConfig)...")
+    if not isinstance(expected_type, (type, tuple)):
+        raise TypeError("expected_type must be a type or tuple")
+    if not isinstance(df, expected_type):
+        pattern_logger.error("Input must be a pandas DataFrame.")
+        return pd.DataFrame()
     if not isinstance(df, pd.DataFrame):
         pattern_logger.error("Input must be a pandas DataFrame.")
         raise TypeError("Input must be a pandas DataFrame.")
@@ -2018,13 +2025,15 @@ def tag_price_structure_patterns(df: pd.DataFrame, config: 'StrategyConfig') -> 
     gc.collect()
     return df_patterns
 
-def calculate_m15_trend_zone(df_m15: pd.DataFrame, config: 'StrategyConfig') -> pd.DataFrame:  # type: ignore
+def calculate_m15_trend_zone(df_m15: pd.DataFrame | Any, config: 'StrategyConfig', expected_type: type | tuple[type, ...] = pd.DataFrame) -> pd.DataFrame:  # type: ignore
     """Calculates M15 Trend Zone (UP, DOWN, NEUTRAL) using config."""
     m15_trend_logger = logging.getLogger(f"{__name__}.calculate_m15_trend_zone")
     m15_trend_logger.info("(Processing) กำลังคำนวณ M15 Trend Zone (using StrategyConfig)...")
-    if not isinstance(df_m15, pd.DataFrame):
+    if not isinstance(expected_type, (type, tuple)):
+        raise TypeError("expected_type must be a type or tuple")
+    if not isinstance(df_m15, expected_type):
         m15_trend_logger.error("Input must be a pandas DataFrame.")
-        raise TypeError("Input must be a pandas DataFrame.")
+        return pd.DataFrame()
 
     result_df = pd.DataFrame(index=df_m15.index)
     # <<< MODIFIED: [Patch] Ensured DataFrame boolean checks use .empty >>>

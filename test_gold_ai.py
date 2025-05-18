@@ -19,6 +19,25 @@ except Exception:  # pragma: no cover - pytest not installed
     class DummyPytest:
         mark = DummyMark()
 
+        class _Raises:
+            def __init__(self, exc):
+                self.exc = exc
+            def __enter__(self):
+                return None
+            def __exit__(self, exc_type, exc_val, _):
+                if exc_type is None:
+                    raise AssertionError("Expected exception not raised")
+                return issubclass(exc_type, self.exc)
+
+        def raises(self, exc):
+            return self._Raises(exc)
+
+        def importorskip(self, name):
+            try:
+                __import__(name)
+            except Exception:
+                raise unittest.SkipTest(f"{name} not available")
+
     pytest = DummyPytest()
 
 try:
@@ -342,6 +361,17 @@ class TestGoldAI2025(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             rm.update_drawdown(79.0)
 
+    def test_risk_manager_soft_kill_active(self):
+        pd_dummy = self.gold_ai.DummyPandas()
+        pd_dummy.isna = lambda x: False
+        self.gold_ai.pd = pd_dummy
+        cfg = self.gold_ai.StrategyConfig({})
+        rm = self.gold_ai.RiskManager(cfg)
+        rm.dd_peak = 100
+        self.assertFalse(rm.soft_kill_active)
+        rm.update_drawdown(80)
+        self.assertTrue(rm.soft_kill_active)
+
     def test_risk_manager_consecutive_loss_and_trading_allowed(self):
         pd_dummy = self.gold_ai.DummyPandas()
         pd_dummy.isna = lambda x: False
@@ -589,6 +619,14 @@ class TestEdgeCases(unittest.TestCase):
             df_loaded = self.ga.load_data(path)
             self.assertIsInstance(df_loaded, self.ga.pd.DataFrame)
             self.assertFalse(df_loaded.empty)
+
+    def test_load_data_missing_file(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "no_such_file.csv")
+            with self.assertRaises(self.ga.DataLoadError):
+                self.ga.load_data(path)
 
     def test_simulate_trades_minimal(self):
         if not self.pandas_available or not self.numpy_available:
@@ -1416,7 +1454,7 @@ class TestBranchAndErrorPathCoverage:
         ga = safe_import_gold_ai()
         ga.pd = pd
         s = pd.Series([1, 2, 3])
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             ga.ema(s, -1)
 
     def test_sma_not_series(self):
@@ -1464,6 +1502,16 @@ class TestBranchAndErrorPathCoverage:
         config = ga.StrategyConfig({})
         res = ga.calculate_m15_trend_zone(df, config)
         assert isinstance(res, ga.pd.DataFrame)
+
+    def test_tag_price_structure_patterns_type_guard(self):
+        ga = safe_import_gold_ai()
+        with pytest.raises(TypeError):
+            ga.tag_price_structure_patterns([], ga.StrategyConfig({}), expected_type=123)
+
+    def test_calculate_m15_trend_zone_empty_guard(self):
+        ga = safe_import_gold_ai()
+        with pytest.raises(TypeError):
+            ga.calculate_m15_trend_zone({}, ga.StrategyConfig({}), expected_type=None)
 
 
 if __name__ == "__main__":
