@@ -1,5 +1,5 @@
 # Agent: gold_ai_test_runner
-version: 4.9.25
+version: 4.9.26
 description: >
   This agent is responsible for validating the Gold AI backtesting and simulation system,
   focusing on robust import handling, mock patching of critical libraries, and unit test execution.

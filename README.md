@@ -11,10 +11,8 @@ pip install -r requirements.txt
 ## Running Tests
 
 ```bash
-pytest
-
-# View coverage information
-pytest --cov=gold_ai2025 --cov-report=term-missing
+# Run full test suite with coverage
+pytest -v --cov=gold_ai2025 --cov-report=term-missing
 ```
 
 ## Notes

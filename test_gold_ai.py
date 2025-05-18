@@ -12,7 +12,6 @@ from unittest.mock import patch, mock_open, MagicMock
 try:
     import coverage  # optional
     cov = coverage.Coverage(source=["gold_ai2025"], branch=True)
-    cov.start()
 except Exception:  # pragma: no cover - coverage library not installed
     cov = None
 
@@ -589,6 +588,64 @@ class TestEdgeCases(unittest.TestCase):
         self.assertEqual(summary["num_sl"], 1)
         self.assertEqual(summary["num_be"], 1)
 
+    def test_try_import_install_success_no_version(self):
+        mod = types.ModuleType("novers")
+        if hasattr(mod, "__version__"):
+            delattr(mod, "__version__")
+
+        original_import = importlib.import_module
+
+        def side_effect(name, *args, **kwargs):
+            if name == "novers" and side_effect.calls == 0:
+                side_effect.calls += 1
+                raise ImportError("missing")
+            if name == "novers":
+                return mod
+            return original_import(name, *args, **kwargs)
+
+        side_effect.calls = 0
+        with patch.object(self.ga.subprocess, "run") as mock_run, \
+             patch.object(self.ga.importlib, "import_module", side_effect=side_effect):
+            mock_run.return_value = MagicMock(returncode=0)
+            result = self.ga.try_import_with_install(
+                "novers",
+                pip_install_name="novers",
+                import_as_name="novers",
+                success_flag_global_name="novers_imported",
+            )
+        self.assertIs(result, mod)
+        self.assertTrue(self.ga.novers_imported)
+
+    def test_dummy_module_behavior(self):
+        dummy = _create_mock_module("dummy_mod")
+        self.assertEqual(dummy.__version__, "0.0")
+        attr = dummy.some_attr
+        self.assertIsInstance(attr, MagicMock)
+        self.assertEqual(attr._mock_name, "dummy_mod.some_attr")
+
+    def test_prepare_datetime_duplicate_index(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame(
+            {
+                "Date": ["20240101", "20240101"],
+                "Timestamp": ["00:00:00", "00:00:00"],
+                "Open": [1, 1],
+                "High": [1, 1],
+                "Low": [1, 1],
+                "Close": [1, 1],
+            }
+        )
+        result = self.ga.prepare_datetime(df, timeframe_str="DUP")
+        self.assertFalse(result.index.has_duplicates)
+        self.assertEqual(len(result), 1)
+
+    def test_set_thai_font_fallback_no_match(self):
+        mod = self.ga
+        with patch.object(mod.fm, "findfont", side_effect=ValueError("no font")), \
+             patch("os.path.exists", return_value=False):
+            self.assertFalse(mod.set_thai_font("NoFont"))
+
     def test_run_backtest_simulation_v34_minimal(self):
         if not self.pandas_available:
             self.skipTest("pandas not available")
@@ -614,6 +671,8 @@ class TestEdgeCases(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if cov:
+        cov.start()
     unittest.main(exit=False)
 
     if cov:
