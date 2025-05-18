@@ -243,6 +243,42 @@ class TestGoldAI2025(unittest.TestCase):
                     m.assert_called_with("data.csv.gz", "rt", encoding="utf-8")
                     mrc.assert_called()
 
+    def test_risk_manager_drawdown_and_kill_switch(self):
+        pd_dummy = self.gold_ai.DummyPandas()
+        pd_dummy.isna = lambda x: x is None or x != x
+        self.gold_ai.pd = pd_dummy
+        cfg = self.gold_ai.StrategyConfig({})
+        rm = self.gold_ai.RiskManager(cfg)
+
+        self.assertEqual(rm.update_drawdown(100.0), 0.0)
+        self.assertFalse(rm.soft_kill_active)
+
+        dd = rm.update_drawdown(90.0)
+        self.assertAlmostEqual(dd, 0.1, places=4)
+        self.assertFalse(rm.soft_kill_active)
+
+        dd = rm.update_drawdown(85.0)
+        self.assertAlmostEqual(dd, 0.15, places=4)
+        self.assertTrue(rm.soft_kill_active)
+
+        with self.assertRaises(RuntimeError):
+            rm.update_drawdown(79.0)
+
+    def test_risk_manager_consecutive_loss_and_trading_allowed(self):
+        pd_dummy = self.gold_ai.DummyPandas()
+        pd_dummy.isna = lambda x: False
+        self.gold_ai.pd = pd_dummy
+        cfg = self.gold_ai.StrategyConfig({})
+        rm = self.gold_ai.RiskManager(cfg)
+
+        self.assertFalse(rm.check_consecutive_loss_kill(3))
+        self.assertTrue(rm.check_consecutive_loss_kill(cfg.kill_switch_consecutive_losses))
+
+        rm.soft_kill_active = True
+        self.assertFalse(rm.is_trading_allowed())
+        rm.soft_kill_active = False
+        self.assertTrue(rm.is_trading_allowed())
+
 
 if __name__ == "__main__":
     unittest.main()
