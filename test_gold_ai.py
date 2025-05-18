@@ -124,10 +124,10 @@ def generate_df_tp2_besl(pd_module):
     """Create DataFrame for TP2/BE-SL tests."""
     index = pd_module.date_range("2023-01-01", periods=6, freq="min")
     return pd_module.DataFrame({
-        "Open": [1000, 1005, 1010, 1015, 1013, 1008],
-        "High": [1005, 1012, 1018, 1025, 1020, 1010],
-        "Low": [999, 1002, 1008, 1010, 1005, 1000],
-        "Close": [1004, 1010, 1015, 1020, 1010, 1005],
+        "Open":   [1000, 1005, 1010, 1015, 1013, 1008],
+        "High":   [1005, 1012, 1018, 1025, 1020, 1010],
+        "Low":    [999, 1002, 1008, 1010, 999, 1000],
+        "Close":  [1004, 1010, 1015, 1010, 999, 1005],
         "Entry_Long": [1, 0, 0, 0, 0, 0],
         "ATR_14_Shifted": [1.0] * 6,
         "Signal_Score": [2.0] * 6,
@@ -953,14 +953,62 @@ class TestTP2AndBESL(unittest.TestCase):
             "base_tp_multiplier": 1.5,
             "base_be_sl_r_threshold": 1.0,
             "default_sl_multiplier": 1.0,
+            "enable_be_sl": True,
         })
         df = generate_df_tp2_besl(self.ga.pd)
-        df.loc[df.index[3], "Close"] = 1010
-        df.loc[df.index[4], "Low"] = 1002
-        df.loc[df.index[4], "Close"] = 1002
         trade_log, equity, summary = self.ga.simulate_trades(df.copy(), cfg)
         self.assertGreaterEqual(len(trade_log), 1)
         self.assertIn(trade_log[0]["exit_reason"], {"BE-SL", "SL"})
+
+
+class TestWFVandLotSizingFix(unittest.TestCase):
+    """Ensure reentry logic handles 0 cooldown correctly."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ga = safe_import_gold_ai()
+        try:
+            import pandas as real_pd
+            cls.ga.pd = real_pd
+            cls.pandas_available = True
+        except Exception:
+            cls.ga.pd = cls.ga.DummyPandas()
+            cls.pandas_available = False
+        cls.ga.datetime = datetime
+
+    def test_simulate_trades_multi_order_with_reentry_fixed(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        is_reentry_allowed = self.ga.is_reentry_allowed
+
+        df = self.ga.pd.DataFrame({
+            "Open": [1000.0, 1000.5],
+            "High": [1001.0, 1001.5],
+            "Low": [999.5, 1000.0],
+            "Close": [1001.0, 1002.0],
+            "Entry_Long": [1, 1],
+            "ATR_14_Shifted": [1.0, 1.0],
+            "Signal_Score": [2.0, 2.0],
+            "Trade_Reason": ["test", "test"],
+            "session": ["Asia", "Asia"],
+            "Gain_Z": [0.3, 0.3],
+            "MACD_hist_smooth": [0.1, 0.1],
+            "RSI": [50, 50],
+        })
+        df.index = self.ga.pd.to_datetime(["2023-01-01 00:00:00", "2023-01-01 00:01:00"])
+
+        cfg = StrategyConfig({
+            "use_reentry": True,
+            "reentry_cooldown_bars": 0,
+            "reentry_cooldown_after_tp_minutes": 0,
+            "initial_capital": 100.0,
+        })
+        trade_log, equity_curve, summary = self.ga.simulate_trades(df.copy(), cfg)
+        self.assertEqual(len(trade_log), 2)
+        self.assertEqual(trade_log[0]["exit_reason"], "TP")
+        self.assertEqual(trade_log[1]["exit_reason"], "TP")
+        allowed = is_reentry_allowed(cfg, df.iloc[1], "BUY", [], 0, df.index[0], 0.6)
+        self.assertTrue(allowed)
 
 
 class TestWarningEdgeCases(unittest.TestCase):
