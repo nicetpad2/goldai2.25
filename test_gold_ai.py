@@ -9,6 +9,13 @@ import logging
 import tempfile
 from unittest.mock import patch, mock_open, MagicMock
 
+try:
+    import coverage  # optional
+    cov = coverage.Coverage(source=["gold_ai2025"], branch=True)
+    cov.start()
+except Exception:  # pragma: no cover - coverage library not installed
+    cov = None
+
 
 def _create_mock_module(name: str) -> types.ModuleType:
     module = types.ModuleType(name)
@@ -547,16 +554,9 @@ class TestEdgeCases(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    try:
-        import coverage
-        cov = coverage.Coverage()
-        cov.start()
-    except Exception:
-        cov = None
-
     unittest.main(exit=False)
 
     if cov:
         cov.stop()
         cov.save()
-        cov.report()
+        cov.report(show_missing=True)
