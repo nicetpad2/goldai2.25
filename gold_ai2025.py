@@ -1,3 +1,9 @@
+
+"""
+Gold AI Enterprise v4.9.x
+[Patch AI Studio v4.9.42] - [Import Safety & QA-PASS]: Ensure 'import pandas as pd' is available to all simulation/backtest functions
+"""
+
 # ==============================================================================
 # === PART 1/15: Setup, Imports, Global Variable Loading, Basic Fixtures ===
 # ==============================================================================
@@ -10,12 +16,12 @@ import sys
 import subprocess
 import importlib
 import logging
-import logging.handlers # Keep for potential use in main()
+import logging.handlers  # Keep for potential use in main()
 import datetime
 import time
 import warnings
 import traceback
-# import pandas as pd # Deferred: Will be imported robustly or via try_import_with_install
+import pandas as pd  # [Patch AI Studio v4.9.42] - Global import for QA/CI/CD robustness
 # import numpy as np  # Deferred: Will be imported robustly or via try_import_with_install
 import json
 import gzip
@@ -24,7 +30,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.25_AISTUDIO_PATCH_IMPORT_FIX_V2" # Updated version
+MINIMAL_SCRIPT_VERSION = "4.9.42_GLOBAL_PANDAS_IMPORT"  # Updated version
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -4463,6 +4469,10 @@ def _run_backtest_simulation_v34_full(
     meta_min_proba_thresh_override: Optional[float] = None, current_fold_index: Optional[int] = None,
     initial_kill_switch_state: bool = False, initial_consecutive_losses: int = 0
 ) -> Tuple[pd.DataFrame, pd.DataFrame, float, Dict[pd.Timestamp, float], float, Dict[str, Any], List[Dict[str, Any]], Optional[str], Optional[str], bool, int, float]:
+
+    # [Patch AI Studio v4.9.42] - Ensure pd (pandas) is accessible for all simulation code paths
+    # (No local import needed, global is enough. Uncomment next line for local fallback if QA requires.)
+    # import pandas as pd
 
     sim_logger = logging.getLogger(f"{__name__}.run_backtest_simulation_v34.{label}.{side}")
     sim_logger.info(

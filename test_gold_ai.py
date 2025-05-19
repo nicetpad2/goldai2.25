@@ -1,3 +1,8 @@
+"""Gold AI Test Suite
+
+[Patch AI Studio v4.9.42] - Validate global pandas availability for backtesting functions.
+"""
+
 import importlib
 import sys
 import types
