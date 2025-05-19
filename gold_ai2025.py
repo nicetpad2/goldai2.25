@@ -6974,8 +6974,18 @@ part14_logger.debug("Part 14: Placeholder for Future Additions reached.")
 
 # --- Simplified Helper Functions for Unit Tests ---
 
-def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig', *args, **kwargs) -> Tuple[list, list, dict]:
-    """Simplified trade simulator with basic multi-order and BE-SL logic."""
+def simulate_trades(
+    df: pd.DataFrame,
+    config: 'StrategyConfig',
+    *args,
+    return_tuple: bool = False,
+    **kwargs,
+) -> Any:
+    """Simplified trade simulator with basic multi-order and BE-SL logic.
+
+    [Patch AI Studio v4.9.54+] Returns a dict by default for easier QA
+    consumption while preserving backward compatibility via ``return_tuple``.
+    """
     # PATCH [v4.9.52+] Absorb side and unused kwargs for test compatibility
     side_override = kwargs.pop("side", None)
     if side_override is not None:
@@ -6989,7 +6999,14 @@ def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig', *args, **kwargs)
     run_summary: dict = {}
 
     if df is None or df.empty:
-        return trade_log, equity_curve, run_summary
+        result_tuple = (trade_log, equity_curve, run_summary)
+        if return_tuple:
+            return result_tuple
+        return {
+            "trade_log": trade_log,
+            "equity_curve": equity_curve,
+            "run_summary": run_summary,
+        }
 
     equity = getattr(config, "initial_capital", 0.0)
     drawdown_peak = equity
@@ -7125,7 +7142,14 @@ def simulate_trades(df: pd.DataFrame, config: 'StrategyConfig', *args, **kwargs)
                 })
 
     run_summary["num_trades"] = len(trade_log)
-    return trade_log, equity_curve, run_summary
+    result_tuple = (trade_log, equity_curve, run_summary)
+    if return_tuple:
+        return result_tuple
+    return {
+        "trade_log": trade_log,
+        "equity_curve": equity_curve,
+        "run_summary": run_summary,
+    }
 
 def calculate_metrics(trade_log: list, fold_tag: str = "") -> Dict[str, Any]:
     """Calculate basic metrics for a list-based trade log."""
