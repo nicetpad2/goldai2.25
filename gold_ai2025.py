@@ -33,7 +33,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.54_FULL_PASS"  # Updated version
+MINIMAL_SCRIPT_VERSION = "4.9.55_FULL_PASS"  # Updated version
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False

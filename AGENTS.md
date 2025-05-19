@@ -1,9 +1,9 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.54+
-**Project:** Gold AI (Enterprise Refactor)  
-**Maintainer:** AI Studio QA/Dev Team  
+**Version:** v4.9.55+
+**Project:** Gold AI (Enterprise Refactor)
+**Maintainer:** AI Studio QA/Dev Team
 **Last updated:** 2025-05-27
 
 ---
@@ -205,8 +205,9 @@ Review vs. this AGENTS.md
 
 No merge without Execution_Test_Unit pass and log review
 
-ล่าสุด: [Patch AI Studio v4.9.43+]
-เพิ่ม Robust Numeric TypeGuard สำหรับ equity history ใน simulation/backtest
+ล่าสุด: [Patch AI Studio v4.9.55+]
+เพิ่ม default dict return ใน `simulate_trades` พร้อมตัวเลือก `return_tuple` 
+เพื่อรองรับ backward compatibility และ QA
 
 ตรวจสอบ audit log & error log ว่า non-numeric (str/NaT/None/nan) ถูก block และ log warning อย่างถูกต้อง
 
