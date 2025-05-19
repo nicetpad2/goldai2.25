@@ -1,7 +1,7 @@
 
 """
 Gold AI Enterprise v4.9.x
-[Patch AI Studio v4.9.47] - [Import Flags Initialization]: initialize optional ML library flags to prevent UnboundLocalError across all modules.
+[Patch AI Studio v4.9.48] - [Import Flags Initialization]: initialize optional ML library flags to prevent UnboundLocalError across all modules.
 """
 
 # ==============================================================================
@@ -32,7 +32,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.47_RETURN_DICT"  # Updated version
+MINIMAL_SCRIPT_VERSION = "4.9.48_RETURN_DICT"  # Updated version
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -378,7 +378,7 @@ def import_core_libraries() -> None:
     global shap, GPUtil, psutil, torch
     global catboost_module, optuna_module, ta_module, shap_module, tqdm_module
 
-    # [Patch AI Studio v4.9.47+] Initialize flags/modules to avoid UnboundLocalError
+    # [Patch AI Studio v4.9.48+] Initialize flags/modules to avoid UnboundLocalError
     catboost_imported = False
     optuna_imported = False
     ta_imported = False
@@ -6982,7 +6982,7 @@ def run_backtest_simulation_v34(
 ) -> Any:
     """Run backtest simulation with explicit argument contract.
 
-    [Patch AI Studio v4.9.47+] Returns a dict by default for QA/production compatibility and fixes optional import edge cases.
+    [Patch AI Studio v4.9.48+] Returns a dict by default for QA/production compatibility and fixes optional import edge cases.
     Set ``return_tuple=True`` for legacy tuple output.
     """
     # [Patch AI Studio v4.9.42+] Robust pd import for test/CI edge case

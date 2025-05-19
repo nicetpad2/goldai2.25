@@ -1,6 +1,6 @@
 """Gold AI Test Suite
 
-[Patch AI Studio v4.9.47] - Validate global pandas availability, import fixes, and new return structure.
+[Patch AI Studio v4.9.48] - Validate global pandas availability, import fixes, and new return structure.
 """
 
 import importlib
@@ -60,7 +60,7 @@ except Exception:  # pragma: no cover - coverage library not installed
     cov = None
 
 
-# === [Patch AI Studio v4.9.47] - Mock missing ML/TA libs for CI/CD ===
+# === [Patch AI Studio v4.9.48] - Mock missing ML/TA libs for CI/CD ===
 import sys
 import types
 
@@ -92,6 +92,15 @@ def _create_mock_module(name: str) -> types.ModuleType:
                         data[k.strip()] = val
             return data
         module.safe_load = safe_load  # type: ignore
+    if name == "optuna":
+        logging_mod = types.ModuleType("optuna.logging")
+        logging_mod.WARNING = 30
+        logging_mod.set_verbosity = MagicMock(name="optuna.logging.set_verbosity")
+        module.logging = logging_mod
+        sys.modules.setdefault("optuna.logging", logging_mod)
+    if name == "optuna.logging":
+        module.WARNING = 30
+        module.set_verbosity = MagicMock(name="optuna.logging.set_verbosity")
     return module
 
 
@@ -128,6 +137,7 @@ def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
         "matplotlib.font_manager": _create_mock_module("matplotlib.font_manager"),
         "scipy": _create_mock_module("scipy"),
         "optuna": _create_mock_module("optuna"),
+        "optuna.logging": _create_mock_module("optuna.logging"),
         "GPUtil": _create_mock_module("GPUtil"),
         "psutil": _create_mock_module("psutil"),
         "cv2": _create_mock_module("cv2"),
