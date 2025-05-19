@@ -4301,7 +4301,10 @@ def _check_exit_conditions_for_order(
             "is_partial_tp_event": False, # This is for full exits
             "current_partial_tp_level_processed": len(order.partial_tp_processed_levels),
         })
-        exit_check_logger_detail.info(f"Exit Finalized: Reason: {exit_reason_final_check}, Price: {exit_price_final_check:.5f}")
+        # [Patch AI Studio v4.9.41+] Guarded float format for exit finalized log
+        exit_check_logger_detail.info(
+            f"Exit Finalized: Reason: {exit_reason_final_check}, Price: {_float_fmt(exit_price_final_check, 5)}"
+        )
         return True, exit_price_final_check, log_entry_for_exit_check
 
     return False, None, None
@@ -4314,7 +4317,10 @@ def close_trade(
     run_summary_dict_ct: Optional[Dict[str, Any]], label_str_ct: str
 ):
     close_trade_logger_detail = logging.getLogger(f"{__name__}.close_trade.{order.label_suffix}.{order.side}.{order.entry_time.strftime('%Y%m%d%H%M')}")
-    close_trade_logger_detail.info(f"   Closing Trade/Portion: Reason: {exit_reason}, Lot Closed: {lot_closed:.2f}, Exit Price: {exit_price:.5f if pd.notna(exit_price) else 'N/A'}")
+    # [Patch AI Studio v4.9.41+] Guarded float format for trade close details
+    close_trade_logger_detail.info(
+        f"   Closing Trade/Portion: Reason: {exit_reason}, Lot Closed: {_float_fmt(lot_closed, 2)}, Exit Price: {_float_fmt(exit_price, 5) if pd.notna(exit_price) else 'N/A'}"
+    )
 
     pnl_points_ct_val = 0.0; pnl_points_net_spread_ct_val = 0.0; raw_pnl_usd_ct_val = 0.0
     commission_usd_ct_val = 0.0; spread_cost_usd_ct_val = 0.0; slippage_usd_ct_val = 0.0; net_pnl_usd_ct_val = 0.0
@@ -4412,7 +4418,10 @@ def close_trade(
     else: # pragma: no cover
         close_trade_logger_detail.error("trade_log_list_ct is not a list. Cannot append entry.")
 
-    close_trade_logger_detail.debug(f"Trade event logged: {exit_reason}, PnL Net: {net_pnl_usd_ct_val:.2f}")
+    # [Patch AI Studio v4.9.41+] Guarded float format for trade event log
+    close_trade_logger_detail.debug(
+        f"Trade event logged: {exit_reason}, PnL Net: {_float_fmt(net_pnl_usd_ct_val, 2)}"
+    )
 
 
 # --- Backtesting Simulation Engine (Main Function - Full Logic) ---
@@ -4437,7 +4446,8 @@ def _run_backtest_simulation_v34_full(
     )
 
     # [Patch AI Studio v4.9.34+] Defensive index validation
-    if not isinstance(df_m1_segment_pd.index, pd.DatetimeIndex):
+    # [Patch AI Studio v4.9.41+] Robust type guard for DataFrame index
+    if not _isinstance_safe(df_m1_segment_pd.index, pd.DatetimeIndex):
         logging.critical(
             "[Patch AI Studio v4.9.34+] DataFrame index must be DatetimeIndex. Got: %r. Test/data pipeline must provide valid datetime index." % type(df_m1_segment_pd.index)
         )
@@ -4494,7 +4504,10 @@ def _run_backtest_simulation_v34_full(
     df_sim = df_m1_segment_pd.copy()
     df_sim = _predefine_result_columns_for_simulation(df_sim, label_suffix_df)
 
-    sim_logger.info(f"[{label}] Initializing simulation. Capital: ${initial_capital_segment:.2f}, Risk: {current_fund_profile.get('risk', config_obj.risk_per_trade):.3%}, MM Mode: {current_fund_profile.get('mm_mode', 'N/A')}")
+    # [Patch AI Studio v4.9.41+] Guarded float format for initial simulation log
+    sim_logger.info(
+        f"[{label}] Initializing simulation. Capital: ${_float_fmt(initial_capital_segment, 2)}, Risk: {current_fund_profile.get('risk', config_obj.risk_per_trade):.3%}, MM Mode: {current_fund_profile.get('mm_mode', 'N/A')}"
+    )
     sim_logger.info(f"[{label}] Config: MaxHold={config_obj.max_holding_bars}, PTP En={config_obj.enable_partial_tp}, ReEn={config_obj.use_reentry}, FE En={config_obj.enable_forced_entry}")
     sim_logger.info(f"[{label}] Initial KillSwitchState={kill_switch_activated_runtime}, InitialConsecLosses={consecutive_losses_runtime}")
 
@@ -4511,7 +4524,10 @@ def _run_backtest_simulation_v34_full(
             equity_at_bar_start = equity_tracker['current_equity']
             equity_change_this_bar = 0.0 # Accumulates PnL from trades closed this bar
             order_opened_this_bar = False
-            sim_logger.debug(f"--- Bar {current_bar_idx} ({now_bar}) --- Equity: {equity_at_bar_start:.2f}, Active: {len(active_orders)}, ConsLoss: {consecutive_losses_runtime}, KS_Active: {kill_switch_activated_runtime} ---")
+            # [Patch AI Studio v4.9.41+] Guarded float format for per-bar debug
+            sim_logger.debug(
+                f"--- Bar {current_bar_idx} ({now_bar}) --- Equity: {_float_fmt(equity_at_bar_start, 2)}, Active: {len(active_orders)}, ConsLoss: {consecutive_losses_runtime}, KS_Active: {kill_switch_activated_runtime} ---"
+            )
 
             # --- [Patch] Kill Switch Checks (Primary Logic) ---
             # 1. Margin Call (most critical)
@@ -4594,7 +4610,10 @@ def _run_backtest_simulation_v34_full(
                                         order_item.lot = remaining_lot_after_ptp_val; order_item.partial_tp_processed_levels.add(ptp_idx_item); order_item.reached_tp1 = True
                                         if config_obj.partial_tp_move_sl_to_entry and not order_item.be_triggered:
                                             if not math.isclose(order_item.sl_price, order_item.entry_price):
-                                                sim_logger.info(f"      [PTP-BE] Moving SL to Entry ({order_item.entry_price:.5f}) after PTP for order {order_item.entry_idx}.")
+                                                # [Patch AI Studio v4.9.41+] Guarded float format for PTP-BE log
+                                                sim_logger.info(
+                                                    f"      [PTP-BE] Moving SL to Entry ({_float_fmt(order_item.entry_price, 5)}) after PTP for order {order_item.entry_idx}."
+                                                )
                                                 order_item.sl_price = order_item.entry_price; order_item.be_triggered = True; order_item.be_triggered_time = now_bar
                                                 if run_summary and 'be_sl_triggered_count' in run_summary: run_summary['be_sl_triggered_count'] +=1 # Count BE from PTP
                                                 if order_item.tsl_activated: order_item.trailing_sl_price = order_item.entry_price # Adjust TSL base if active
@@ -4608,11 +4627,17 @@ def _run_backtest_simulation_v34_full(
                     if order_item.side == "BUY" and pd.notna(bar_h_tsl_act_val_curr) and bar_h_tsl_act_val_curr >= order_item.entry_price + tsl_activation_price_diff_val_act:
                         order_item.tsl_activated = True
                         order_item.peak_since_tsl_activation = bar_h_tsl_act_val_curr # Initialize peak
-                        sim_logger.info(f"   TSL Activated for BUY order {order_item.entry_idx} at price {bar_h_tsl_act_val_curr:.5f}")
+                        # [Patch AI Studio v4.9.41+] Guarded float format for TSL activation log (BUY)
+                        sim_logger.info(
+                            f"   TSL Activated for BUY order {order_item.entry_idx} at price {_float_fmt(bar_h_tsl_act_val_curr, 5)}"
+                        )
                     elif order_item.side == "SELL" and pd.notna(bar_l_tsl_act_val_curr) and bar_l_tsl_act_val_curr <= order_item.entry_price - tsl_activation_price_diff_val_act:
                         order_item.tsl_activated = True
                         order_item.trough_since_tsl_activation = bar_l_tsl_act_val_curr # Initialize trough
-                        sim_logger.info(f"   TSL Activated for SELL order {order_item.entry_idx} at price {bar_l_tsl_act_val_curr:.5f}")
+                        # [Patch AI Studio v4.9.41+] Guarded float format for TSL activation log (SELL)
+                        sim_logger.info(
+                            f"   TSL Activated for SELL order {order_item.entry_idx} at price {_float_fmt(bar_l_tsl_act_val_curr, 5)}"
+                        )
 
                 # Main Exit Conditions (SL, TP, MaxBars) - This now includes TSL/BE logic via _check_exit_conditions_for_order
                 if not order_item.closed:
@@ -4721,7 +4746,10 @@ def _run_backtest_simulation_v34_full(
                                 label_suffix=label, config_at_entry=config_obj
                             )
                             active_orders.append(new_order_instance_val_call)
-                            sim_logger.info(f"   +++ ORDER OPENED ({entry_type_open_val_call}): {side} Lot={final_lot_new_val_call:.2f} @{entry_price_new_val_call:.5f}, SL={original_sl_open_val_calc_call:.5f}, TP1={tp1_price_open_val_calc_val_call:.5f}, TP2={tp2_price_open_val_calc_final_call:.5f} Model: {model_key_open_val_call} Conf: {model_conf_open_val_call} +++")
+                            # [Patch AI Studio v4.9.41+] Guarded float format for order open log
+                            sim_logger.info(
+                                f"   +++ ORDER OPENED ({entry_type_open_val_call}): {side} Lot={_float_fmt(final_lot_new_val_call, 2)} @{_float_fmt(entry_price_new_val_call, 5)}, SL={_float_fmt(original_sl_open_val_calc_call, 5)}, TP1={_float_fmt(tp1_price_open_val_calc_val_call, 5)}, TP2={_float_fmt(tp2_price_open_val_calc_final_call, 5)} Model: {model_key_open_val_call} Conf: {model_conf_open_val_call} +++"
+                            )
 
                             # Log order details to df_sim
                             df_sim.loc[idx_bar, f"Order_Opened{label_suffix_df}"] = True
@@ -4743,7 +4771,13 @@ def _run_backtest_simulation_v34_full(
                             df_sim.loc[idx_bar, f"Entry_ADX{label_suffix_df}"] = new_order_instance_val_call.entry_adx
                             df_sim.loc[idx_bar, f"Entry_Volatility_Index{label_suffix_df}"] = new_order_instance_val_call.entry_volatility_index
                         else: # pragma: no cover
-                            blocked_order_log.append({"timestamp": now_bar, "reason": f"LOT_SIZE_MIN ({final_lot_new_val_call:.2f} < {config_obj.min_lot})", "side": side, "signal_score": row_data_bar.get('Signal_Score', 0.0)})
+                            # [Patch AI Studio v4.9.41+] Guarded float format for blocked order log
+                            blocked_order_log.append({
+                                "timestamp": now_bar,
+                                "reason": f"LOT_SIZE_MIN ({_float_fmt(final_lot_new_val_call, 2)} < {config_obj.min_lot})",
+                                "side": side,
+                                "signal_score": row_data_bar.get('Signal_Score', 0.0),
+                            })
                 elif block_reason_open_val_call != "ALLOWED" and block_reason_open_val_call != "NO_VALID_SIGNAL": # Log other block reasons
                     blocked_order_log.append({"timestamp": now_bar, "reason": block_reason_open_val_call, "side": side, "signal_score": row_data_bar.get('Signal_Score', 0.0)})
 
@@ -4806,7 +4840,10 @@ def _run_backtest_simulation_v34_full(
     else: # Should not happen if initialized correctly # pragma: no cover
         run_summary = { "error_in_loop": error_in_loop_runtime, "kill_switch_activated": kill_switch_activated_runtime, "final_risk_mode": current_risk_mode, "total_ib_lot_accumulator": 0.0 }
 
-    sim_logger.info(f"  (Finished) {label} ({side}) simulation complete. Final Equity: ${equity_tracker['current_equity']:.2f}")
+    # [Patch AI Studio v4.9.41+] Guarded float format for final equity log
+    sim_logger.info(
+        f"  (Finished) {label} ({side}) simulation complete. Final Equity: ${_float_fmt(equity_tracker['current_equity'], 2)}"
+    )
     gc.collect()
 
     return (
@@ -6823,21 +6860,25 @@ def run_backtest_simulation_v34(
 
     [Patch AI Studio v4.9.34+] Arguments must satisfy strict type requirements.
     """
-    if not isinstance(df_m1_segment_pd, pd.DataFrame):
+    # [Patch AI Studio v4.9.41+] Robust type guard for DataFrame input
+    if not _isinstance_safe(df_m1_segment_pd, pd.DataFrame):
         raise TypeError(
             "[Patch AI Studio v4.9.34+] df_m1_segment_pd must be pd.DataFrame, got %r"
             % type(df_m1_segment_pd)
         )
-    if not isinstance(label, str):
+    # [Patch AI Studio v4.9.41+] Robust type guard for label
+    if not _isinstance_safe(label, str):
         raise TypeError(
             "[Patch AI Studio v4.9.34+] label must be str, got %r" % type(label)
         )
-    if not isinstance(initial_capital_segment, (int, float)):
+    # [Patch AI Studio v4.9.41+] Robust type guard for initial_capital_segment
+    if not _isinstance_safe(initial_capital_segment, (int, float)):
         raise TypeError(
             "[Patch AI Studio v4.9.34+] initial_capital_segment must be numeric, got %r"
             % type(initial_capital_segment)
         )
-    if not isinstance(config_obj, StrategyConfig):
+    # [Patch AI Studio v4.9.41+] Robust type guard for config_obj
+    if not _isinstance_safe(config_obj, StrategyConfig):
         raise TypeError(
             "[Patch AI Studio v4.9.34+] config_obj must be StrategyConfig, got %r"
             % type(config_obj)
