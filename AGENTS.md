@@ -1,7 +1,7 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.48+
+**Version:** v4.9.49+
 **Project:** Gold AI (Enterprise Refactor)  
 **Maintainer:** AI Studio QA/Dev Team  
 **Last updated:** 2025-05-23
@@ -12,7 +12,7 @@
 
 | Agent                  | Main Role           | Responsibilities                                                                                                                              |
 |------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl, run_backtest_simulation_v34), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.48+]` |
+| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl, run_backtest_simulation_v34), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.49+]` |
 | **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                                 |
 | **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                                 |
 | **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                                         |
@@ -55,10 +55,10 @@
 ## 🔁 Patch Protocols & Version Control
 
 - **Explicit Versioning:**  
-  All patches/agent changes must log version (e.g., `v4.9.48+`) matching latest codebase.
+  All patches/agent changes must log version (e.g., `v4.9.49+`) matching latest codebase.
 
 - **Patch Logging:**  
-  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, `[v4.9.42+]`, `[v4.9.43+]`, `[v4.9.44+]`, `[v4.9.45+]`, `[v4.9.48+]`, etc.
+  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, `[v4.9.42+]`, `[v4.9.43+]`, `[v4.9.44+]`, `[v4.9.45+]`, `[v4.9.49+]`, etc.
   Any core logic change: notify relevant owners (GPT Dev, OMS_Guardian, ML_Innovator).
 
 - **Critical Constraints:**  
@@ -70,7 +70,7 @@
 
 ## 🧩 Agent Test Runner – QA Key Features
 
-**Version:** 4.9.48+
+**Version:** 4.9.49+
 **Purpose:** Validates Gold AI: robust import handling, dynamic mocking, complete unit test execution.
 
 **Capabilities:**
@@ -89,7 +89,8 @@
 - `[Patch AI Studio v4.9.45+]`: **Import error fixes, deferred GPU setup, and logging improvements for smoother CI/CD.**
 - `[Patch AI Studio v4.9.46+]`: **Initialize optional ML library flags to prevent UnboundLocalError across all modules.**
 - `[Patch AI Studio v4.9.47+]`: **Mock missing ML/TA libs for CI/CD tests**
-- `[Patch AI Studio v4.9.48+]`: **Add optuna.logging mock for CI/CD compatibility**
+ - `[Patch AI Studio v4.9.48+]`: **Add optuna.logging mock for CI/CD compatibility**
+ - `[Patch AI Studio v4.9.49+]`: **Robust Optuna logging compatibility for v3.x+ and mocked environments**
 - No dependencies beyond (`gold_ai2025.py`, `test_gold_ai.py`)
 
 ### 🧪 Mock Targets (for test_runner)
@@ -163,6 +164,10 @@ Release Note v4.9.47+ (Mock ML/TA libs for CI/CD)
 - Production logic unchanged; ensures pytest passes in minimal environments.
 Release Note v4.9.48+ (Optuna logging mock)
 - Added optuna.logging module to mocked optuna to ensure verbosity setup works.
+
+Release Note v4.9.49+ (Robust Optuna logging)
+- Added compatibility wrapper to safely call `optuna.logging.set_verbosity` or `optuna.set_verbosity`.
+- Logs every branch and warns if optuna is missing or mocked.
 
 
 ✅ QA Flow & Testing Requirements (v4.9.43+)

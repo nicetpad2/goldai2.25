@@ -1,6 +1,6 @@
 """Gold AI Test Suite
 
-[Patch AI Studio v4.9.48] - Validate global pandas availability, import fixes, and new return structure.
+[Patch AI Studio v4.9.49] - Validate global pandas availability, import fixes, and new return structure.
 """
 
 import importlib
@@ -60,7 +60,7 @@ except Exception:  # pragma: no cover - coverage library not installed
     cov = None
 
 
-# === [Patch AI Studio v4.9.48] - Mock missing ML/TA libs for CI/CD ===
+# === [Patch AI Studio v4.9.49] - Mock missing ML/TA libs for CI/CD ===
 import sys
 import types
 
