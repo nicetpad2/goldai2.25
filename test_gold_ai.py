@@ -12,6 +12,14 @@ import json
 import datetime
 import logging
 import tempfile
+try:
+    import numpy as np
+except Exception:  # pragma: no cover - numpy not installed
+    np = None
+try:
+    import pandas as pd
+except Exception:  # pragma: no cover - pandas not installed
+    pd = None
 from unittest.mock import patch, mock_open, MagicMock
 
 try:
@@ -76,6 +84,12 @@ def _create_mock_module(name: str) -> types.ModuleType:
             return data
         module.safe_load = safe_load  # type: ignore
     return module
+
+
+if np is None:
+    np = _create_mock_module("numpy")
+if pd is None:
+    pd = _create_mock_module("pandas")
 
 
 # Helper to avoid DataFrame truth ambiguity when extracting kwargs in tests
@@ -1753,6 +1767,196 @@ class TestRobustFormatAndTypeGuard(unittest.TestCase):
             tm.update_last_trade_time(pd_stub.NaT)
             tm.update_last_trade_time(float("nan"))
             tm.update_last_trade_time("not-a-date")
+
+
+# ---------------------------
+# Integration/E2E Test Fixture: Random DataFrame Generator
+# ---------------------------
+
+def gen_random_m1_df(length=100, trend="up", volatility=1.0, seed=42):
+    pytest.importorskip("pandas")
+    pytest.importorskip("numpy")
+    import pandas as pd
+    import numpy as np
+    np.random.seed(seed)
+    base = 1800
+    drift = np.linspace(0, 10 if trend == "up" else -10, length)
+    noise = np.random.randn(length) * volatility
+    close = base + drift + noise
+    open_ = close + np.random.randn(length) * 0.5
+    high = np.maximum(open_, close) + np.abs(np.random.rand(length) * 0.5)
+    low = np.minimum(open_, close) - np.abs(np.random.rand(length) * 0.5)
+    date = ["20230101"] * length
+    ts = pd.date_range("2023-01-01", periods=length, freq="min").strftime("%H:%M:%S")
+    return pd.DataFrame({
+        "Open": open_,
+        "High": high,
+        "Low": low,
+        "Close": close,
+        "Date": date,
+        "Timestamp": ts,
+    })
+
+
+# ---------------------------
+# Mock CatBoost & SHAP for ML inference coverage
+# ---------------------------
+
+class DummyCatBoostModel:
+    def fit(self, X, y):
+        return self
+
+    def predict(self, X):
+        return np.zeros(len(X))
+
+    def get_feature_importance(self, *a, **k):
+        return np.ones(X.shape[1])
+
+
+class DummySHAP:
+    def __init__(self, *a, **k):
+        pass
+
+    def shap_values(self, X):
+        return np.ones((len(X), X.shape[1]))
+
+
+# ---------------------------
+# Integration: Full pipeline + file export/reload
+# ---------------------------
+
+
+@pytest.mark.integration
+def test_full_e2e_backtest_and_export(tmp_path, monkeypatch):
+    pytest.importorskip("pandas")
+    pytest.importorskip("numpy")
+    from gold_ai2025 import (
+        load_data,
+        engineer_m1_features,
+        prepare_datetime,
+        StrategyConfig,
+        simulate_trades,
+        calculate_metrics,
+        run_backtest_simulation_v34,
+        run_all_folds_with_threshold,
+    )
+
+    df = gen_random_m1_df(50, trend="up", volatility=0.7)
+    data_csv = tmp_path / "random_gold.csv"
+    df.to_csv(data_csv, index=False)
+    df_loaded = load_data(str(data_csv))
+
+    df_feat = engineer_m1_features(df_loaded, StrategyConfig({}))
+    df_dt = prepare_datetime(df_feat, label="E2E")
+
+    config = StrategyConfig({"initial_capital": 1000, "risk_per_trade": 0.01})
+    res = simulate_trades(df_dt, config, side="BUY")
+    trade_log = res["trade_log"]
+
+    metrics = calculate_metrics(trade_log, side="BUY", fold_tag="e2e")
+    trade_csv = tmp_path / "trade_log.csv"
+    trade_log.to_csv(trade_csv, index=False)
+
+    reloaded_trade = pd.read_csv(trade_csv)
+    assert isinstance(metrics, dict)
+    assert reloaded_trade.shape[1] >= 8
+
+    summary_json = tmp_path / "summary.json"
+    import json
+
+    with open(summary_json, "w") as f:
+        json.dump(metrics, f)
+    with open(summary_json) as f:
+        loaded_metrics = json.load(f)
+    assert "net_profit" in loaded_metrics
+
+
+# ---------------------------
+# Integration: Multi-fold Walk-Forward Validation (param/split variation)
+# ---------------------------
+
+
+@pytest.mark.integration
+def test_run_wfv_multi_fold(monkeypatch):
+    pytest.importorskip("pandas")
+    pytest.importorskip("numpy")
+    from gold_ai2025 import run_all_folds_with_threshold, StrategyConfig
+
+    for splits, thresh in [(2, 0.3), (3, 0.5), (4, 0.7)]:
+        df = gen_random_m1_df(40 + splits * 10, trend="down" if splits % 2 == 0 else "up")
+        config = StrategyConfig({
+            "initial_capital": 1000,
+            "n_walk_forward_splits": splits,
+            "risk_per_trade": 0.01,
+        })
+
+        monkeypatch.setattr("gold_ai2025.CatBoostClassifier", lambda *a, **k: DummyCatBoostModel())
+        monkeypatch.setattr("gold_ai2025.shap", DummySHAP)
+        result = run_all_folds_with_threshold(df, config, l1_threshold=thresh, fund_name=f"TEST_{splits}")
+        assert "overall_metrics" in result
+        assert "fold_metrics" in result
+
+
+# ---------------------------
+# Integration: RiskManager, TradeManager, forced entry, spike guard
+# ---------------------------
+
+
+@pytest.mark.integration
+def test_risk_trade_manager_forced_entry_spike(monkeypatch):
+    pytest.importorskip("pandas")
+    pytest.importorskip("numpy")
+    from gold_ai2025 import (
+        StrategyConfig,
+        RiskManager,
+        TradeManager,
+        simulate_trades,
+        engineer_m1_features,
+        prepare_datetime,
+    )
+
+    df = gen_random_m1_df(30, trend="up", volatility=3.5)
+    df = engineer_m1_features(df, StrategyConfig({}))
+    df = prepare_datetime(df, label="RISK_TM")
+    config = StrategyConfig({
+        "initial_capital": 1000,
+        "risk_per_trade": 0.1,
+        "force_entry_on_signal": True,
+        "enable_spike_guard": True,
+        "spike_guard_threshold": 0.5,
+    })
+    tm = TradeManager(config)
+    rm = RiskManager(config)
+    result = simulate_trades(df, config, side="BUY", trade_manager_obj=tm, risk_manager_obj=rm)
+    log = result["trade_log"]
+    assert isinstance(log, pd.DataFrame)
+    assert (log["exit_reason"] == "FORCED_ENTRY").any() or log.shape[0] > 0
+
+
+# ---------------------------
+# Integration: ML path coverage (mock inference/catboost/shap)
+# ---------------------------
+
+
+@pytest.mark.integration
+def test_ml_inference_path(monkeypatch):
+    pytest.importorskip("pandas")
+    pytest.importorskip("numpy")
+    from gold_ai2025 import StrategyConfig, run_all_folds_with_threshold
+
+    df = gen_random_m1_df(20, trend="up")
+    config = StrategyConfig({
+        "initial_capital": 500,
+        "n_walk_forward_splits": 2,
+        "risk_per_trade": 0.02,
+        "use_catboost": True,
+        "use_shap": True,
+    })
+
+    monkeypatch.setattr("gold_ai2025.CatBoostClassifier", lambda *a, **k: DummyCatBoostModel())
+    monkeypatch.setattr("gold_ai2025.shap", DummySHAP)
+    res = run_all_folds_with_threshold(df, config, l1_threshold=0.33, fund_name="ML_E2E")
+    assert "overall_metrics" in res
 
 
 if __name__ == "__main__":
