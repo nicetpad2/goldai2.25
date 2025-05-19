@@ -12,7 +12,7 @@
 
 | Agent                  | Main Role           | Responsibilities                                                                                                                              |
 |------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.43+]`      |
+| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl, run_backtest_simulation_v34), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.43+]`      |
 | **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                                 |
 | **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                                 |
 | **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                                         |
@@ -85,7 +85,7 @@
 - `[Patch AI Studio v4.9.40+]`: Numeric formatter covers all edge/mock cases
 - `[Patch AI Studio v4.9.41+]`: DataFrame subclass/typeguard (production + test) and equity tracker bug fixes; robust equity history audit (TypeGuard Numeric)
 - `[Patch AI Studio v4.9.42+]`: **Global import patch/fix for pandas (pd) across all simulation and backtest functions (prevents UnboundLocalError in minimal/edge/CI runs)**
-- `[Patch AI Studio v4.9.43+]`: **Robust Numeric TypeGuard for equity_tracker['history'] in simulation/backtest (prevents TypeError: '<=' not supported between str and int)**
+- `[Patch AI Studio v4.9.43+]`: **run_backtest_simulation_v34 always returns dict for QA, CI, minimal/mocked tests and all production runner calls.**
 - No dependencies beyond (`gold_ai2025.py`, `test_gold_ai.py`)
 
 ### 🧪 Mock Targets (for test_runner)
@@ -101,6 +101,7 @@
 - `test_besl_trigger`
 - `test_simulate_trades_with_kill_switch_activation`
 - Edge/branch/typeguard for `_isinstance_safe`, minimal/None/NaT paths
+- **run_backtest_simulation_v34 minimal & full QA**
 
 ---
 
@@ -143,6 +144,7 @@ def _isinstance_safe(obj, expected_type):
         return False
     logging.error("[Patch AI Studio v4.9.40] _isinstance_safe: expected_type is not a valid type: %r, returning False.", expected_type)
     return False
+
 ✅ QA Flow & Testing Requirements (v4.9.43+)
 Coverage Target:
 All patches must bring test coverage to >90% for test_gold_ai.py + gold_ai2025.py (excluding placeholders).
