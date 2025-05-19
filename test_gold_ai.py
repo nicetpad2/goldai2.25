@@ -806,7 +806,8 @@ class TestEdgeCases(unittest.TestCase):
             "RSI": [50] * 10,
         })
         df.index = self.ga.pd.date_range("2023-01-01", periods=10, freq="min")
-        result = self.ga.run_backtest_simulation_v34(df)
+        cfg = self.ga.StrategyConfig({})
+        result = self.ga.run_backtest_simulation_v34(df, config_obj=cfg)
         self.assertIsInstance(result, dict)
         self.assertIn("trade_log", result)
         self.assertIn("run_summary", result)
@@ -1556,12 +1557,73 @@ class TestBranchAndErrorPathCoverage:
         res = ga.calculate_m15_trend_zone({}, ga.StrategyConfig({}), expected_type=None)
         assert getattr(res, "empty", True)
 
-    def test_calculate_m15_trend_zone_expected_type_guard(self):
+def test_calculate_m15_trend_zone_expected_type_guard(self):
         ga = safe_import_gold_ai()
         cfg = ga.StrategyConfig({})
         df = ga.pd.DataFrame()
         res = ga.calculate_m15_trend_zone(df, cfg, expected_type=[])
         assert getattr(res, "empty", True)
+
+
+def test_trade_manager_update_methods():
+    ga = safe_import_gold_ai()
+    pytest.importorskip("pandas")
+    import pandas as pd
+    cfg = ga.StrategyConfig({})
+    rm = ga.RiskManager(cfg)
+    tm = ga.TradeManager(cfg, rm)
+    test_timestamp = pd.Timestamp("2023-01-01")
+    tm.update_last_trade_time(test_timestamp)
+    assert tm.last_trade_time == test_timestamp
+    assert tm.risk_manager is rm
+
+
+def test_run_backtest_simulation_minimal():
+    ga = safe_import_gold_ai()
+    pytest.importorskip("pandas")
+    import pandas as pd
+    df = pd.DataFrame({
+        "Open": [1, 2, 3, 4, 5],
+        "High": [1, 2, 3, 4, 5],
+        "Low": [1, 2, 3, 4, 5],
+        "Close": [1, 2, 3, 4, 5],
+        "Date": ["20210101"] * 5,
+        "Timestamp": ["00:00:00"] * 5,
+    })
+    cfg = ga.StrategyConfig({})
+    result = ga.run_backtest_simulation_v34(df, config_obj=cfg)
+    assert isinstance(result, dict)
+    assert "trade_log" in result
+
+
+def test_calculate_metrics_minimal():
+    ga = safe_import_gold_ai()
+    pytest.importorskip("pandas")
+    import pandas as pd
+    trade_log_list = [{
+        "entry_idx": 0,
+        "entry_price": 1000,
+        "stop_loss": 995,
+        "take_profit": 1010,
+        "side": "BUY",
+        "exit_price": 1010,
+        "exit_reason": "TP",
+        "exit_idx": 0,
+        "exit_time": pd.Timestamp("2023-01-01 00:00:00"),
+        "pnl_usd_net": 10.0,
+    }]
+    result = ga.calculate_metrics(trade_log_list, fold_tag="minimal_test")
+    assert "num_tp" in result
+    assert result["num_tp"] == 1
+
+
+def test_safe_load_csv_auto_nonexistent(caplog):
+    ga = safe_import_gold_ai()
+    path = "file_that_does_not_exist.csv"
+    with caplog.at_level("ERROR"):
+        result = ga.safe_load_csv_auto(path)
+    assert result is None or (hasattr(result, "empty") and result.empty)
+    assert any("ไม่พบไฟล์" in rec.message for rec in caplog.records)
 
 
 if __name__ == "__main__":
