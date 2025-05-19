@@ -73,33 +73,34 @@ class DataLoadError(GoldAIError):
     """Raised when load_data fails."""
 
 
-# [Patch AI Studio v4.9.28] Robust isinstance for test/type-guard coverage
+# [Patch AI Studio v4.9.29] Robust isinstance for test/type-guard coverage
 def _isinstance_safe(obj, expected_type):
     """Safe isinstance wrapper for dynamic expected_type.
 
-    - expected_type can be a type, tuple of types, or an instance (fallback to type(expected_type)).
-    - If invalid expected_type, logs warning and returns False instead of raising TypeError.
+    [Patch AI Studio v4.9.29]
+    - If expected_type is not a type or tuple of types, logs an error and returns False.
+    - Handles exceptions from isinstance and logs them for debugging robustness.
     """
     import logging
     logger = logging.getLogger()
 
-    if isinstance(expected_type, type) or (
-        isinstance(expected_type, tuple) and all(isinstance(t, type) for t in expected_type)
-    ):
-        return isinstance(obj, expected_type)
-    elif expected_type is None:
-        logger.error("[Patch AI Studio v4.9.28] expected_type is None in _isinstance_safe. Returning False.")
-        return False
-    else:
+    if not isinstance(expected_type, (type, tuple)):
         logger.error(
-            f"[Patch AI Studio v4.9.28] expected_type argument for isinstance is not a type or tuple of types. Got: {expected_type} ({type(expected_type)}). Fallback to type(expected_type)."
+            "[Patch AI Studio v4.9.29] Invalid expected_type argument for isinstance: %r (type: %r). Returning False for robust test-path.",
+            expected_type,
+            type(expected_type),
         )
-        try:
-            fallback_type = type(expected_type)
-            return isinstance(obj, fallback_type)
-        except Exception as ex:
-            logger.error(f"[Patch AI Studio v4.9.28] _isinstance_safe fallback failed: {ex}")
-            return False
+        return False
+    try:
+        return isinstance(obj, expected_type)
+    except Exception as e:
+        logger.error(
+            "[Patch AI Studio v4.9.29] Exception in isinstance: %s | obj=%r | expected_type=%r",
+            e,
+            obj,
+            expected_type,
+        )
+        return False
 
 
 # --- Dummy Library Classes for Fallbacks ---
