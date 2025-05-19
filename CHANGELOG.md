@@ -8,5 +8,10 @@
 - Fixed argument order in `run_backtest_simulation_v34` and ensured side is parsed from kwargs.
 - Guarded `equity_tracker['current_equity']` comparison with numeric check and improved history update imports.
 
+## [v4.9.44+] - 2025-05-22
+- `run_backtest_simulation_v34` now returns a dictionary by default with keys matching production expectations.
+- Added optional `return_tuple=True` argument for legacy compatibility.
+- Updated documentation and version constants for enterprise QA.
+
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
