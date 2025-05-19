@@ -1,7 +1,7 @@
 
 """
 Gold AI Enterprise v4.9.x
-[Patch AI Studio v4.9.48] - [Import Flags Initialization]: initialize optional ML library flags to prevent UnboundLocalError across all modules.
+[Patch AI Studio v4.9.49] - [Import Flags Initialization]: initialize optional ML library flags to prevent UnboundLocalError across all modules.
 """
 
 # ==============================================================================
@@ -32,7 +32,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.48_RETURN_DICT"  # Updated version
+MINIMAL_SCRIPT_VERSION = "4.9.49_RETURN_DICT"  # Updated version
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -378,7 +378,7 @@ def import_core_libraries() -> None:
     global shap, GPUtil, psutil, torch
     global catboost_module, optuna_module, ta_module, shap_module, tqdm_module
 
-    # [Patch AI Studio v4.9.48+] Initialize flags/modules to avoid UnboundLocalError
+    # [Patch AI Studio v4.9.49+] Initialize flags/modules to avoid UnboundLocalError
     catboost_imported = False
     optuna_imported = False
     ta_imported = False
@@ -422,9 +422,24 @@ def import_core_libraries() -> None:
     optuna = try_import_with_install("optuna", success_flag_global_name="optuna_imported")
     if optuna_imported and optuna:
         try:
-            optuna.logging.set_verbosity(optuna.logging.WARNING)
+            # [Patch AI Studio v4.9.49+] Robust Optuna Logging Compatibility
+            if hasattr(optuna, "logging") and hasattr(optuna.logging, "set_verbosity"):
+                logger.info(
+                    "[Patch AI Studio v4.9.49+] Setting optuna.logging.set_verbosity(optuna.logging.WARNING)"
+                )
+                optuna.logging.set_verbosity(getattr(optuna.logging, "WARNING", 30))
+            elif hasattr(optuna, "set_verbosity"):
+                warning_level = getattr(getattr(optuna, "logging", optuna), "WARNING", 30)
+                logger.info(
+                    "[Patch AI Studio v4.9.49+] Setting optuna.set_verbosity() fallback (no optuna.logging)"
+                )
+                optuna.set_verbosity(warning_level)
+            else:
+                logger.warning(
+                    "[Patch AI Studio v4.9.49+] Optuna logging interface not found; skipping verbosity control."
+                )
         except Exception as e_optuna_log:
-            logger.warning(f"   (Warning) Could not set Optuna verbosity: {e_optuna_log}")
+            logger.warning(f"[Patch AI Studio v4.9.49+] Optuna logging not available or mock: {e_optuna_log}")
 
     CatBoostClassifier = None
     Pool = None
@@ -3016,8 +3031,26 @@ except ImportError:
     shap = None  # type: ignore
 try:
     import optuna
-    if optuna: # pragma: no cover
-        optuna.logging.set_verbosity(optuna.logging.WARNING) # Reduce Optuna's default verbosity
+    if optuna:  # pragma: no cover
+        try:
+            # [Patch AI Studio v4.9.49+] Robust Optuna Logging Compatibility
+            if hasattr(optuna, "logging") and hasattr(optuna.logging, "set_verbosity"):
+                logger.info(
+                    "[Patch AI Studio v4.9.49+] Setting optuna.logging.set_verbosity(optuna.logging.WARNING)"
+                )
+                optuna.logging.set_verbosity(getattr(optuna.logging, "WARNING", 30))
+            elif hasattr(optuna, "set_verbosity"):
+                warning_level = getattr(getattr(optuna, "logging", optuna), "WARNING", 30)
+                logger.info(
+                    "[Patch AI Studio v4.9.49+] Setting optuna.set_verbosity() fallback (no optuna.logging)"
+                )
+                optuna.set_verbosity(warning_level)
+            else:
+                logger.warning(
+                    "[Patch AI Studio v4.9.49+] Optuna logging interface not found; skipping verbosity control."
+                )
+        except Exception as e:
+            logger.warning(f"[Patch AI Studio v4.9.49+] Optuna logging not available or mock: {e}")
 except ImportError:
     optuna = None  # type: ignore
 
@@ -6982,7 +7015,7 @@ def run_backtest_simulation_v34(
 ) -> Any:
     """Run backtest simulation with explicit argument contract.
 
-    [Patch AI Studio v4.9.48+] Returns a dict by default for QA/production compatibility and fixes optional import edge cases.
+    [Patch AI Studio v4.9.49+] Returns a dict by default for QA/production compatibility and fixes optional import edge cases.
     Set ``return_tuple=True`` for legacy tuple output.
     """
     # [Patch AI Studio v4.9.42+] Robust pd import for test/CI edge case

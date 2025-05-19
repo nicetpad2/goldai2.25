@@ -30,6 +30,11 @@
 - Added mock submodule `optuna.logging` in `test_gold_ai.py` to prevent `AttributeError` when `optuna` is missing.
 - Updated version constants and documentation references.
 
+## [v4.9.49+] - 2025-05-23
+- Robust Optuna logging compatibility to handle missing `optuna.logging` attributes and support Optuna v3.x.
+- Logs all code paths and warnings when `optuna` is unavailable or mocked.
+- Updated version constants and documentation references.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
