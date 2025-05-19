@@ -149,6 +149,32 @@ def _float_fmt(val, ndigit: int = 3) -> str:
     """Backward compatible wrapper for ``safe_float_fmt``."""
     return safe_float_fmt(val, ndigit)
 
+# [Patch AI Studio v4.9.43+] Numeric type guard helper for simulation metrics
+def _safe_numeric(val: Any, default: float = 0.0, *, nan_as: Optional[float] = None, log_ctx: str = "") -> float:
+    """Convert ``val`` to float safely.
+
+    Handles strings, ``None``, pandas NA/NaT, and other objects. Returns
+    ``default`` or ``nan_as`` if conversion fails.
+    """
+    try:
+        import pandas as pd  # Local import for mocks
+        import numpy as np
+
+        if val is None or (hasattr(pd, "isna") and pd.isna(val)):
+            return nan_as if nan_as is not None else default
+        if isinstance(val, (int, float, np.integer, np.floating)):
+            return float(val)
+
+        conv = pd.to_numeric(val, errors="coerce")
+        if pd.isna(conv):
+            return nan_as if nan_as is not None else default
+        return float(conv)
+    except Exception as exc:  # pragma: no cover - unexpected types
+        logging.error(
+            f"[Patch AI Studio v4.9.43+] _safe_numeric: Failed in {log_ctx}: {exc}"
+        )
+        return nan_as if nan_as is not None else default
+
 
 def safe_isinstance(obj, typ):
     """[Patch AI Studio v4.9.37] Robust isinstance check supporting MagicMock."""
@@ -4405,13 +4431,11 @@ def close_trade(
     equity_tracker_dict_ct['current_equity'] += net_pnl_usd_ct_val
     equity_tracker_dict_ct['peak_equity'] = max(equity_tracker_dict_ct['peak_equity'], equity_tracker_dict_ct['current_equity'])
     if 'history' in equity_tracker_dict_ct and _isinstance_safe(equity_tracker_dict_ct['history'], dict):
-        try:
-            eq_val_hist = float(equity_tracker_dict_ct['current_equity'])
-        except Exception:
-            logging.error(
-                f"[Patch AI Studio v4.9.41] Non-numeric value in equity history: {equity_tracker_dict_ct['current_equity']} (type: {type(equity_tracker_dict_ct['current_equity'])})"
-            )
-            eq_val_hist = np.nan
+        eq_val_hist = _safe_numeric(
+            equity_tracker_dict_ct['current_equity'],
+            default=np.nan,
+            log_ctx="close_trade.history"
+        )
         equity_tracker_dict_ct['history'][exit_time] = eq_val_hist
 
     # Update run summary
@@ -4512,10 +4536,11 @@ def _run_backtest_simulation_v34_full(
     l1_threshold_run = meta_min_proba_thresh_override if meta_min_proba_thresh_override is not None else config_obj.meta_min_proba_thresh
     timeframe_m1_for_sim = config_obj.timeframe_minutes_m1
 
+    init_capital_safe = _safe_numeric(initial_capital_segment, default=0.0, log_ctx="init_capital")
     equity_tracker: Dict[str, Any] = {
-        'current_equity': initial_capital_segment,
-        'peak_equity': risk_manager_obj.dd_peak if risk_manager_obj.dd_peak is not None and risk_manager_obj.dd_peak >= initial_capital_segment else initial_capital_segment,
-        'history': {df_m1_segment_pd.index[0] if not df_m1_segment_pd.empty else pd.Timestamp.now(tz='UTC'): initial_capital_segment}
+        'current_equity': init_capital_safe,
+        'peak_equity': risk_manager_obj.dd_peak if risk_manager_obj.dd_peak is not None and risk_manager_obj.dd_peak >= init_capital_safe else init_capital_safe,
+        'history': {df_m1_segment_pd.index[0] if not df_m1_segment_pd.empty else pd.Timestamp.now(tz='UTC'): init_capital_safe}
     }
     if risk_manager_obj.dd_peak is None or risk_manager_obj.dd_peak < initial_capital_segment: # Ensure peak is at least initial capital
         risk_manager_obj.dd_peak = initial_capital_segment
@@ -4834,13 +4859,11 @@ def _run_backtest_simulation_v34_full(
             df_sim.loc[idx_bar, f"Max_Drawdown_At_Point{label_suffix_df}"] = max_drawdown_pct_overall
             df_sim.loc[idx_bar, f"Equity_Realistic{label_suffix_df}"] = equity_tracker['current_equity']
             df_sim.loc[idx_bar, f"Active_Order_Count{label_suffix_df}"] = len(active_orders)
-            try:
-                eq_val_hist_loop = float(equity_tracker['current_equity'])
-            except Exception:
-                logging.error(
-                    f"[Patch AI Studio v4.9.41] Non-numeric value in equity history: {equity_tracker['current_equity']} (type: {type(equity_tracker['current_equity'])})"
-                )
-                eq_val_hist_loop = np.nan
+            eq_val_hist_loop = _safe_numeric(
+                equity_tracker['current_equity'],
+                default=np.nan,
+                log_ctx="sim_loop.history"
+            )
             equity_tracker['history'][now_bar] = eq_val_hist_loop
 
             prev_risk_mode_loop = current_risk_mode
@@ -4886,37 +4909,25 @@ def _run_backtest_simulation_v34_full(
                     import numpy as np
                     import pandas as pd
 
-                    def _is_numeric(val):
-                        if val is None:
-                            return False
-                        if isinstance(val, (int, float, np.integer, np.floating)):
-                            return not (val is np.nan or (hasattr(val, 'isnan') and val.isnan()))
-                        if isinstance(val, (np.generic,)):
-                            return np.issubdtype(type(val), np.number)
-                        if isinstance(val, (pd.Timestamp, pd.Timedelta)):
-                            return False
-                        try:
-                            v = float(val)
-                            if np.isnan(v):
-                                return False
-                            return True
-                        except Exception:
-                            return False
-
-                    if _is_numeric(eq_value):
-                        eq_value = float(eq_value)
+                    eq_value = _safe_numeric(eq_value, default=np.nan, log_ctx="final.history")
+                    if not np.isnan(eq_value):
                         eq_is_valid = True
                         equity_tracker.setdefault("history", []).append(eq_value)
-                        peak = equity_tracker.get("peak_equity", eq_value)
-                        if _is_numeric(peak) and eq_value > float(peak):
+                        peak = _safe_numeric(equity_tracker.get("peak_equity", eq_value), default=eq_value, log_ctx="final.history.peak")
+                        if eq_value > peak:
                             equity_tracker["peak_equity"] = eq_value
                     else:
                         logging.warning(
-                            f"[Patch AI Studio v4.9.41+] Skipped non-numeric equity value in tracker history: {eq_value} (type={type(eq_value)})"
+                            f"[Patch AI Studio v4.9.41+] Skipped non-numeric equity value in tracker history: {equity_tracker.get('current_equity')} (type={type(equity_tracker.get('current_equity'))})"
                         )
             except Exception as e:
                 logging.error(f"[Patch AI Studio v4.9.41] Error updating equity_tracker['history']: {e}")
-            if equity_tracker['current_equity'] <= 0: # pragma: no cover
+            current_eq_safe = _safe_numeric(
+                equity_tracker.get('current_equity'),
+                default=0.0,
+                log_ctx="final.equity_check"
+            )
+            if current_eq_safe <= 0:  # pragma: no cover
                 try:
                     first_zero_idx_sim_df_val = df_sim[df_sim[equity_col_final_df_sim_val] <= 0].index[0]
                     df_sim.loc[first_zero_idx_sim_df_val:, equity_col_final_df_sim_val] = 0.0
@@ -6991,11 +7002,13 @@ def run_backtest_simulation_v34(
             "[Patch AI Studio v4.9.34+] config_obj must be StrategyConfig, got %r"
             % type(config_obj)
         )
+    side_arg = kwargs.pop("side", "BUY")
     return _run_backtest_simulation_v34_full(
         df_m1_segment_pd,
-        config_obj,
         label,
         initial_capital_segment,
+        side_arg,
+        config_obj,
         risk_manager_obj,
         trade_manager_obj,
         **kwargs,
