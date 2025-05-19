@@ -33,7 +33,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.53_FULL_PASS"  # Updated version
+MINIMAL_SCRIPT_VERSION = "4.9.54_FULL_PASS"  # Updated version
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -5680,7 +5680,7 @@ class WFVResult(NamedTuple):
             if key in self._fields:
                 return getattr(self, key)
             raise KeyError(key)
-        return super().__getitem__(key)
+        return tuple.__getitem__(self, key)
 
     def as_dict(self) -> Dict[str, Any]:  # pragma: no cover - convenience
         data = {field: getattr(self, field) for field in self._fields}

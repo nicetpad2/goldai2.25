@@ -59,6 +59,11 @@
 - `_run_backtest_simulation_v34_full` now imports numpy locally to avoid `UnboundLocalError`.
 - Version bumped to `4.9.53_FULL_PASS`.
 
+## [v4.9.54+] - 2025-05-27
+- Fixed `__class__` propagation issue in `WFVResult` when importing module on Python 3.11.
+- `__getitem__` now delegates to `tuple.__getitem__` to avoid runtime errors.
+- Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.54_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
