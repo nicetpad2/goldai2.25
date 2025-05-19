@@ -18,5 +18,9 @@
 - Enhanced logging for library installation and Colab detection.
 - Updated version constants and documentation references.
 
+## [v4.9.46+] - 2025-05-23
+- Initialized all optional ML library flags inside `import_core_libraries` to avoid `UnboundLocalError` across inference and backtest modules.
+- Updated documentation and version constants.
+
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.

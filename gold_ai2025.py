@@ -1,7 +1,7 @@
 
 """
 Gold AI Enterprise v4.9.x
-[Patch AI Studio v4.9.45] - [Import Fix + Return Dict Default]: `run_backtest_simulation_v34` now returns a dictionary by default with optional legacy tuple and improved import handling.
+[Patch AI Studio v4.9.46] - [Import Flags Initialization]: initialize optional ML library flags to prevent UnboundLocalError across all modules.
 """
 
 # ==============================================================================
@@ -32,7 +32,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.45_RETURN_DICT"  # Updated version
+MINIMAL_SCRIPT_VERSION = "4.9.46_RETURN_DICT"  # Updated version
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -376,6 +376,24 @@ def import_core_libraries() -> None:
     global pd, np, tqdm, ta, optuna
     global CatBoostClassifier, Pool, EShapCalcType, EFeaturesSelectionAlgorithm
     global shap, GPUtil, psutil, torch
+    global catboost_module, optuna_module, ta_module, shap_module, tqdm_module
+
+    # [Patch AI Studio v4.9.46+] Initialize flags/modules to avoid UnboundLocalError
+    catboost_imported = False
+    optuna_imported = False
+    ta_imported = False
+    shap_imported = False
+    tqdm_imported = False
+    gputil_imported = False
+    psutil_imported = False
+    torch_imported = False
+    pandas_imported = False
+    numpy_imported = False
+    catboost_module = None
+    optuna_module = None
+    ta_module = None
+    shap_module = None
+    tqdm_module = None
 
     logger.info("\n(Processing) Importing core libraries (with robust fallbacks)...")
     warnings.filterwarnings("ignore", category=UserWarning, module='sklearn')
@@ -6964,7 +6982,7 @@ def run_backtest_simulation_v34(
 ) -> Any:
     """Run backtest simulation with explicit argument contract.
 
-    [Patch AI Studio v4.9.45+] Returns a dict by default for QA/production compatibility and fixes optional import edge cases.
+    [Patch AI Studio v4.9.46+] Returns a dict by default for QA/production compatibility and fixes optional import edge cases.
     Set ``return_tuple=True`` for legacy tuple output.
     """
     # [Patch AI Studio v4.9.42+] Robust pd import for test/CI edge case
