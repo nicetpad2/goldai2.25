@@ -1493,17 +1493,35 @@ class TestBranchAndErrorPathCoverage:
 
     def test_tag_price_structure_patterns_empty(self):
         ga = safe_import_gold_ai()
-        df = ga.pd.DataFrame()
         config = ga.StrategyConfig({})
-        res = ga.tag_price_structure_patterns(df, config)
-        assert isinstance(res, ga.pd.DataFrame)
+        df = None  # input ผิด type
+        with pytest.raises(TypeError):
+            ga.tag_price_structure_patterns(df, config)
 
     def test_calculate_m15_trend_zone_empty(self):
         ga = safe_import_gold_ai()
-        df = ga.pd.DataFrame()
         config = ga.StrategyConfig({})
+        df = None  # input ผิด type
+        with pytest.raises(TypeError):
+            ga.calculate_m15_trend_zone(df, config)
+
+    def test_tag_price_structure_patterns_empty_df(self):
+        ga = safe_import_gold_ai()
+        config = ga.StrategyConfig({})
+        df = ga.pd.DataFrame()
+        res = ga.tag_price_structure_patterns(df, config)
+        assert isinstance(res, ga.pd.DataFrame)
+        assert getattr(res, "empty", True)
+        assert "Pattern_Label" in res.columns
+
+    def test_calculate_m15_trend_zone_empty_df(self):
+        ga = safe_import_gold_ai()
+        config = ga.StrategyConfig({})
+        df = ga.pd.DataFrame()
         res = ga.calculate_m15_trend_zone(df, config)
         assert isinstance(res, ga.pd.DataFrame)
+        assert getattr(res, "empty", True)
+        assert "Trend_Zone" in res.columns
 
     def test_tag_price_structure_patterns_type_guard(self):
         ga = safe_import_gold_ai()
