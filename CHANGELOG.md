@@ -40,6 +40,13 @@
 - Added `_robust_kwargs_guard` helper to absorb unexpected kwargs.
 - Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.50_FULL_PASS`.
 
+## [v4.9.51+] - 2025-05-24
+- Hotfix `prepare_datetime` uses `datetime.now()` correctly.
+- `run_all_folds_with_threshold` now accepts legacy argument order and provides
+  dummy defaults for missing objects.
+- Enhanced test TA mock with trend/momentum/volatility submodules.
+- Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.51_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.

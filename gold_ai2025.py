@@ -18,6 +18,7 @@ import importlib
 import logging
 import logging.handlers  # Keep for potential use in main()
 import datetime
+from datetime import datetime
 import time
 import warnings
 import traceback
@@ -32,7 +33,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.50_FULL_PASS"  # Updated version
+MINIMAL_SCRIPT_VERSION = "4.9.51_FULL_PASS"  # Updated version
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -1744,7 +1745,7 @@ def prepare_datetime(
                     if year_part_str:
                         try:
                             year_part = int(year_part_str)
-                            current_ce_year = datetime.datetime.now().year
+                            current_ce_year = datetime.now().year
                             if year_part > current_ce_year + 100:
                                 potential_be = True
                                 prep_dt_logger.debug(f"      [Converter] Potential BE year detected: {year_part} in '{date_str_sample}'")
@@ -1760,7 +1761,7 @@ def prepare_datetime(
                         if year_part_str_conv_inner.isdigit():
                             try:
                                 year_be_conv = int(year_part_str_conv_inner)
-                                current_ce_year_conv_inner = datetime.datetime.now().year
+                                current_ce_year_conv_inner = datetime.now().year
                                 if year_be_conv > current_ce_year_conv_inner + 100:
                                     year_ce_conv = year_be_conv - 543
                                     return str(year_ce_conv) + date_str_conv[4:]
@@ -5622,8 +5623,11 @@ def adjust_gain_z_threshold_by_drift(
 
 # --- Walk-Forward Orchestration (Refactored to use injected objects and config) ---
 def run_all_folds_with_threshold(
-    config_obj: 'StrategyConfig', risk_manager_obj: 'RiskManager', trade_manager_obj: 'TradeManager',  # type: ignore
-    df_m1_final_for_wfv: pd.DataFrame, output_dir_for_wfv: str,
+    config_obj: Any,
+    risk_manager_obj: Any = None,
+    trade_manager_obj: Optional['TradeManager'] = None,  # type: ignore
+    df_m1_final_for_wfv: Optional[pd.DataFrame] = None,
+    output_dir_for_wfv: Optional[str] = None,
     available_models_for_wfv: Optional[Dict[str, Any]] = None,
     model_switcher_func_for_wfv: Optional[Callable[[Dict[str, Any], Optional[Dict[str, Any]]], Tuple[Optional[str], Optional[float]]]] = None, # <<< MODIFIED: Type hint
     drift_observer_for_wfv: Optional[DriftObserver] = None, current_l1_threshold_override_for_wfv: Optional[float] = None,
@@ -5635,6 +5639,40 @@ def run_all_folds_with_threshold(
     if "l1_threshold" in kwargs:
         current_l1_threshold_override_for_wfv = kwargs.pop("l1_threshold")
     _robust_kwargs_guard(**kwargs)
+
+    # Legacy argument order support: (df, config, ...)
+    if df_m1_final_for_wfv is None and _isinstance_safe(config_obj, pd.DataFrame):
+        df_m1_final_for_wfv = config_obj
+        config_obj = risk_manager_obj
+        risk_manager_obj = None
+        wfv_logger.info("Detected legacy argument order; adjusted parameters.")
+
+    if trade_manager_obj is None:
+        class DummyTradeManager:
+            def __init__(self):
+                self.last_trade_time = None
+                self.consecutive_forced_losses = 0
+
+        trade_manager_obj = DummyTradeManager()
+        wfv_logger.warning("trade_manager_obj not provided; using dummy instance.")
+    if risk_manager_obj is None:
+        try:
+            risk_manager_obj = RiskManager(config_obj)
+            wfv_logger.warning("risk_manager_obj not provided; initialized new RiskManager.")
+        except NameError:
+            class DummyRiskManager:
+                def __init__(self):
+                    self.dd_peak = None
+                    self.soft_kill_active = False
+
+            risk_manager_obj = DummyRiskManager()
+            wfv_logger.warning("RiskManager class missing; using dummy instance.")
+    if df_m1_final_for_wfv is None:
+        wfv_logger.warning("df_m1_final_for_wfv not provided; using empty DataFrame.")
+        df_m1_final_for_wfv = pd.DataFrame()
+    if output_dir_for_wfv is None:
+        wfv_logger.warning("output_dir_for_wfv not provided; using '/tmp'.")
+        output_dir_for_wfv = "/tmp"
 
     n_splits_wfv = config_obj.n_walk_forward_splits
     initial_capital_wfv = config_obj.initial_capital
