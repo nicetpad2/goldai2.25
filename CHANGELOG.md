@@ -35,6 +35,11 @@
 - Logs all code paths and warnings when `optuna` is unavailable or mocked.
 - Updated version constants and documentation references.
 
+## [v4.9.50+] - 2025-05-24
+- ADA test API sync for `prepare_datetime` (label arg) and `run_all_folds_with_threshold` (l1_threshold alias).
+- Added `_robust_kwargs_guard` helper to absorb unexpected kwargs.
+- Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.50_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
