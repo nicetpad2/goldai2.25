@@ -18,7 +18,7 @@ pytest -v --cov=gold_ai2025 --cov-report=term-missing
 📝 Project Notes
 Patch Protocol:
 All logic patches and critical changes must log their version (e.g., [Patch AI Studio v4.9.42+]) in code and test logs per AGENTS.md.
-The latest patch `[Patch AI Studio v4.9.46+]` initializes all optional ML library flags to avoid `UnboundLocalError` during imports and maintains the default dictionary return for `run_backtest_simulation_v34`.
+The latest patch `[Patch AI Studio v4.9.47+]` mocks TA-related libraries in the test suite so CI/CD passes even without `ta`, `optuna`, or `catboost` installed.
 
 Type/Format Guards:
 Use only _isinstance_safe and _float_fmt as enforced by QA for all dynamic type or format operations.

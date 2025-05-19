@@ -19,8 +19,13 @@
 - Updated version constants and documentation references.
 
 ## [v4.9.46+] - 2025-05-23
+
 - Initialized all optional ML library flags inside `import_core_libraries` to avoid `UnboundLocalError` across inference and backtest modules.
 - Updated documentation and version constants.
+## [v4.9.47+] - 2025-05-23
+- Mocked missing ML/TA libraries (`ta`, `optuna`, `catboost`) in `test_gold_ai.py` to ensure CI/CD environments without these packages pass all tests.
+- Documentation and version constants updated.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
