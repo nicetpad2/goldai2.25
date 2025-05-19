@@ -728,7 +728,7 @@ class TestEdgeCases(unittest.TestCase):
         })
         df.index = self.ga.pd.date_range("2023-01-01", periods=2, freq="min")
         cfg = self.ga.StrategyConfig({"risk_per_trade": 0.01})
-        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         self.assertIsInstance(trade_log, list)
         self.assertIsInstance(equity_curve, list)
         self.assertIsInstance(run_summary, dict)
@@ -753,7 +753,7 @@ class TestEdgeCases(unittest.TestCase):
         }, index=self.ga.pd.date_range("2023-01-01", periods=4, freq="min"))
 
         cfg = self.ga.StrategyConfig({"risk_per_trade": 0.01})
-        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
 
         self.assertGreaterEqual(len(trade_log), 1)
         self.assertIn(trade_log[0]["exit_reason"], {"TP", "SL", "BE-SL"})
@@ -783,7 +783,7 @@ class TestEdgeCases(unittest.TestCase):
             "trailing_sl_distance": 1.5,
         })
 
-        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         self.assertEqual(len(trade_log), 1)
         self.assertIn(trade_log[0]["exit_reason"], {"TSL", "TP", "BE-SL", "SL"})
 
@@ -954,7 +954,7 @@ class TestWFVandLotSizing(unittest.TestCase):
             "reentry_cooldown_after_tp_minutes": 0,
             "initial_capital": 100.0,
         })
-        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         self.assertGreaterEqual(len(trade_log), 2)
         self.assertIn(trade_log[0]["exit_reason"], {"TP", "TSL", "BE-SL", "SL"})
         self.assertIn(trade_log[1]["exit_reason"], {"TP", "TSL", "BE-SL", "SL"})
@@ -1083,7 +1083,7 @@ class TestTP2AndBESL(unittest.TestCase):
             "default_sl_multiplier": 1.0,
         })
         df = generate_df_tp2_besl(self.ga.pd)
-        trade_log, equity, summary = self.ga.simulate_trades(df.copy(), cfg)
+        trade_log, equity, summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         self.assertGreaterEqual(len(trade_log), 1)
         self.assertIn(
             trade_log[0]["exit_reason"], {"TP", "SL", "PartialTP", "BE-SL"}
@@ -1115,7 +1115,7 @@ class TestTP2AndBESL(unittest.TestCase):
             "MACD_hist_smooth": [0.1] * 7,
             "RSI": [50] * 7,
         }, index=self.ga.pd.date_range("2023-01-01", periods=7, freq="min"))
-        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         print("=== trade_log for BE-SL debug ===")
         for t in trade_log:
             print(t)
@@ -1151,7 +1151,7 @@ class TestTP2AndBESL(unittest.TestCase):
             "partial_tp_move_sl_to_entry": True,
         })
 
-        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         self.assertTrue(any(t["exit_reason"] in {"TSL", "TP", "BE-SL"} for t in trade_log))
 
     def test_simulate_trades_with_kill_switch_activation(self):
@@ -1183,7 +1183,7 @@ class TestTP2AndBESL(unittest.TestCase):
 
         run_summary = {}
         try:
-            trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+            trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         except RuntimeError:
             run_summary["hard_kill_triggered"] = True
 
@@ -1243,7 +1243,7 @@ class TestWFVandLotSizingFix(unittest.TestCase):
             "reentry_cooldown_after_tp_minutes": 0,
             "initial_capital": 100.0,
         })
-        trade_log, equity_curve, summary = self.ga.simulate_trades(df.copy(), cfg)
+        trade_log, equity_curve, summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         self.assertEqual(len(trade_log), 2)
         # Accept TP or BE-SL as valid, since BE-SL can occur due to tight BE logic
         self.assertIn(trade_log[0]["exit_reason"], ["TP", "BE-SL"])
@@ -1278,7 +1278,7 @@ class TestWFVandLotSizingFix(unittest.TestCase):
             "risk_per_trade": 0.01,
         })
 
-        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         self.assertGreaterEqual(len(trade_log), 2)
         self.assertIn(trade_log[0]["exit_reason"], {"TP", "TSL", "BE-SL", "SL"})
         self.assertIn(trade_log[1]["exit_reason"], {"TP", "TSL", "BE-SL", "SL"})
@@ -1312,7 +1312,7 @@ class TestWFVandLotSizingFix(unittest.TestCase):
             "initial_capital": 100.0,
             "risk_per_trade": 0.01,
         })
-        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         self.assertGreaterEqual(len(trade_log), 2)
         exit_reasons = set(t['exit_reason'] for t in trade_log)
         self.assertTrue(all(reason in {"TP", "SL", "BE-SL", "TSL"} for reason in exit_reasons))
@@ -1346,7 +1346,7 @@ class TestWFVandLotSizingFix(unittest.TestCase):
             "initial_capital": 100.0,
             "risk_per_trade": 0.01,
         })
-        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         self.assertGreaterEqual(len(trade_log), 2)
         times = [t['entry_time'] for t in trade_log]
         self.assertEqual(len(times), len(set(times)))
