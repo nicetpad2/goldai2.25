@@ -1,7 +1,7 @@
 
 """
 Gold AI Enterprise v4.9.x
-[Patch AI Studio v4.9.44] - [Return Dict Default]: `run_backtest_simulation_v34` now returns a dictionary by default with optional legacy tuple.
+[Patch AI Studio v4.9.45] - [Import Fix + Return Dict Default]: `run_backtest_simulation_v34` now returns a dictionary by default with optional legacy tuple and improved import handling.
 """
 
 # ==============================================================================
@@ -32,7 +32,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.44_RETURN_DICT"  # Updated version
+MINIMAL_SCRIPT_VERSION = "4.9.45_RETURN_DICT"  # Updated version
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -6964,7 +6964,7 @@ def run_backtest_simulation_v34(
 ) -> Any:
     """Run backtest simulation with explicit argument contract.
 
-    [Patch AI Studio v4.9.44+] Returns a dict by default for QA/production compatibility.
+    [Patch AI Studio v4.9.45+] Returns a dict by default for QA/production compatibility and fixes optional import edge cases.
     Set ``return_tuple=True`` for legacy tuple output.
     """
     # [Patch AI Studio v4.9.42+] Robust pd import for test/CI edge case
