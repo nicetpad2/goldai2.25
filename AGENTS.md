@@ -1,10 +1,10 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.44+  
+**Version:** v4.9.45+
 **Project:** Gold AI (Enterprise Refactor)  
 **Maintainer:** AI Studio QA/Dev Team  
-**Last updated:** 2025-05-22
+**Last updated:** 2025-05-23
 
 ---
 
@@ -12,7 +12,7 @@
 
 | Agent                  | Main Role           | Responsibilities                                                                                                                              |
 |------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl, run_backtest_simulation_v34), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.44+]` |
+| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl, run_backtest_simulation_v34), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.45+]` |
 | **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                                 |
 | **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                                 |
 | **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                                         |
@@ -55,10 +55,10 @@
 ## 🔁 Patch Protocols & Version Control
 
 - **Explicit Versioning:**  
-  All patches/agent changes must log version (e.g., `v4.9.44+`) matching latest codebase.
+  All patches/agent changes must log version (e.g., `v4.9.45+`) matching latest codebase.
 
 - **Patch Logging:**  
-  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, `[v4.9.42+]`, `[v4.9.43+]`, `[v4.9.44+]`, etc.  
+  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, `[v4.9.42+]`, `[v4.9.43+]`, `[v4.9.44+]`, `[v4.9.45+]`, etc.
   Any core logic change: notify relevant owners (GPT Dev, OMS_Guardian, ML_Innovator).
 
 - **Critical Constraints:**  
@@ -70,7 +70,7 @@
 
 ## 🧩 Agent Test Runner – QA Key Features
 
-**Version:** 4.9.44+  
+**Version:** 4.9.45+
 **Purpose:** Validates Gold AI: robust import handling, dynamic mocking, complete unit test execution.
 
 **Capabilities:**
@@ -86,7 +86,7 @@
 - `[Patch AI Studio v4.9.41+]`: DataFrame subclass/typeguard (production + test) and equity tracker bug fixes; robust equity history audit (TypeGuard Numeric)
 - `[Patch AI Studio v4.9.42+]`: **Global import patch/fix for pandas (pd) across all simulation and backtest functions (prevents UnboundLocalError in minimal/edge/CI runs)**
 - `[Patch AI Studio v4.9.43+]`: **run_backtest_simulation_v34 always returns dict for QA, CI, minimal/mocked tests and all production runner calls.**
-- `[Patch AI Studio v4.9.44+]`: **Integration/E2E tests, random DataFrame generation, full pipeline export/reload, ML (CatBoost/SHAP) inference path coverage.**
+- `[Patch AI Studio v4.9.45+]`: **Import error fixes, deferred GPU setup, and logging improvements for smoother CI/CD.**
 - No dependencies beyond (`gold_ai2025.py`, `test_gold_ai.py`)
 
 ### 🧪 Mock Targets (for test_runner)
@@ -147,7 +147,7 @@ def _isinstance_safe(obj, expected_type):
     logging.error("[Patch AI Studio v4.9.40] _isinstance_safe: expected_type is not a valid type: %r, returning False.", expected_type)
     return False
 
-Release Note v4.9.44+ (QA/Integration Focus)
+Release Note v4.9.45+ (Import Error Fix & QA Improvements)
 All core logic, simulation, ML, WFV, risk/trade, file export/reload, and E2E/integration paths must be covered in test_gold_ai.py and verified by Execution_Test_Unit.
 
 New integration/E2E scenarios must use the @pytest.mark.integration marker, random DataFrame fixtures, and full pipeline validation (from load_data → feature engineering → simulate_trades → export/reload).

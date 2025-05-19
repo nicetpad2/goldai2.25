@@ -13,5 +13,10 @@
 - Added optional `return_tuple=True` argument for legacy compatibility.
 - Updated documentation and version constants for enterprise QA.
 
+## [v4.9.45+] - 2025-05-23
+- Fixed import errors for optional libraries and deferred GPU setup to main execution block.
+- Enhanced logging for library installation and Colab detection.
+- Updated version constants and documentation references.
+
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.

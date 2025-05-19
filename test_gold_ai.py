@@ -1,6 +1,6 @@
 """Gold AI Test Suite
 
-[Patch AI Studio v4.9.44] - Validate global pandas availability and new return structure.
+[Patch AI Studio v4.9.45] - Validate global pandas availability, import fixes, and new return structure.
 """
 
 import importlib
