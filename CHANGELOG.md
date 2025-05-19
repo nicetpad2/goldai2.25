@@ -54,6 +54,11 @@
 - Updated tests to provide dummy RiskManager to `TradeManager`.
 - Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.52_FULL_PASS`.
 
+## [v4.9.53+] - 2025-05-26
+- `run_all_folds_with_threshold` returns `WFVResult` supporting dict-style access.
+- `_run_backtest_simulation_v34_full` now imports numpy locally to avoid `UnboundLocalError`.
+- Version bumped to `4.9.53_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
