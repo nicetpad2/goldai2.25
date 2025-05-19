@@ -4,20 +4,20 @@
 **Version:** v4.9.42+  
 **Project:** Gold AI (Enterprise Refactor)  
 **Maintainer:** AI Studio QA/Dev Team  
-**Last updated:** 2025-05-20
+**Last updated:** 2025-05-21
 
 ---
 
 ## 🧠 Core AI Units
 
-| Agent                  | Main Role           | Responsibilities                                                                                                                     |
-|------------------------|--------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.42+]` |
-| **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                       |
-| **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                       |
-| **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                              |
-| **ML_Innovator**       | Advanced ML        | Researches SHAP, Meta Classifier, feature engineering, reinforcement learning                                                      |
-| **Model_Inspector**    | Model Diagnostics  | Checks overfitting, noise, data leakage, fallback correctness, metrics drift                                                       |
+| Agent                  | Main Role           | Responsibilities                                                                                                                         |
+|------------------------|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.42+]`|
+| **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                           |
+| **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                           |
+| **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                                   |
+| **ML_Innovator**       | Advanced ML        | Researches SHAP, Meta Classifier, feature engineering, reinforcement learning                                                           |
+| **Model_Inspector**    | Model Diagnostics  | Checks overfitting, noise, data leakage, fallback correctness, metrics drift                                                            |
 
 ---
 
@@ -143,6 +143,7 @@ def _isinstance_safe(obj, expected_type):
     logging.error("[Patch AI Studio v4.9.40] _isinstance_safe: expected_type is not a valid type: %r, returning False.", expected_type)
     return False
 ✅ QA Flow & Testing Requirements (v4.9.42+)
+
 Coverage Target:
 All patches must bring test coverage to >90% for test_gold_ai.py + gold_ai2025.py (excluding placeholders).
 
@@ -194,7 +195,7 @@ Production Constraints:
 
 Release Tagging:
 
-Release ทุกชุดต้องระบุ version ตรงกับ AGENTS.md/CHANGELOG.md (ตัวอย่าง: v4.9.41-enterprise, v4.9.42-rc1)
+Release ทุกชุดต้องระบุ version ตรงกับ AGENTS.md/CHANGELOG.md (ตัวอย่าง: v4.9.42-enterprise, v4.9.42-rc1)
 
 ตรวจสอบ version bump ในทุกไฟล์สำคัญ: AGENTS.md, CHANGELOG.md, gold_ai2025.py, test_gold_ai.py
 
@@ -237,7 +238,6 @@ Fail-safe Protocol:
 หากเจอ failed test case หรือ branch ไม่ถูก cover → patch/new test/rollback ทันที
 
 ห้าม deploy ถ้า coverage <90% หรือเจอ log typeguard, numeric error, หรือ DataFrame issue โดยไม่ได้รับการตรวจสอบและอนุมัติ
-
 Example CI/CD Pipeline (yaml sketch)
 stages:
   - test
