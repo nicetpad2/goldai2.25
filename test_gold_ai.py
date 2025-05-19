@@ -528,6 +528,7 @@ class TestGoldAI2025(unittest.TestCase):
         self.assertEqual(res, (False, False))
 
     def test_spike_guard_and_reentry(self):
+        import logging
         pd_dummy = self.gold_ai.DummyPandas()
         pd_dummy.isna = lambda x: x is None
         pd_dummy.notna = lambda x: not pd_dummy.isna(x)
@@ -537,7 +538,19 @@ class TestGoldAI2025(unittest.TestCase):
         cfg.spike_guard_score_threshold = 0.5
         cfg.spike_guard_london_patterns = ["Breakout"]
         row = {"spike_score": 0.6, "Pattern_Label": "Breakout"}
-        self.assertTrue(self.gold_ai.spike_guard_blocked(row, "London", cfg))
+        logging.getLogger("GoldAI_UnitTest").info(
+            "[Patch AI Studio v4.9.57+] Test spike_guard_blocked input: session=%s, row=%s, cfg.threshold=%.2f, allowed=%s",
+            "London",
+            row,
+            cfg.spike_guard_score_threshold,
+            cfg.spike_guard_london_patterns,
+        )
+        blocked = self.gold_ai.spike_guard_blocked(row, "London", cfg)
+        logging.getLogger("GoldAI_UnitTest").info(
+            "[Patch AI Studio v4.9.57+] spike_guard_blocked returned: %s",
+            blocked,
+        )
+        self.assertTrue(blocked)
         self.assertFalse(self.gold_ai.spike_guard_blocked(row, "Asia", cfg))
         cfg.use_reentry = True
         cfg.reentry_cooldown_bars = 3
@@ -1890,6 +1903,7 @@ def test_full_e2e_backtest_and_export(tmp_path, monkeypatch):
         calculate_metrics,
         run_backtest_simulation_v34,
         run_all_folds_with_threshold,
+        ensure_dataframe,
     )
 
     df = gen_random_m1_df(50, trend="up", volatility=0.7)
@@ -1903,10 +1917,15 @@ def test_full_e2e_backtest_and_export(tmp_path, monkeypatch):
     config = StrategyConfig({"initial_capital": 1000, "risk_per_trade": 0.01})
     res = simulate_trades(df_dt, config, side="BUY")
     trade_log = res["trade_log"]
-
     metrics = calculate_metrics(trade_log, side="BUY", fold_tag="e2e")
     trade_csv = tmp_path / "trade_log.csv"
+    # [Patch AI Studio v4.9.57+] Guard: ensure DataFrame before export
+    trade_log = ensure_dataframe(trade_log)
     trade_log.to_csv(trade_csv, index=False)
+    import logging
+    logging.getLogger("GoldAI_Export").info(
+        "[Patch AI Studio v4.9.57+] Export trade_log shape: %s", trade_log.shape
+    )
 
     reloaded_trade = pd.read_csv(trade_csv)
     assert isinstance(metrics, dict)
@@ -1966,6 +1985,7 @@ def test_risk_trade_manager_forced_entry_spike(monkeypatch):
         prepare_datetime,
     )
 
+    import logging
     df = gen_random_m1_df(30, trend="up", volatility=3.5)
     df = engineer_m1_features(df, StrategyConfig({}))
     df = prepare_datetime(df, label="RISK_TM")
@@ -1980,6 +2000,9 @@ def test_risk_trade_manager_forced_entry_spike(monkeypatch):
     rm = RiskManager(config)
     result = simulate_trades(df, config, side="BUY", trade_manager_obj=tm, risk_manager_obj=rm)
     log = result["trade_log"]
+    logging.getLogger("GoldAI_UnitTest").info(
+        "[Patch AI Studio v4.9.57+] Export trade_log shape: %s", log.shape if hasattr(log, "shape") else "N/A"
+    )
     assert isinstance(log, pd.DataFrame)
     assert (log["exit_reason"] == "FORCED_ENTRY").any() or log.shape[0] > 0
 

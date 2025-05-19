@@ -33,7 +33,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.56_FULL_PASS"  # [Patch AI Studio v4.9.56+] Fix simulate_trades/test contracts & kwargs guard
+MINIMAL_SCRIPT_VERSION = "4.9.57_FULL_PASS"  # [Patch AI Studio v4.9.57+] Ensure DataFrame export utility & logging
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -207,6 +207,22 @@ def _ensure_datetimeindex(df: pd.DataFrame, logger: Optional[logging.Logger] = N
         if not isinstance(df.index, pd.DatetimeIndex):
             _raise_or_warn("DataFrame index must be DatetimeIndex for backtest simulation.", logger=logger)
     return df
+
+
+# [Patch AI Studio v4.9.57+] Utility function: ensure_dataframe
+def ensure_dataframe(obj):
+    """
+    [Patch AI Studio v4.9.57+] Utility to ensure object is a pandas DataFrame for export.
+    Handles list-of-dict, dict, or DataFrame input.
+    """
+    import pandas as pd
+    if isinstance(obj, pd.DataFrame):
+        return obj
+    if isinstance(obj, list):
+        return pd.DataFrame(obj)
+    if isinstance(obj, dict):
+        return pd.DataFrame([obj])
+    return obj
 
 
 def safe_isinstance(obj, typ):
@@ -976,6 +992,7 @@ class StrategyConfig:
 class RiskManager:
     """
     Manages risk aspects like drawdown, kill switches, and soft kill switches.
+    [Patch AI Studio v4.9.57+] Add extensive debug/info log for all state transitions.
     """
 
     def __init__(self, config: StrategyConfig):
@@ -986,36 +1003,37 @@ class RiskManager:
         self.logger.info(f"RiskManager initialized. Hard Kill DD: {self.config.kill_switch_dd:.2%}, Soft Kill DD: {self.config.soft_kill_dd:.2%}")
 
     def update_drawdown(self, current_equity: float) -> float:
+        # [Patch AI Studio v4.9.57+] Add logging for all state transitions & edge-path
         if self.dd_peak is None or pd.isna(self.dd_peak):
             self.dd_peak = current_equity
-            self.logger.debug(f"Drawdown peak initialized to current equity: {current_equity:.2f}")
+            self.logger.info(f"[Patch AI Studio v4.9.57+] Drawdown peak initialized to current equity: {current_equity:.2f}")
 
         if pd.isna(current_equity):
-            self.logger.warning("Current equity is NaN in update_drawdown. Cannot calculate drawdown.")
+            self.logger.warning("[Patch AI Studio v4.9.57+] Current equity is NaN in update_drawdown. Cannot calculate drawdown.")
             return 0.0
 
         self.dd_peak = max(self.dd_peak, current_equity)
 
         if self.dd_peak <= 1e-9: # type: ignore
             drawdown = 0.0
-            self.logger.debug(f"Drawdown peak is near zero ({self.dd_peak:.2f}). Drawdown set to 0.") # type: ignore
+            self.logger.warning(f"[Patch AI Studio v4.9.57+] Drawdown peak is near zero ({self.dd_peak:.2f}). Drawdown set to 0.") # type: ignore
         else:
             drawdown = 1.0 - (current_equity / self.dd_peak) # type: ignore
 
-        self.logger.debug(f"Drawdown updated. Equity={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f}") # type: ignore
+        self.logger.info(f"[Patch AI Studio v4.9.57+] Drawdown updated. Equity={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f}") # type: ignore
 
         if drawdown >= self.config.soft_kill_dd:
             if not self.soft_kill_active:
-                self.logger.info(f"[RISK] Soft Kill Switch ACTIVATED. DD={drawdown:.4f} >= Threshold={self.config.soft_kill_dd:.4f}")
+                self.logger.critical(f"[Patch AI Studio v4.9.57+][RISK] Soft Kill Switch ACTIVATED. DD={drawdown:.4f} >= Threshold={self.config.soft_kill_dd:.4f}")
             self.soft_kill_active = True
         else:
             if self.soft_kill_active:
-                self.logger.info(f"[RISK] Soft Kill Switch DEACTIVATED. DD={drawdown:.4f} < Threshold={self.config.soft_kill_dd:.4f}")
+                self.logger.critical(f"[Patch AI Studio v4.9.57+][RISK] Soft Kill Switch DEACTIVATED. DD={drawdown:.4f} < Threshold={self.config.soft_kill_dd:.4f}")
             self.soft_kill_active = False
 
         if drawdown >= self.config.kill_switch_dd:
-            self.logger.critical(f"[RISK - KILL SWITCH] Max Drawdown Threshold Hit. Equity={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f}, Threshold={self.config.kill_switch_dd:.4f}") # type: ignore
-            raise RuntimeError(f"[KILL SWITCH] Max Drawdown Threshold Hit ({drawdown:.2%}). System Stopped.")
+            self.logger.critical(f"[Patch AI Studio v4.9.57+][RISK - KILL SWITCH] Max Drawdown Threshold Hit. Equity={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f}, Threshold={self.config.kill_switch_dd:.4f}") # type: ignore
+            raise RuntimeError(f"[Patch AI Studio v4.9.57+] [KILL SWITCH] Max Drawdown Threshold Hit ({drawdown:.2%}). System Stopped.")
         return drawdown
 
     def check_consecutive_loss_kill(self, consecutive_losses: int) -> bool:
@@ -3843,42 +3861,26 @@ def dynamic_tp2_multiplier(
 # <<< END OF MODIFIED [Patch] >>>
 
 # <<< MODIFIED: [Patch] Added new function spike_guard_blocked >>>
-def spike_guard_blocked(
-    row_data: pd.Series,
-    session_tag: str,
-    config: 'StrategyConfig'  # type: ignore
-) -> bool:
+def spike_guard_blocked(row, session: str, cfg) -> bool:
     """
-    Checks if a trade should be blocked by the Spike Guard, primarily during London session.
+    [Patch AI Studio v4.9.57+] Returns True if spike guard logic blocks trade, else False.
+    Enhanced debug logging for analysis.
     """
-    sg_logger = logging.getLogger(f"{__name__}.spike_guard_blocked")
-
-    # <<< MODIFIED: [Patch] Use getattr for config access >>>
-    if not getattr(config, 'enable_spike_guard', True):
+    logger = logging.getLogger("GoldAI.SpikeGuard")
+    # Robust edge guard
+    if not getattr(cfg, "enable_spike_guard", True):
+        logger.info("[Patch AI Studio v4.9.57+] Spike guard disabled by config.")
         return False
-
-    is_london_session_active = "london" in session_tag.lower()
-
-    if is_london_session_active:
-        spike_score = row_data.get('spike_score', 0.0)
-        pattern_label = str(row_data.get('Pattern_Label', 'Normal')) # Ensure it's a string
-        threshold = getattr(config, 'spike_guard_score_threshold', 0.75)
-        allowed_patterns = getattr(config, 'spike_guard_london_patterns', ["Breakout", "StrongTrend"])
-
-        sg_logger.debug(f"Spike Guard (London Active): Score={spike_score:.2f} (Thresh={threshold:.2f}), Pattern='{pattern_label}', AllowedPatterns={allowed_patterns}")
-
-        if not _isinstance_safe(allowed_patterns, list): # pragma: no cover
-            sg_logger.warning(f"spike_guard_london_patterns is not a list in config: {allowed_patterns}. Spike Guard may not function as expected.")
-            return False # Fail safe if config is malformed
-
-        if spike_score > threshold and pattern_label in allowed_patterns:
-            sg_logger.info(f"   [Spike Guard BLOCKED] Conditions met: SpikeScore ({spike_score:.2f}) > Threshold ({threshold:.2f}) AND Pattern ('{pattern_label}') in {allowed_patterns}.")
-            return True
-        else: # pragma: no cover
-            sg_logger.debug("   Spike Guard (London Active): Conditions not met for blocking.")
-    else: # pragma: no cover
-        sg_logger.debug(f"   Spike Guard: Not London session ('{session_tag}'). No blocking by this rule.")
-
+    score = row.get("spike_score", 0.0)
+    pattern = row.get("Pattern_Label", "")
+    threshold = getattr(cfg, "spike_guard_score_threshold", 0.75)
+    patterns = getattr(cfg, "spike_guard_london_patterns", ["Breakout"])
+    # Log current state for debug
+    logger.info(f"[Patch AI Studio v4.9.57+] Checking spike guard: session={session}, score={score}, threshold={threshold}, pattern={pattern}, allowed_patterns={patterns}")
+    if session == "London" and score >= threshold and pattern in patterns:
+        logger.warning(f"[Patch AI Studio v4.9.57+] Spike guard blocked! session={session}, score={score}, pattern={pattern}")
+        return True
+    logger.info(f"[Patch AI Studio v4.9.57+] Spike guard allowed: session={session}, score={score}, pattern={pattern}")
     return False
 # <<< END OF MODIFIED [Patch] >>>
 
@@ -6985,6 +6987,11 @@ def simulate_trades(
 
     [Patch AI Studio v4.9.54+] Returns a dict by default for easier QA
     consumption while preserving backward compatibility via ``return_tuple``.
+
+    Returns:
+        dict (default: {"trade_log": list, ...})
+        or tuple (if return_tuple=True): (trade_log, equity_curve, run_summary)
+    [Patch AI Studio v4.9.56+/57+] See docstring for output structure and export tips.
     """
     # PATCH [v4.9.52+] Absorb side and unused kwargs for test compatibility
     side_override = kwargs.pop("side", None)
