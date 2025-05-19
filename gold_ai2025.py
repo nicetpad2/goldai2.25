@@ -1981,23 +1981,9 @@ def tag_price_structure_patterns(
     import pandas as pd
 
     # PATCH: Robust type guard (v4.9.33) สำหรับ unit test & production
-    if not _isinstance_safe(df, pd.DataFrame):
+    if not _isinstance_safe(df, pd.DataFrame) or getattr(df, "empty", True):
         logging.error(
-            "[Patch AI Studio v4.9.33] tag_price_structure_patterns: Input is not of expected DataFrame type. Returning empty DataFrame for test compatibility."
-        )
-        empty_cols = [
-            "Pattern_Breakout",
-            "Pattern_Consolidation",
-            "Pattern_Pullback",
-            "Pattern_Reversal",
-            "Pattern_Spike",
-            "Pattern_Fakeout",
-        ]
-        return pd.DataFrame(columns=empty_cols)
-    # PATCH: สำหรับ DataFrame ว่าง ให้ return DataFrame ว่างที่มี column 'Pattern_Label'
-    if df.empty:
-        logging.info(
-            "[Patch AI Studio v4.9.30] tag_price_structure_patterns: Empty DataFrame input, returning empty DataFrame with columns ['Pattern_Label']."
+            "[Patch AI Studio v4.9.33] tag_price_structure_patterns: Input is not of expected DataFrame type or empty. Returning DataFrame with only ['Pattern_Label'] column for test compatibility."
         )
         return pd.DataFrame(columns=["Pattern_Label"])
     required_cols = ["High", "Low", "Close"]
@@ -2024,16 +2010,9 @@ def calculate_m15_trend_zone(
     import pandas as pd
 
     # PATCH: Robust type guard (v4.9.33) สำหรับ unit test & production
-    if not _isinstance_safe(df, pd.DataFrame):
+    if not _isinstance_safe(df, pd.DataFrame) or getattr(df, "empty", True):
         logging.error(
-            "[Patch AI Studio v4.9.33] calculate_m15_trend_zone: Input is not of expected DataFrame type. Returning empty DataFrame for test compatibility."
-        )
-        empty_cols = ["Trend_Zone", "Trend_Zone_Prob"]
-        return pd.DataFrame(columns=empty_cols)
-    # PATCH: สำหรับ DataFrame ว่าง ให้ return DataFrame ว่างที่มี column 'Trend_Zone'
-    if df.empty:
-        logging.info(
-            "[Patch AI Studio v4.9.30] calculate_m15_trend_zone: Empty DataFrame input, returning empty DataFrame with columns ['Trend_Zone']."
+            "[Patch AI Studio v4.9.33] calculate_m15_trend_zone: Input is not of expected DataFrame type or empty. Returning DataFrame with only ['Trend_Zone'] column for test compatibility."
         )
         return pd.DataFrame(columns=["Trend_Zone"])
     required_cols = ["High", "Low", "Close"]
