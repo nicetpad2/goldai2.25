@@ -887,12 +887,17 @@ class TradeManager:
         self.logger = logging.getLogger(f"{__name__}.TradeManager")
         self.logger.info(f"TradeManager initialized. FE Cooldown: {self.config.forced_entry_cooldown_minutes} min, FE Score: {self.config.forced_entry_score_min}, FE Max Losses: {self.config.forced_entry_max_consecutive_losses}")
 
-    def update_last_trade_time(self, trade_time: pd.Timestamp):
-        if pd.isna(trade_time):
-            self.logger.warning("Attempted to update last_trade_time with NaT.")
+    def update_last_trade_time(self, timestamp):
+        if timestamp is None or pd.isna(timestamp):
+            logging.warning(
+                "[Patch AI Studio v4.9.34+] Attempted to update last_trade_time with NaT/None. No update performed."
+            )
             return
-        self.last_trade_time = trade_time
-        self.logger.debug(f"Last trade time updated to: {self.last_trade_time}")
+        if not isinstance(timestamp, pd.Timestamp):
+            raise TypeError(
+                "[Patch AI Studio v4.9.34+] last_trade_time must be pd.Timestamp, got %r" % type(timestamp)
+            )
+        self.last_trade_time = timestamp
 
     def update_forced_entry_result(self, is_loss: bool):
         if is_loss:
@@ -4380,6 +4385,13 @@ def _run_backtest_simulation_v34_full(
     sim_logger = logging.getLogger(f"{__name__}.run_backtest_simulation_v34.{label}.{side}")
     sim_logger.info(f"--- Starting Backtest Simulation (v4.9.23 - AI Studio Patch v4.9.1): Label='{label}', Side='{side}', Fold={current_fold_index if current_fold_index is not None else 'N/A'} ---")
 
+    # [Patch AI Studio v4.9.34+] Defensive index validation
+    if not isinstance(df_m1_segment_pd.index, pd.DatetimeIndex):
+        logging.critical(
+            "[Patch AI Studio v4.9.34+] DataFrame index must be DatetimeIndex. Got: %r. Test/data pipeline must provide valid datetime index." % type(df_m1_segment_pd.index)
+        )
+        raise ValueError("DataFrame index must be DatetimeIndex for backtest simulation.")
+
     if config_obj is None: # pragma: no cover
         sim_logger.warning(f"[{label}] StrategyConfig (config_obj) not provided. Initializing with default empty config.")
         config_obj = StrategyConfig({})  # type: ignore
@@ -6747,13 +6759,47 @@ def calculate_metrics(trade_log: list, fold_tag: str = "") -> Dict[str, Any]:
     return metrics
 
 
-def run_backtest_simulation_v34(df_m1_segment_pd: pd.DataFrame, *args, **kwargs):
-    """Wrapper for unit tests; calls full engine when extra arguments are provided."""
-    if args or kwargs:
-        return _run_backtest_simulation_v34_full(df_m1_segment_pd, *args, **kwargs)
-    cfg = kwargs.get("config_obj", StrategyConfig({}))
-    trade_log, equity_curve, run_summary = simulate_trades(df_m1_segment_pd, cfg)
-    return {"trade_log": trade_log, "equity_curve": equity_curve, "run_summary": run_summary}
+def run_backtest_simulation_v34(
+    df_m1_segment_pd: pd.DataFrame,
+    config_obj: StrategyConfig,
+    label: str,
+    initial_capital_segment: float,
+    risk_manager_obj: Optional['RiskManager'] = None,
+    trade_manager_obj: Optional['TradeManager'] = None,
+    **kwargs,
+) -> Any:
+    """Run backtest simulation with explicit argument contract.
+
+    [Patch AI Studio v4.9.34+] Arguments must satisfy strict type requirements.
+    """
+    if not isinstance(df_m1_segment_pd, pd.DataFrame):
+        raise TypeError(
+            "[Patch AI Studio v4.9.34+] df_m1_segment_pd must be pd.DataFrame, got %r"
+            % type(df_m1_segment_pd)
+        )
+    if not isinstance(label, str):
+        raise TypeError(
+            "[Patch AI Studio v4.9.34+] label must be str, got %r" % type(label)
+        )
+    if not isinstance(initial_capital_segment, (int, float)):
+        raise TypeError(
+            "[Patch AI Studio v4.9.34+] initial_capital_segment must be numeric, got %r"
+            % type(initial_capital_segment)
+        )
+    if not isinstance(config_obj, StrategyConfig):
+        raise TypeError(
+            "[Patch AI Studio v4.9.34+] config_obj must be StrategyConfig, got %r"
+            % type(config_obj)
+        )
+    return _run_backtest_simulation_v34_full(
+        df_m1_segment_pd,
+        config_obj,
+        label,
+        initial_capital_segment,
+        risk_manager_obj,
+        trade_manager_obj,
+        **kwargs,
+    )
 
 
 # No functional code in this part for the current refactor.
