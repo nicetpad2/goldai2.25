@@ -793,7 +793,7 @@ class TestEdgeCases(unittest.TestCase):
             {"entry_idx": 1, "exit_reason": "SL", "pnl_usd_net": -10.0, "side": "SELL"},
             {"entry_idx": 2, "exit_reason": "BE-SL", "pnl_usd_net": 0.0, "side": "BUY"},
         ]
-        summary = self.ga.calculate_metrics(trades, fold_tag="test")
+        summary = self.ga.calculate_metrics(trades, fold_tag="test", side="BUY")  # [Patch AI Studio v4.9.56+] Test kwargs absorb
         self.assertEqual(summary["fold_tag"], "test")
         self.assertEqual(summary["num_trades"], 3)
         self.assertEqual(summary["num_tp"], 1)
@@ -1380,7 +1380,7 @@ class TestWFVandLotSizingFix(unittest.TestCase):
             "initial_capital": 100.0,
             "risk_per_trade": 0.01,
         })
-        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg)
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         self.assertTrue(all(t['exit_reason'] in {"BE-SL", "SL", "TP"} for t in trade_log))
 
 
