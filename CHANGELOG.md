@@ -76,6 +76,12 @@
 - Updated tests to request tuple output explicitly where required.
 - Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.56_FULL_PASS`.
 
+## [v4.9.57+] - 2025-05-27
+- Added `ensure_dataframe` utility for safe export of results.
+- Expanded logging in `RiskManager.update_drawdown` and `spike_guard_blocked`.
+- Updated tests to guard export serialization.
+- Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.57_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
