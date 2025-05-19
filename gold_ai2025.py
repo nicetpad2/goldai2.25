@@ -75,40 +75,26 @@ class DataLoadError(GoldAIError):
 
 # [Patch AI Studio v4.9.30] Robust isinstance for test/type-guard coverage
 def _isinstance_safe(obj, expected_type):
-    """Safe isinstance wrapper for dynamic expected_type.
+    """Safe ``isinstance`` wrapper that never raises ``TypeError``.
 
-    [Patch AI Studio v4.9.30] FINAL HOTFIX: Never raises TypeError. Always
-    returns False and logs if ``expected_type`` is not a type or tuple of types.
-    Handles unexpected exceptions for extra robustness.
+    [Patch AI Studio v4.9.32] Only accepts ``type`` or tuple of types for
+    ``expected_type`` and logs all errors for robust test paths.
     """
     import logging
     logger = logging.getLogger()
 
-    try:
-        if not isinstance(expected_type, (type, tuple)):
-            logger.error(
-                "[Patch AI Studio v4.9.30] Invalid expected_type argument for isinstance: %r (type: %r). Returning False for robust test-path.",
-                expected_type,
-                type(expected_type),
-            )
-            return False
-        try:
-            return isinstance(obj, expected_type)
-        except Exception as e:
-            logger.error(
-                "[Patch AI Studio v4.9.30] Exception in isinstance: %s | obj=%r | expected_type=%r",
-                e,
-                obj,
-                expected_type,
-            )
-            return False
-    except Exception as e:
+    # Robust guard: Only accept type/tuple of types as expected_type
+    if not isinstance(expected_type, (type, tuple)):
         logger.error(
-            "[Patch AI Studio v4.9.30] UNEXPECTED OUTER EXCEPTION in _isinstance_safe: %s | obj=%r | expected_type=%r",
-            e,
-            obj,
-            expected_type,
+            f"[Patch AI Studio v4.9.32] Invalid expected_type argument for isinstance: "
+            f"{repr(expected_type)} (type: {type(expected_type)}). "
+            f"Returning False for robust test-path."
         )
+        return False
+    try:
+        return isinstance(obj, expected_type)
+    except Exception as e:  # pragma: no cover - unexpected edge
+        logger.error(f"[Patch AI Studio v4.9.32] Exception in _isinstance_safe: {e}")
         return False
 
 
@@ -1988,19 +1974,19 @@ def rolling_zscore(series: pd.Series | Any, window: int, min_periods: int | None
 
 def tag_price_structure_patterns(
     df,
-    expected_type=None,
     strategy_config=None,
     label_col="Pattern_Label",
     **kwargs,
 ):
     import pandas as pd
 
-    # --- Robust type guard ---
-    if expected_type is not None:
-        if not _isinstance_safe(df, expected_type):
-            raise TypeError(
-                f"[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: {expected_type!r}"
-            )
+    # Force expected_type to pd.DataFrame (NEVER strategy_config object!)
+    expected_type = pd.DataFrame
+    if not _isinstance_safe(df, expected_type):
+        logging.error(
+            "[Patch] tag_price_structure_patterns: Input is not of expected DataFrame type."
+        )
+        return None
     required_cols = ["High", "Low", "Close"]
     if (
         df is None
@@ -2017,19 +2003,19 @@ def tag_price_structure_patterns(
 
 def calculate_m15_trend_zone(
     df,
-    expected_type=None,
     strategy_config=None,
     label_col="Trend_Zone",
     **kwargs,
 ):
     import pandas as pd
 
-    # --- Robust type guard ---
-    if expected_type is not None:
-        if not _isinstance_safe(df, expected_type):
-            raise TypeError(
-                f"[Patch] expected_type argument for isinstance is not a type or tuple of types. Got: {expected_type!r}"
-            )
+    # Force expected_type to pd.DataFrame (NEVER strategy_config object!)
+    expected_type = pd.DataFrame
+    if not _isinstance_safe(df, expected_type):
+        logging.error(
+            "[Patch] calculate_m15_trend_zone: Input is not of expected DataFrame type."
+        )
+        return None
     required_cols = ["High", "Low", "Close"]
     if (
         df is None

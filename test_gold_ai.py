@@ -1412,11 +1412,13 @@ class TestFeatureEngineeringCoverage:
 
     def test_tag_price_structure_patterns_missing_col(self):
         df = self.ga.pd.DataFrame({"Gain_Z": [1, -1]})
+        # config ไม่เกี่ยวกับ expected_type แล้ว ฟังก์ชันหลักจะ fix expected_type เอง
         res = self.ga.tag_price_structure_patterns(df, self.config)
         assert "Pattern_Label" in res.columns
 
     def test_calculate_m15_trend_zone_minimal(self):
         df = self.ga.pd.DataFrame({"Close": [1, 2, 3, 4, 5]})
+        # ฟังก์ชันหลักกำหนด expected_type เองแบบ DataFrame
         res = self.ga.calculate_m15_trend_zone(df, self.config)
         assert "Trend_Zone" in res.columns
 
