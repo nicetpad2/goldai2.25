@@ -33,7 +33,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.57_FULL_PASS"  # [Patch AI Studio v4.9.57+] Ensure DataFrame export utility & logging
+MINIMAL_SCRIPT_VERSION = "4.9.58_FULL_PASS"  # [Patch AI Studio v4.9.58+] Ensure DataFrame export utility & logging
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -209,10 +209,10 @@ def _ensure_datetimeindex(df: pd.DataFrame, logger: Optional[logging.Logger] = N
     return df
 
 
-# [Patch AI Studio v4.9.57+] Utility function: ensure_dataframe
+# [Patch AI Studio v4.9.58+] Utility function: ensure_dataframe
 def ensure_dataframe(obj):
     """
-    [Patch AI Studio v4.9.57+] Utility to ensure object is a pandas DataFrame for export.
+    [Patch AI Studio v4.9.58+] Utility to ensure object is a pandas DataFrame for export.
     Handles list-of-dict, dict, or DataFrame input.
     """
     import pandas as pd
@@ -992,7 +992,7 @@ class StrategyConfig:
 class RiskManager:
     """
     Manages risk aspects like drawdown, kill switches, and soft kill switches.
-    [Patch AI Studio v4.9.57+] Add extensive debug/info log for all state transitions.
+    [Patch AI Studio v4.9.58+] Guard all states, NaN, negative equity, None, and log every transition.
     """
 
     def __init__(self, config: StrategyConfig):
@@ -1003,37 +1003,42 @@ class RiskManager:
         self.logger.info(f"RiskManager initialized. Hard Kill DD: {self.config.kill_switch_dd:.2%}, Soft Kill DD: {self.config.soft_kill_dd:.2%}")
 
     def update_drawdown(self, current_equity: float) -> float:
-        # [Patch AI Studio v4.9.57+] Add logging for all state transitions & edge-path
-        if self.dd_peak is None or pd.isna(self.dd_peak):
-            self.dd_peak = current_equity
-            self.logger.info(f"[Patch AI Studio v4.9.57+] Drawdown peak initialized to current equity: {current_equity:.2f}")
-
-        if pd.isna(current_equity):
-            self.logger.warning("[Patch AI Studio v4.9.57+] Current equity is NaN in update_drawdown. Cannot calculate drawdown.")
-            return 0.0
-
+        # [Patch AI Studio v4.9.58+] Robust guard for None, NaN, negative, zero, infinite
+        if current_equity is None or (hasattr(pd, "isna") and pd.isna(current_equity)):
+            self.logger.warning("[Patch AI Studio v4.9.58+] current_equity is None/NaN in update_drawdown, forcing 0.0")
+            current_equity = 0.0
+        if current_equity < 0:
+            self.logger.warning("[Patch AI Studio v4.9.58+] current_equity is negative! Forcing to 0.0")
+            current_equity = 0.0
+        if self.dd_peak is None or (hasattr(pd, "isna") and pd.isna(self.dd_peak)) or self.dd_peak < 1e-9:
+            self.dd_peak = max(1.0, current_equity)
+            self.logger.info(f"[Patch AI Studio v4.9.58+] Drawdown peak initialized to {self.dd_peak:.2f}")
+        if self.dd_peak < current_equity:
+            self.logger.info(f"[Patch AI Studio v4.9.58+] New equity peak: {current_equity:.2f} > prev peak {self.dd_peak:.2f}")
         self.dd_peak = max(self.dd_peak, current_equity)
-
-        if self.dd_peak <= 1e-9: # type: ignore
+        if self.dd_peak <= 1e-9:
             drawdown = 0.0
-            self.logger.warning(f"[Patch AI Studio v4.9.57+] Drawdown peak is near zero ({self.dd_peak:.2f}). Drawdown set to 0.") # type: ignore
+            self.logger.warning(f"[Patch AI Studio v4.9.58+] Drawdown peak is zero or too small ({self.dd_peak:.6f}). Drawdown set to 0.")
         else:
-            drawdown = 1.0 - (current_equity / self.dd_peak) # type: ignore
-
-        self.logger.info(f"[Patch AI Studio v4.9.57+] Drawdown updated. Equity={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f}") # type: ignore
-
+            drawdown = 1.0 - (current_equity / self.dd_peak)
+            if drawdown < 0:
+                self.logger.warning(f"[Patch AI Studio v4.9.58+] Negative drawdown ({drawdown:.6f}) detected, forcing to 0.0.")
+                drawdown = 0.0
+        self.logger.info(f"[Patch AI Studio v4.9.58+] Drawdown updated: Equity={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f}")
+        if drawdown is None or (hasattr(pd, "isna") and pd.isna(drawdown)) or drawdown < 0 or drawdown > 10:
+            self.logger.error(f"[Patch AI Studio v4.9.58+] Invalid drawdown value detected: {drawdown}. Resetting to 0.0")
+            drawdown = 0.0
         if drawdown >= self.config.soft_kill_dd:
             if not self.soft_kill_active:
-                self.logger.critical(f"[Patch AI Studio v4.9.57+][RISK] Soft Kill Switch ACTIVATED. DD={drawdown:.4f} >= Threshold={self.config.soft_kill_dd:.4f}")
+                self.logger.critical(f"[Patch AI Studio v4.9.58+][RISK] Soft Kill ACTIVATED: DD={drawdown:.4f} >= {self.config.soft_kill_dd:.4f}")
             self.soft_kill_active = True
         else:
             if self.soft_kill_active:
-                self.logger.critical(f"[Patch AI Studio v4.9.57+][RISK] Soft Kill Switch DEACTIVATED. DD={drawdown:.4f} < Threshold={self.config.soft_kill_dd:.4f}")
+                self.logger.critical(f"[Patch AI Studio v4.9.58+][RISK] Soft Kill DEACTIVATED: DD={drawdown:.4f} < {self.config.soft_kill_dd:.4f}")
             self.soft_kill_active = False
-
         if drawdown >= self.config.kill_switch_dd:
-            self.logger.critical(f"[Patch AI Studio v4.9.57+][RISK - KILL SWITCH] Max Drawdown Threshold Hit. Equity={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f}, Threshold={self.config.kill_switch_dd:.4f}") # type: ignore
-            raise RuntimeError(f"[Patch AI Studio v4.9.57+] [KILL SWITCH] Max Drawdown Threshold Hit ({drawdown:.2%}). System Stopped.")
+            self.logger.critical(f"[Patch AI Studio v4.9.58+][RISK - KILL SWITCH] Max Drawdown Triggered! EQ={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f} >= {self.config.kill_switch_dd:.4f}")
+            raise RuntimeError(f"[Patch AI Studio v4.9.58+] [KILL SWITCH] Max Drawdown ({drawdown:.2%}) Triggered. System Stopped.")
         return drawdown
 
     def check_consecutive_loss_kill(self, consecutive_losses: int) -> bool:
@@ -1095,52 +1100,55 @@ class TradeManager:
     def should_force_entry(self, current_time: pd.Timestamp, signal_score: Optional[float],
                            current_atr: Optional[float], avg_atr: Optional[float],
                            gain_z: Optional[float], pattern_label: Optional[str]) -> bool:
+        import math
         if not self.config.enable_forced_entry:
+            self.logger.info("[Patch AI Studio v4.9.58+] Forced entry disabled by config.")
             return False
-
         if not self.risk_manager.is_trading_allowed():
-            self.logger.debug("[TRADE_MGR] Forced entry check: Trading currently blocked by RiskManager (Soft Kill).")
+            self.logger.debug("[Patch AI Studio v4.9.58+] Forced entry blocked: Soft Kill is active.")
             return False
-
         time_since_last_trade_minutes = float('inf')
-        if self.last_trade_time is not None and not pd.isna(self.last_trade_time):
-            if pd.isna(current_time):
-                self.logger.warning("[TRADE_MGR] Forced entry check: current_time is NaT. Cannot calculate time since last trade.")
+        if self.last_trade_time is not None and hasattr(pd, "isna") and not pd.isna(self.last_trade_time):
+            if hasattr(pd, "isna") and pd.isna(current_time):
+                self.logger.warning("[Patch AI Studio v4.9.58+] Forced entry check: current_time is NaT. Cannot calculate time since last trade.")
                 return False
             try:
                 time_since_last_trade_minutes = (current_time - self.last_trade_time).total_seconds() / 60.0
                 if time_since_last_trade_minutes < self.config.forced_entry_cooldown_minutes:
-                    self.logger.debug(f"[TRADE_MGR] Forced entry check: Cooldown active. {time_since_last_trade_minutes:.1f} min < {self.config.forced_entry_cooldown_minutes} min.")
+                    self.logger.debug(f"[Patch AI Studio v4.9.58+] Forced entry check: Cooldown {time_since_last_trade_minutes:.1f} min < {self.config.forced_entry_cooldown_minutes} min.")
                     return False
-            except TypeError as te: # pragma: no cover
-                self.logger.error(f"[TRADE_MGR] Forced entry check: TypeError calculating time_since_last_trade (current_time: {current_time}, last_trade_time: {self.last_trade_time}): {te}")
+            except Exception as te:
+                self.logger.error(f"[Patch AI Studio v4.9.58+] Forced entry: error calculating time_since_last_trade: {te}")
                 return False
         else:
-            self.logger.debug("[TRADE_MGR] Forced entry check: No last trade time recorded, cooldown condition met.")
-
-
-        if pd.isna(signal_score) or abs(signal_score if signal_score is not None else 0.0) < self.config.forced_entry_score_min:
-            self.logger.debug(f"[TRADE_MGR] Forced entry check: Signal score ({signal_score}) below threshold ({self.config.forced_entry_score_min}).")
+            self.logger.debug("[Patch AI Studio v4.9.58+] No last trade time, cooldown met.")
+        sscore = signal_score if signal_score is not None else 0.0
+        try:
+            sscore = float(sscore)
+        except Exception:
+            sscore = 0.0
+        if hasattr(math, "isnan") and math.isnan(sscore):
+            sscore = 0.0
+        if sscore < self.config.forced_entry_score_min:
+            self.logger.debug(f"[Patch AI Studio v4.9.58+] Forced entry: score {sscore} < min {self.config.forced_entry_score_min}")
             return False
-
         if self.consecutive_forced_losses >= self.config.forced_entry_max_consecutive_losses:
-            self.logger.info(f"[TRADE_MGR] Forced entry blocked: Max consecutive forced losses ({self.consecutive_forced_losses}) reached threshold ({self.config.forced_entry_max_consecutive_losses}).")
+            self.logger.info(f"[Patch AI Studio v4.9.58+] Forced entry blocked: Max consecutive forced losses {self.consecutive_forced_losses} >= {self.config.forced_entry_max_consecutive_losses}")
             return False
-
-        if pd.isna(current_atr) or pd.isna(avg_atr) or pd.isna(gain_z) or pd.isna(pattern_label):
-            self.logger.debug("[TRADE_MGR] Forced entry check: Market condition data (ATR, GainZ, Pattern) has NaNs. Skipping these specific market condition checks.")
+        if any([(v is None or (hasattr(pd, "isna") and pd.isna(v))) for v in [current_atr, avg_atr, gain_z, pattern_label]]):
+            self.logger.debug("[Patch AI Studio v4.9.58+] Forced entry: NaN in market data, skipping ATR/gain_z/pattern checks.")
         else:
             if avg_atr is not None and avg_atr > 1e-9 and current_atr is not None and (current_atr / avg_atr) > self.config.forced_entry_max_atr_mult:
-                self.logger.debug(f"[TRADE_MGR] Forced entry check: ATR ratio ({current_atr/avg_atr:.2f if avg_atr is not None and avg_atr > 1e-9 else 'N/A'}) above max ({self.config.forced_entry_max_atr_mult}).")
+                self.logger.debug(f"[Patch AI Studio v4.9.58+] Forced entry: ATR ratio ({current_atr/avg_atr:.2f}) > max {self.config.forced_entry_max_atr_mult}")
                 return False
             if gain_z is not None and abs(gain_z) < self.config.forced_entry_min_gain_z_abs:
-                self.logger.debug(f"[TRADE_MGR] Forced entry check: Abs Gain_Z ({abs(gain_z):.2f}) below min ({self.config.forced_entry_min_gain_z_abs}).")
+                self.logger.debug(f"[Patch AI Studio v4.9.58+] Forced entry: Abs Gain_Z {abs(gain_z):.2f} < min {self.config.forced_entry_min_gain_z_abs}")
                 return False
-            if pattern_label not in self.config.forced_entry_allowed_regimes:
-                self.logger.debug(f"[TRADE_MGR] Forced entry check: Pattern Label '{pattern_label}' not in allowed regimes {self.config.forced_entry_allowed_regimes}.")
+            regimes = getattr(self.config, "forced_entry_allowed_regimes", ["Normal", "Breakout", "StrongTrend"])
+            if pattern_label not in regimes:
+                self.logger.debug(f"[Patch AI Studio v4.9.58+] Forced entry: pattern '{pattern_label}' not in allowed {regimes}")
                 return False
-
-        self.logger.info(f"[TRADE_MGR] Conditions MET for Forced Entry. Time since last: {time_since_last_trade_minutes:.1f} min, Score: {signal_score:.2f if signal_score is not None else 'N/A'}")
+        self.logger.info(f"[Patch AI Studio v4.9.58+] Forced entry ALLOWED: \u0394t={time_since_last_trade_minutes:.1f} min, Score={sscore:.2f}")
         return True
 
 
@@ -3863,24 +3871,37 @@ def dynamic_tp2_multiplier(
 # <<< MODIFIED: [Patch] Added new function spike_guard_blocked >>>
 def spike_guard_blocked(row, session: str, cfg) -> bool:
     """
-    [Patch AI Studio v4.9.57+] Returns True if spike guard logic blocks trade, else False.
+    [Patch AI Studio v4.9.58+] Returns True if spike guard logic blocks trade, else False. Adds guard for None, NaN, unexpected input.
     Enhanced debug logging for analysis.
     """
     logger = logging.getLogger("GoldAI.SpikeGuard")
-    # Robust edge guard
+    if row is None or not isinstance(row, dict):
+        logger.error("[Patch AI Studio v4.9.58+] Invalid row input for spike_guard_blocked: %r", row)
+        return False
     if not getattr(cfg, "enable_spike_guard", True):
-        logger.info("[Patch AI Studio v4.9.57+] Spike guard disabled by config.")
+        logger.info("[Patch AI Studio v4.9.58+] Spike guard disabled by config.")
         return False
     score = row.get("spike_score", 0.0)
     pattern = row.get("Pattern_Label", "")
+    try:
+        score = float(score) if score is not None else 0.0
+    except Exception:
+        logger.warning("[Patch AI Studio v4.9.58+] score not convertible to float: %r", score)
+        score = 0.0
     threshold = getattr(cfg, "spike_guard_score_threshold", 0.75)
     patterns = getattr(cfg, "spike_guard_london_patterns", ["Breakout"])
-    # Log current state for debug
-    logger.info(f"[Patch AI Studio v4.9.57+] Checking spike guard: session={session}, score={score}, threshold={threshold}, pattern={pattern}, allowed_patterns={patterns}")
+    logger.info(f"[Patch AI Studio v4.9.58+] Checking spike guard: session={session}, score={score}, threshold={threshold}, pattern={pattern}, allowed_patterns={patterns}")
+    if not isinstance(patterns, list):
+        logger.warning("[Patch AI Studio v4.9.58+] patterns is not list: %r", patterns)
+        patterns = [patterns]
+    import math
+    if score is None or (hasattr(math, "isnan") and math.isnan(score)):
+        logger.warning("[Patch AI Studio v4.9.58+] score is None or NaN, treat as 0.0")
+        score = 0.0
     if session == "London" and score >= threshold and pattern in patterns:
-        logger.warning(f"[Patch AI Studio v4.9.57+] Spike guard blocked! session={session}, score={score}, pattern={pattern}")
+        logger.warning(f"[Patch AI Studio v4.9.58+] Spike guard blocked! session={session}, score={score}, pattern={pattern}")
         return True
-    logger.info(f"[Patch AI Studio v4.9.57+] Spike guard allowed: session={session}, score={score}, pattern={pattern}")
+    logger.info(f"[Patch AI Studio v4.9.58+] Spike guard allowed: session={session}, score={score}, pattern={pattern}")
     return False
 # <<< END OF MODIFIED [Patch] >>>
 
