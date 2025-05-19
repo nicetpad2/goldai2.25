@@ -1,10 +1,10 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.50+
+**Version:** v4.9.51+
 **Project:** Gold AI (Enterprise Refactor)  
 **Maintainer:** AI Studio QA/Dev Team  
-**Last updated:** 2025-05-23
+**Last updated:** 2025-05-24
 
 ---
 
@@ -12,7 +12,7 @@
 
 | Agent                  | Main Role           | Responsibilities                                                                                                                              |
 |------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl, run_backtest_simulation_v34), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.50+]` |
+| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl, run_backtest_simulation_v34), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.51+]` |
 | **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                                 |
 | **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                                 |
 | **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                                         |
@@ -55,10 +55,10 @@
 ## 🔁 Patch Protocols & Version Control
 
 - **Explicit Versioning:**  
-  All patches/agent changes must log version (e.g., `v4.9.50+`) matching latest codebase.
+  All patches/agent changes must log version (e.g., `v4.9.51+`) matching latest codebase.
 
 - **Patch Logging:**  
-  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, `[v4.9.42+]`, `[v4.9.43+]`, `[v4.9.44+]`, `[v4.9.45+]`, `[v4.9.49+]`, `[v4.9.50+]`, etc.
+  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, `[v4.9.42+]`, `[v4.9.43+]`, `[v4.9.44+]`, `[v4.9.45+]`, `[v4.9.49+]`, `[v4.9.50+]`, `[v4.9.51+]`, etc.
   Any core logic change: notify relevant owners (GPT Dev, OMS_Guardian, ML_Innovator).
 
 - **Critical Constraints:**  
@@ -70,7 +70,7 @@
 
 ## 🧩 Agent Test Runner – QA Key Features
 
-**Version:** 4.9.50+
+**Version:** 4.9.51+
 **Purpose:** Validates Gold AI: robust import handling, dynamic mocking, complete unit test execution.
 
 **Capabilities:**
@@ -168,6 +168,11 @@ Release Note v4.9.48+ (Optuna logging mock)
 Release Note v4.9.50+ (ADA test API sync)
 - Added compatibility wrapper to safely call `optuna.logging.set_verbosity` or `optuna.set_verbosity`.
 - Logs every branch and warns if optuna is missing or mocked.
+
+Release Note v4.9.51+ (Legacy WFV compat & TA mock)
+- Hotfix for `prepare_datetime` year detection using `datetime.now()`.
+- `run_all_folds_with_threshold` now accepts legacy args and auto-dummy objects.
+- Test suite uses expanded TA mock with submodules.
 
 
 ✅ QA Flow & Testing Requirements (v4.9.43+)

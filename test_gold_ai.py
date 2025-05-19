@@ -101,6 +101,38 @@ def _create_mock_module(name: str) -> types.ModuleType:
     if name == "optuna.logging":
         module.WARNING = 30
         module.set_verbosity = MagicMock(name="optuna.logging.set_verbosity")
+    if name == "ta":
+        trend = types.ModuleType("ta.trend")
+        momentum = types.ModuleType("ta.momentum")
+        volatility = types.ModuleType("ta.volatility")
+        class MACD:
+            def __init__(self, **kwargs):
+                pass
+            def macd(self):
+                return pd.Series([0]) if pd is not None else [0]
+            def macd_diff(self):
+                return pd.Series([0]) if pd is not None else [0]
+            def macd_signal(self):
+                return pd.Series([0]) if pd is not None else [0]
+        class RSIIndicator:
+            def __init__(self, **kwargs):
+                pass
+            def rsi(self):
+                return pd.Series([50]) if pd is not None else [50]
+        class ATR:
+            def __init__(self, **kwargs):
+                pass
+            def average_true_range(self):
+                return pd.Series([1.0]) if pd is not None else [1.0]
+        trend.MACD = MACD
+        momentum.RSIIndicator = RSIIndicator
+        volatility.ATR = ATR
+        module.trend = trend
+        module.momentum = momentum
+        module.volatility = volatility
+        sys.modules.setdefault("ta.trend", trend)
+        sys.modules.setdefault("ta.momentum", momentum)
+        sys.modules.setdefault("ta.volatility", volatility)
     return module
 
 
