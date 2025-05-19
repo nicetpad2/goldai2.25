@@ -4880,11 +4880,11 @@ def _run_backtest_simulation_v34_full(
             # [Patch AI Studio v4.9.41+] Robust equity_tracker history update (type-checked, audit log)
             try:
                 if equity_tracker is not None and isinstance(equity_tracker, dict):
+                    import numpy as np
+                    import pandas as pd
                     # Coerce equity value to float, ignore/skip non-numeric
                     eq_value = equity_tracker.get('current_equity', np.nan)
                     eq_is_valid = False
-                    import numpy as np
-                    import pandas as pd
 
                     def _is_numeric(val):
                         if val is None:
@@ -4916,11 +4916,17 @@ def _run_backtest_simulation_v34_full(
                         )
             except Exception as e:
                 logging.error(f"[Patch AI Studio v4.9.41] Error updating equity_tracker['history']: {e}")
-            if equity_tracker['current_equity'] <= 0: # pragma: no cover
+            current_eq_check = equity_tracker.get('current_equity')
+            if _is_numeric(current_eq_check) and float(current_eq_check) <= 0: # pragma: no cover
                 try:
                     first_zero_idx_sim_df_val = df_sim[df_sim[equity_col_final_df_sim_val] <= 0].index[0]
                     df_sim.loc[first_zero_idx_sim_df_val:, equity_col_final_df_sim_val] = 0.0
-                except IndexError: pass # No equity <= 0 found
+                except IndexError:
+                    pass  # No equity <= 0 found
+            elif not _is_numeric(current_eq_check):
+                logging.warning(
+                    f"[Patch AI Studio v4.9.43+] Non-numeric current_equity encountered: {current_eq_check}"
+                )
 
     if run_summary and _isinstance_safe(run_summary, dict):
         run_summary.update({ "error_in_loop": error_in_loop_runtime, "kill_switch_activated": kill_switch_activated_runtime, "final_risk_mode": current_risk_mode })
@@ -6991,11 +6997,13 @@ def run_backtest_simulation_v34(
             "[Patch AI Studio v4.9.34+] config_obj must be StrategyConfig, got %r"
             % type(config_obj)
         )
+    side_arg = kwargs.pop("side", "BUY")
     return _run_backtest_simulation_v34_full(
         df_m1_segment_pd,
-        config_obj,
         label,
         initial_capital_segment,
+        side_arg,
+        config_obj,
         risk_manager_obj,
         trade_manager_obj,
         **kwargs,
