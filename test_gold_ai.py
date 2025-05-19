@@ -1602,7 +1602,7 @@ def test_run_backtest_simulation_minimal():
             "Low": [1, 2, 3, 4, 5],
             "Close": [1, 2, 3, 4, 5],
         },
-        index=pd.date_range("2023-01-01", periods=5, freq="T"),
+        index=pd.date_range("2023-01-01", periods=5, freq="min"),
     )
     cfg = ga.StrategyConfig({})
     result = ga.run_backtest_simulation_v34(
