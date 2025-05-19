@@ -1585,8 +1585,10 @@ def test_trade_manager_update_methods():
     assert tm.last_trade_time == test_timestamp
     tm.update_last_trade_time(pd.NaT)
     assert tm.last_trade_time == test_timestamp
-    with pytest.raises(TypeError):
-        tm.update_last_trade_time("2023-01-01 00:00:00")
+    tm.update_last_trade_time("2023-01-02 00:00:00")
+    assert tm.last_trade_time == pd.Timestamp("2023-01-02 00:00:00")
+    tm.update_last_trade_time("nan")
+    assert tm.last_trade_time == pd.Timestamp("2023-01-02 00:00:00")
 
 
 def test_run_backtest_simulation_minimal():
@@ -1641,6 +1643,57 @@ def test_safe_load_csv_auto_nonexistent(caplog):
         result = ga.safe_load_csv_auto(path)
     assert result is None or (hasattr(result, "empty") and result.empty)
     assert any("ไม่พบไฟล์" in rec.message for rec in caplog.records)
+
+
+class TestRobustFormatAndTypeGuard(unittest.TestCase):
+    """[Patch AI Studio v4.9.40] Test robust _float_fmt, safe_isinstance, TradeManager.update_last_trade_time"""
+
+    def test_float_fmt_basic(self):
+        ga = safe_import_gold_ai()
+        _float_fmt = ga._float_fmt
+        self.assertEqual(_float_fmt(12.34567), "12.346")
+        self.assertEqual(_float_fmt("99.991"), "99.991")
+        self.assertEqual(_float_fmt(None), "None")
+        self.assertEqual(_float_fmt("foo"), "foo")
+
+    def test_safe_isinstance_with_type(self):
+        ga = safe_import_gold_ai()
+        safe_isinstance = ga.safe_isinstance
+        self.assertTrue(safe_isinstance(3, int))
+        self.assertTrue(safe_isinstance("x", str))
+        self.assertFalse(safe_isinstance(3, str))
+
+    def test_safe_isinstance_magicmock(self):
+        ga = safe_import_gold_ai()
+        safe_isinstance = ga.safe_isinstance
+        class FakeDF:
+            columns = []
+            index = []
+        mock_df = FakeDF()
+        MagicMockClass = type("MagicMock", (object,), {})
+        mock_typ = MagicMockClass()
+        self.assertTrue(safe_isinstance(mock_df, mock_typ))
+
+    def test_trade_manager_update_last_trade_time(self):
+        pytest.importorskip("pandas")
+        ga = safe_import_gold_ai()
+        TradeManager = ga.TradeManager
+        RiskManager = ga.RiskManager
+        StrategyConfig = ga.StrategyConfig
+        import pandas as pd
+        cfg = StrategyConfig({})
+        rm = RiskManager(cfg)
+        tm = TradeManager(cfg, rm)
+        tm.update_last_trade_time(pd.Timestamp("2023-01-01 00:00:00"))
+        self.assertEqual(tm.last_trade_time, pd.Timestamp("2023-01-01 00:00:00"))
+        tm.update_last_trade_time(None)
+        self.assertEqual(tm.last_trade_time, pd.Timestamp("2023-01-01 00:00:00"))
+        tm.update_last_trade_time("2023-01-02 00:00:00")
+        self.assertEqual(tm.last_trade_time, pd.Timestamp("2023-01-02 00:00:00"))
+        tm.update_last_trade_time("nan")
+        self.assertEqual(tm.last_trade_time, pd.Timestamp("2023-01-02 00:00:00"))
+        tm.update_last_trade_time(1672531200000)
+        # Accept parse or skip if parsing fails
 
 
 if __name__ == "__main__":

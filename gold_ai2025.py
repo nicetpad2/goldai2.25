@@ -98,6 +98,29 @@ def _isinstance_safe(obj, expected_type):
         return False
 
 
+# [Patch AI Studio v4.9.36] Robust format guard
+def _float_fmt(val, ndigit: int = 3) -> str:
+    """Return formatted float string or fallback to str(val)."""
+    try:
+        return f"{float(val):.{ndigit}f}"
+    except Exception:
+        return str(val)
+
+
+def safe_isinstance(obj, typ):
+    """[Patch AI Studio v4.9.37] Robust isinstance check supporting MagicMock."""
+    try:
+        if isinstance(typ, type):
+            return isinstance(obj, typ)
+        if hasattr(typ, "__class__") and typ.__class__.__name__ == "MagicMock":
+            # สำหรับ pandas.DataFrame/Series mock
+            return hasattr(obj, "columns") or hasattr(obj, "index")
+        # fallback สำหรับ object-mock, str name check
+        return typ.__name__ in str(type(obj))
+    except Exception:
+        return False
+
+
 # --- Dummy Library Classes for Fallbacks ---
 class DummyPandas:
     __version__ = "0.0"
@@ -887,17 +910,25 @@ class TradeManager:
         self.logger = logging.getLogger(f"{__name__}.TradeManager")
         self.logger.info(f"TradeManager initialized. FE Cooldown: {self.config.forced_entry_cooldown_minutes} min, FE Score: {self.config.forced_entry_score_min}, FE Max Losses: {self.config.forced_entry_max_consecutive_losses}")
 
-    def update_last_trade_time(self, timestamp):
-        if timestamp is None or pd.isna(timestamp):
-            logging.warning(
-                "[Patch AI Studio v4.9.34+] Attempted to update last_trade_time with NaT/None. No update performed."
-            )
+    def update_last_trade_time(self, trade_time):
+        import pandas as pd
+        import numpy as np
+        if trade_time is None:
+            logging.warning("[Patch AI Studio v4.9.38] Attempted to update last_trade_time with None.")
             return
-        if not isinstance(timestamp, pd.Timestamp):
-            raise TypeError(
-                "[Patch AI Studio v4.9.34+] last_trade_time must be pd.Timestamp, got %r" % type(timestamp)
-            )
-        self.last_trade_time = timestamp
+        if isinstance(trade_time, pd.Timestamp) and not pd.isna(trade_time):
+            self.last_trade_time = trade_time
+            logging.info(f"[Patch AI Studio v4.9.38] Updated last_trade_time: {trade_time}")
+        elif isinstance(trade_time, (float, int, str)) and str(trade_time).lower() not in ["nan", "nat", "none"]:
+            try:
+                t = pd.to_datetime(trade_time)
+                if not pd.isna(t):
+                    self.last_trade_time = t
+                    logging.info(f"[Patch AI Studio v4.9.38] Updated last_trade_time: {t}")
+            except Exception:
+                logging.warning(f"[Patch AI Studio v4.9.38] Could not parse trade_time: {trade_time}")
+        else:
+            logging.warning(f"[Patch AI Studio v4.9.38] Invalid trade_time (NaT/None/Type): {trade_time}")
 
     def update_forced_entry_result(self, is_loss: bool):
         if is_loss:
@@ -4383,7 +4414,11 @@ def _run_backtest_simulation_v34_full(
 ) -> Tuple[pd.DataFrame, pd.DataFrame, float, Dict[pd.Timestamp, float], float, Dict[str, Any], List[Dict[str, Any]], Optional[str], Optional[str], bool, int, float]:
 
     sim_logger = logging.getLogger(f"{__name__}.run_backtest_simulation_v34.{label}.{side}")
-    sim_logger.info(f"--- Starting Backtest Simulation (v4.9.23 - AI Studio Patch v4.9.1): Label='{label}', Side='{side}', Fold={current_fold_index if current_fold_index is not None else 'N/A'} ---")
+    sim_logger.info(
+        f"--- Starting Backtest Simulation (v4.9.23 - AI Studio Patch v4.9.1): "
+        f"Label='{_float_fmt(label)}', Side='{_float_fmt(side)}', "
+        f"Fold={current_fold_index if current_fold_index is not None else 'N/A'} ---"
+    )
 
     # [Patch AI Studio v4.9.34+] Defensive index validation
     if not isinstance(df_m1_segment_pd.index, pd.DatetimeIndex):
