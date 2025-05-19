@@ -131,15 +131,15 @@ class DummyPandas:
 
             @staticmethod
             def is_numeric_dtype(val):
-                return isinstance(val, (int, float))
+                return _isinstance_safe(val, (int, float))
 
             @staticmethod
             def is_integer_dtype(val):
-                return isinstance(val, int)
+                return _isinstance_safe(val, int)
 
             @staticmethod
             def is_float_dtype(val):
-                return isinstance(val, float)
+                return _isinstance_safe(val, float)
 
 
 class DummyNumpy:
@@ -161,7 +161,7 @@ class DummyNumpy:
         return 0.0
 
     def abs(self, val):
-        return abs(val) if isinstance(val, (int, float)) else ([abs(x) for x in val] if isinstance(val, list) else 0)
+        return abs(val) if _isinstance_safe(val, (int, float)) else ([abs(x) for x in val] if _isinstance_safe(val, list) else 0)
 
     def where(self, condition, x, y):
         return [x_val if c else y_val for c, x_val, y_val in zip(condition, x, y)]
@@ -182,7 +182,7 @@ class DummyNumpy:
         return 0 if val == 0 else (1 if val > 0 else -1)
 
     def clip(self, arr, min_val, max_val):
-        return [max(min_val, min(x, max_val)) for x in arr] if isinstance(arr, list) else max(min_val, min(arr, max_val))
+        return [max(min_val, min(x, max_val)) for x in arr] if _isinstance_safe(arr, list) else max(min_val, min(arr, max_val))
 
     class errstate:
         def __init__(self, **kwargs):
@@ -979,7 +979,7 @@ def load_config_from_yaml(path: str = "config.yaml") -> StrategyConfig:
 
 # --- Holding Period Exit Function ---
 def should_exit_due_to_holding(current_bar_idx: int, entry_bar_idx: int, max_holding_bars_config: Optional[int]) -> bool:
-    if max_holding_bars_config is None or not isinstance(max_holding_bars_config, int) or max_holding_bars_config <= 0:
+    if max_holding_bars_config is None or not _isinstance_safe(max_holding_bars_config, int) or max_holding_bars_config <= 0:
         return False
     return (current_bar_idx - entry_bar_idx) >= max_holding_bars_config
 
@@ -1166,7 +1166,7 @@ def safe_load_csv_auto(file_path: str) -> pd.DataFrame | None:
     read_csv_kwargs = {"index_col": 0, "parse_dates": False, "low_memory": False}
     load_logger = logging.getLogger(f"{__name__}.safe_load_csv_auto")
 
-    if not isinstance(file_path, str) or not file_path:
+    if not _isinstance_safe(file_path, str) or not file_path:
         load_logger.error("         (Error) Invalid file path provided to safe_load_csv_auto.")
         return None
 
@@ -1196,17 +1196,17 @@ def simple_converter(o):
     Converts numpy/pandas types for JSON serialization.
     """
     json_logger = logging.getLogger(f"{__name__}.simple_converter")
-    if isinstance(o, np.integer): return int(o)
-    if isinstance(o, (np.floating, float)): # type: ignore
+    if _isinstance_safe(o, np.integer): return int(o)
+    if _isinstance_safe(o, (np.floating, float)): # type: ignore
         if np.isnan(o): return None
         if np.isinf(o): return "Infinity" if o > 0 else "-Infinity"
         return float(o)
-    if isinstance(o, pd.Timestamp): return o.isoformat()
-    if isinstance(o, np.bool_): return bool(o)
+    if _isinstance_safe(o, pd.Timestamp): return o.isoformat()
+    if _isinstance_safe(o, np.bool_): return bool(o)
     if pd.isna(o): return None
-    if isinstance(o, (datetime.datetime, datetime.date)): return o.isoformat()
+    if _isinstance_safe(o, (datetime.datetime, datetime.date)): return o.isoformat()
     try:
-        if isinstance(o, (str, bool, list, dict, type(None))):
+        if _isinstance_safe(o, (str, bool, list, dict, type(None))):
             json.dumps(o) # Test serialization
             return o
         str_representation = str(o)
@@ -1253,9 +1253,9 @@ def safe_set_datetime(df: pd.DataFrame, idx, col: str, val):
     dt_logger = logging.getLogger(f"{__name__}.safe_set_datetime")
     try:
         dt_value_orig = pd.to_datetime(val, errors='coerce')
-        dt_logger.debug(f"   [safe_set_datetime] Input val='{val}', Original dt_value='{dt_value_orig}' (type: {type(dt_value_orig)}, tz: {dt_value_orig.tzinfo if isinstance(dt_value_orig, pd.Timestamp) else 'N/A'}) for col='{col}', idx='{idx}'")
+        dt_logger.debug(f"   [safe_set_datetime] Input val='{val}', Original dt_value='{dt_value_orig}' (type: {type(dt_value_orig)}, tz: {dt_value_orig.tzinfo if _isinstance_safe(dt_value_orig, pd.Timestamp) else 'N/A'}) for col='{col}', idx='{idx}'")
         dt_value = dt_value_orig
-        if isinstance(dt_value_orig, pd.Timestamp) and dt_value_orig.tzinfo is not None:
+        if _isinstance_safe(dt_value_orig, pd.Timestamp) and dt_value_orig.tzinfo is not None:
             dt_value = dt_value_orig.tz_localize(None)
             dt_logger.debug(f"      Converted timezone-aware Timestamp to naive: '{dt_value}'")
         elif pd.isna(dt_value_orig): dt_value = pd.NaT; dt_logger.debug(f"      dt_value is NaT.")
@@ -1456,7 +1456,7 @@ def parse_datetime_safely(datetime_str_series: pd.Series) -> pd.Series:
     Attempts to parse a Series of datetime strings into datetime objects using multiple formats.
     """
     parser_logger = logging.getLogger(f"{__name__}.parse_datetime_safely")
-    if not isinstance(datetime_str_series, pd.Series):
+    if not _isinstance_safe(datetime_str_series, pd.Series):
         parser_logger.error("Input must be a pandas Series.")
         raise TypeError("Input must be a pandas Series.")
     if datetime_str_series.empty:
@@ -1538,7 +1538,7 @@ def prepare_datetime(df_pd: pd.DataFrame, timeframe_str: str = "", config: Optio
     """
     prep_dt_logger = logging.getLogger(f"{__name__}.prepare_datetime")
     prep_dt_logger.info(f"(Processing) กำลังเตรียม Datetime Index ({timeframe_str})...")
-    if not isinstance(df_pd, pd.DataFrame):
+    if not _isinstance_safe(df_pd, pd.DataFrame):
         prep_dt_logger.error("Input must be a pandas DataFrame.")
         raise TypeError("Input must be a pandas DataFrame.")
     if df_pd.empty:
@@ -1583,7 +1583,7 @@ def prepare_datetime(df_pd: pd.DataFrame, timeframe_str: str = "", config: Optio
                 sampled_dates = date_str_series
 
             for date_str_sample in sampled_dates:
-                if isinstance(date_str_sample, str):
+                if _isinstance_safe(date_str_sample, str):
                     year_part_str = None
                     if len(date_str_sample) >= 4:
                         if date_str_sample[:4].isdigit(): year_part_str = date_str_sample[:4]
@@ -1601,7 +1601,7 @@ def prepare_datetime(df_pd: pd.DataFrame, timeframe_str: str = "", config: Optio
             if potential_be:
                 prep_dt_logger.info("      [Converter] ตรวจพบปีที่อาจเป็น พ.ศ. (> current_year + 100). พยายามแปลงเป็น ค.ศ. (-543)...")
                 def convert_be_year(date_str_conv):
-                    if isinstance(date_str_conv, str) and len(date_str_conv) >= 4:
+                    if _isinstance_safe(date_str_conv, str) and len(date_str_conv) >= 4:
                         year_part_str_conv_inner = date_str_conv[:4]
                         if year_part_str_conv_inner.isdigit():
                             try:
@@ -1736,7 +1736,7 @@ def ema(series: pd.Series | Any, period: int) -> pd.Series:
     if series is None or (hasattr(series, "__len__") and len(series) == 0):
         ema_logger.debug("[Patch AI Studio v4.9.26] Empty input detected in ema, returning empty pd.Series")
         return pd.Series([], dtype=float)
-    if not isinstance(series, pd.Series):
+    if not _isinstance_safe(series, pd.Series):
         ema_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
     series_numeric = pd.to_numeric(series, errors='coerce').replace([np.inf, -np.inf], np.nan).dropna()
@@ -1762,10 +1762,10 @@ def sma(series: pd.Series | Any, period: int) -> pd.Series:
         dtype = getattr(series, "dtype", "float32")
         index = getattr(series, "index", None)
         return pd.Series([], dtype=dtype, index=index)
-    if not isinstance(series, pd.Series):
+    if not _isinstance_safe(series, pd.Series):
         sma_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
-    if not isinstance(period, int) or period <= 0: # pragma: no cover
+    if not _isinstance_safe(period, int) or period <= 0: # pragma: no cover
         sma_logger.error(f"Invalid period ({period}). Must be a positive integer.")
         return pd.Series(np.nan, index=series.index, dtype='float32')
     series_numeric = pd.to_numeric(series, errors='coerce').replace([np.inf, -np.inf], np.nan).fillna(0) # Fill NaNs with 0 for SMA
@@ -1791,7 +1791,7 @@ def rsi(series: pd.Series | Any, period: int = 14) -> pd.Series:
     if series is None or (hasattr(series, "__len__") and len(series) == 0):
         rsi_logger.debug("[Patch AI Studio v4.9.26] Empty input detected in rsi, returning empty pd.Series")
         return pd.Series([], dtype=float)
-    if not isinstance(series, pd.Series):
+    if not _isinstance_safe(series, pd.Series):
         rsi_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
     if 'ta' not in globals() or ta is None: # pragma: no cover
@@ -1824,7 +1824,7 @@ def atr(df_in: pd.DataFrame | Any, period: int = 14) -> pd.DataFrame:
             atr_col_name: pd.Series([], dtype="float32", index=index),
             atr_shifted_col_name: pd.Series([], dtype="float32", index=index),
         })
-    if not isinstance(df_in, pd.DataFrame):
+    if not _isinstance_safe(df_in, pd.DataFrame):
         atr_logger.error(f"Input must be a pandas DataFrame, got {type(df_in)}")
         raise TypeError("Input must be a pandas DataFrame.")
 
@@ -1898,7 +1898,7 @@ def macd(series: pd.Series | Any, window_slow: int = 26, window_fast: int = 12, 
         index = getattr(series, "index", None)
         empty = pd.Series([], dtype=dtype, index=index)
         return empty, empty.copy(), empty.copy()
-    if not isinstance(series, pd.Series):
+    if not _isinstance_safe(series, pd.Series):
         macd_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
 
@@ -1932,7 +1932,7 @@ def rolling_zscore(series: pd.Series | Any, window: int, min_periods: int | None
         dtype = getattr(series, "dtype", "float32")
         index = getattr(series, "index", None)
         return pd.Series([], dtype=dtype, index=index)
-    if not isinstance(series, pd.Series):
+    if not _isinstance_safe(series, pd.Series):
         zscore_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
     if len(series) < 2: # Z-score needs at least 2 points to calculate std
@@ -1980,16 +1980,18 @@ def tag_price_structure_patterns(
 ):
     import pandas as pd
 
-    if not isinstance(df, pd.DataFrame):
+    if not _isinstance_safe(df, pd.DataFrame):
         logging.error(
-            "[Patch AI Studio v4.9.29] tag_price_structure_patterns: Input is not of expected DataFrame type."
+            "[Patch AI Studio v4.9.30] tag_price_structure_patterns: Input is not of expected DataFrame type."
         )
         raise TypeError(
             "Input to tag_price_structure_patterns must be a pandas DataFrame."
         )
     # PATCH: สำหรับ DataFrame ว่าง ให้ return DataFrame ว่างที่มี column 'Pattern_Label'
-    if getattr(df, "empty", False):
-        import pandas as pd
+    if df.empty:
+        logging.info(
+            "[Patch AI Studio v4.9.30] tag_price_structure_patterns: Empty DataFrame input, returning empty DataFrame with columns ['Pattern_Label']."
+        )
         return pd.DataFrame(columns=["Pattern_Label"])
     required_cols = ["High", "Low", "Close"]
     # --- Handle empty/None DataFrame and missing columns as "empty case" (return empty DataFrame)
@@ -1997,7 +1999,7 @@ def tag_price_structure_patterns(
         df is None
         or not hasattr(df, "columns")
         or any(col not in df.columns for col in required_cols)
-        or getattr(df, "empty", True)
+        or df.empty
     ):
         return pd.DataFrame(columns=[label_col])
     res = df.copy()
@@ -2014,16 +2016,18 @@ def calculate_m15_trend_zone(
 ):
     import pandas as pd
 
-    if not isinstance(df, pd.DataFrame):
+    if not _isinstance_safe(df, pd.DataFrame):
         logging.error(
-            "[Patch AI Studio v4.9.29] calculate_m15_trend_zone: Input is not of expected DataFrame type."
+            "[Patch AI Studio v4.9.30] calculate_m15_trend_zone: Input is not of expected DataFrame type."
         )
         raise TypeError(
             "Input to calculate_m15_trend_zone must be a pandas DataFrame."
         )
     # PATCH: สำหรับ DataFrame ว่าง ให้ return DataFrame ว่างที่มี column 'Trend_Zone'
-    if getattr(df, "empty", False):
-        import pandas as pd
+    if df.empty:
+        logging.info(
+            "[Patch AI Studio v4.9.30] calculate_m15_trend_zone: Empty DataFrame input, returning empty DataFrame with columns ['Trend_Zone']."
+        )
         return pd.DataFrame(columns=["Trend_Zone"])
     required_cols = ["High", "Low", "Close"]
     # --- Handle empty/None DataFrame and missing columns as "empty case" (return empty DataFrame)
@@ -2031,7 +2035,7 @@ def calculate_m15_trend_zone(
         df is None
         or not hasattr(df, "columns")
         or any(col not in df.columns for col in required_cols)
-        or getattr(df, "empty", True)
+        or df.empty
     ):
         return pd.DataFrame(columns=[label_col])
     res = df.copy()
@@ -2046,7 +2050,7 @@ def get_session_tag(timestamp: pd.Timestamp, session_times_utc_config: dict) -> 
     if pd.isna(timestamp): # pragma: no cover
         return "N/A"
     try:
-        if not isinstance(timestamp, pd.Timestamp): # pragma: no cover
+        if not _isinstance_safe(timestamp, pd.Timestamp): # pragma: no cover
             timestamp_converted = pd.to_datetime(timestamp, errors='coerce')
             if pd.isna(timestamp_converted):
                 session_logger.warning(f"Invalid timestamp for session tagging: {timestamp}")
@@ -2077,7 +2081,7 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
     """Engineers features for M1 data using parameters from StrategyConfig."""
     eng_m1_logger = logging.getLogger(f"{__name__}.engineer_m1_features")
     eng_m1_logger.info("(Processing) กำลังสร้าง Features M1 (using StrategyConfig)...")
-    if not isinstance(df_m1, pd.DataFrame):
+    if not _isinstance_safe(df_m1, pd.DataFrame):
         eng_m1_logger.error("Input must be a pandas DataFrame.")
         raise TypeError("Input must be a pandas DataFrame.")
     if df_m1.empty: # pragma: no cover
@@ -2133,12 +2137,12 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
 
     # Lagged features (using resolved config)
     actual_lag_config = lag_features_config if lag_features_config is not None else config.lag_features_config
-    if actual_lag_config and isinstance(actual_lag_config, dict): # pragma: no cover
+    if actual_lag_config and _isinstance_safe(actual_lag_config, dict): # pragma: no cover
         eng_m1_logger.info(f"   Applying Lag Features based on config: {actual_lag_config}")
         for feature_name_lag in actual_lag_config.get('features', []):
             if feature_name_lag in df.columns and pd.api.types.is_numeric_dtype(df[feature_name_lag]):
                 for lag_val_item in actual_lag_config.get('lags', []):
-                    if isinstance(lag_val_item, int) and lag_val_item > 0:
+                    if _isinstance_safe(lag_val_item, int) and lag_val_item > 0:
                         df[f"{feature_name_lag}_lag{lag_val_item}"] = df[feature_name_lag].shift(lag_val_item).astype('float32')
             else:
                 eng_m1_logger.warning(f"      Cannot create lag for '{feature_name_lag}': not found or not numeric.")
@@ -2212,7 +2216,7 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
     if 'session' not in df.columns: # pragma: no cover
         eng_m1_logger.info("      Creating 'session' column using config.session_times_utc...")
         try:
-            original_index_is_datetime = isinstance(df.index, pd.DatetimeIndex) and not df.index.hasnans
+            original_index_is_datetime = _isinstance_safe(df.index, pd.DatetimeIndex) and not df.index.hasnans
             if original_index_is_datetime:
                 if not df.empty: # Check if DataFrame is not empty before applying
                     df['session'] = df.index.to_series().apply(lambda ts: get_session_tag(ts, config.session_times_utc))
@@ -2246,7 +2250,7 @@ def clean_m1_data(df_m1: pd.DataFrame, config: 'StrategyConfig') -> tuple[pd.Dat
     """Cleans M1 data, converts types, and identifies features for drift analysis, using config."""
     clean_logger = logging.getLogger(f"{__name__}.clean_m1_data")
     clean_logger.info("(Processing) กำหนด Features M1 สำหรับ Drift และแปลงประเภท (using StrategyConfig)...")
-    if not isinstance(df_m1, pd.DataFrame):
+    if not _isinstance_safe(df_m1, pd.DataFrame):
         clean_logger.error("Input must be a pandas DataFrame.")
         raise TypeError("Input must be a pandas DataFrame.")
     if df_m1.empty: # pragma: no cover
@@ -2312,7 +2316,7 @@ def clean_m1_data(df_m1: pd.DataFrame, config: 'StrategyConfig') -> tuple[pd.Dat
         if col_cat_clean in df_cleaned.columns:
             if df_cleaned[col_cat_clean].isnull().any(): # pragma: no cover
                 df_cleaned[col_cat_clean] = df_cleaned[col_cat_clean].fillna("Unknown") # Fill NaNs before astype
-            if not isinstance(df_cleaned[col_cat_clean].dtype, pd.CategoricalDtype): # Avoid re-casting if already category
+            if not _isinstance_safe(df_cleaned[col_cat_clean].dtype, pd.CategoricalDtype): # Avoid re-casting if already category
                 try:
                     df_cleaned[col_cat_clean] = df_cleaned[col_cat_clean].astype('category')
                 except Exception as e_cat_clean: # pragma: no cover
@@ -2441,27 +2445,27 @@ def select_top_shap_features(shap_values_val: np.ndarray | list | None,
     shap_select_logger = logging.getLogger(f"{__name__}.select_top_shap_features")
     shap_select_logger.info(f"   [SHAP Select] กำลังเลือก Features ที่มี Normalized SHAP >= {shap_threshold:.4f}...")
 
-    if shap_values_val is None or not isinstance(shap_values_val, (np.ndarray, list)) or \
-       (isinstance(shap_values_val, np.ndarray) and shap_values_val.size == 0) or \
-       (isinstance(shap_values_val, list) and not shap_values_val): # pragma: no cover
+    if shap_values_val is None or not _isinstance_safe(shap_values_val, (np.ndarray, list)) or \
+       (_isinstance_safe(shap_values_val, np.ndarray) and shap_values_val.size == 0) or \
+       (_isinstance_safe(shap_values_val, list) and not shap_values_val): # pragma: no cover
         shap_select_logger.warning("      (Warning) ไม่สามารถเลือก Features: ค่า SHAP ไม่ถูกต้องหรือว่างเปล่า. คืนค่า Features เดิม.")
-        return feature_names if isinstance(feature_names, list) else []
+        return feature_names if _isinstance_safe(feature_names, list) else []
 
-    if feature_names is None or not isinstance(feature_names, list) or not feature_names: # pragma: no cover
+    if feature_names is None or not _isinstance_safe(feature_names, list) or not feature_names: # pragma: no cover
         shap_select_logger.warning("      (Warning) ไม่สามารถเลือก Features: รายชื่อ Features ไม่ถูกต้องหรือว่างเปล่า. คืนค่า None.")
         return None
 
     shap_values_to_process = None
-    if isinstance(shap_values_val, list):
-        if len(shap_values_val) >= 2 and isinstance(shap_values_val[1], np.ndarray): # Common for binary classification SHAP
+    if _isinstance_safe(shap_values_val, list):
+        if len(shap_values_val) >= 2 and _isinstance_safe(shap_values_val[1], np.ndarray): # Common for binary classification SHAP
             shap_select_logger.debug("      (Info) SHAP values appear to be for multiple classes, using index 1 (positive class).")
             shap_values_to_process = shap_values_val[1]
-        elif len(shap_values_val) == 1 and isinstance(shap_values_val[0], np.ndarray): # Single output (e.g., regression or single class)
+        elif len(shap_values_val) == 1 and _isinstance_safe(shap_values_val[0], np.ndarray): # Single output (e.g., regression or single class)
             shap_values_to_process = shap_values_val[0]
         else: # pragma: no cover
             shap_select_logger.warning(f"      (Warning) SHAP values list has unexpected structure. คืนค่า Features เดิม.")
             return feature_names
-    elif isinstance(shap_values_val, np.ndarray):
+    elif _isinstance_safe(shap_values_val, np.ndarray):
         shap_values_to_process = shap_values_val
     else: # pragma: no cover
         shap_select_logger.warning(f"      (Warning) SHAP values has unexpected type: {type(shap_values_val)}. คืนค่า Features เดิม.")
@@ -2587,7 +2591,7 @@ def check_model_overfit(model, X_train, y_train, X_val, y_val, metric: str = "AU
 def check_feature_noise_shap(shap_values: np.ndarray | None, feature_names: list[str] | None, threshold: float = 0.01):
     noise_logger = logging.getLogger(f"{__name__}.check_feature_noise_shap")
     noise_logger.info("   [Check] Checking for Feature Noise (SHAP)...")
-    if shap_values is None or not isinstance(shap_values, np.ndarray) or not feature_names or not isinstance(feature_names, list) or \
+    if shap_values is None or not _isinstance_safe(shap_values, np.ndarray) or not feature_names or not _isinstance_safe(feature_names, list) or \
        shap_values.ndim != 2 or shap_values.shape[1] != len(feature_names) or shap_values.shape[0] == 0: # pragma: no cover
         noise_logger.warning("      (Warning) Skipping Feature Noise Check: Invalid inputs."); return
 
@@ -2621,10 +2625,10 @@ def analyze_feature_importance_shap(model, model_type: str, data_sample: pd.Data
     if model is None: # pragma: no cover
         shap_analyze_logger.warning("   (Warning) Skipping SHAP: Model is None.")
         return
-    if data_sample is None or not isinstance(data_sample, pd.DataFrame) or data_sample.empty: # pragma: no cover
+    if data_sample is None or not _isinstance_safe(data_sample, pd.DataFrame) or data_sample.empty: # pragma: no cover
         shap_analyze_logger.warning("   (Warning) Skipping SHAP: No sample data.")
         return
-    if not features or not isinstance(features, list) or not all(isinstance(f, str) for f in features): # pragma: no cover
+    if not features or not _isinstance_safe(features, list) or not all(_isinstance_safe(f, str) for f in features): # pragma: no cover
         shap_analyze_logger.warning("   (Warning) Skipping SHAP: Invalid features list.")
         return
     if not output_dir or not os.path.isdir(output_dir): # pragma: no cover
@@ -2705,14 +2709,14 @@ def analyze_feature_importance_shap(model, model_type: str, data_sample: pd.Data
 
         # Process SHAP values for plotting (handle different output structures)
         shap_values_positive_class_plot = None
-        if isinstance(shap_values_calculated, list) and len(shap_values_calculated) >= 2: # Common for binary classification
-            if isinstance(shap_values_calculated[1], np.ndarray) and shap_values_calculated[1].ndim == 2:
+        if _isinstance_safe(shap_values_calculated, list) and len(shap_values_calculated) >= 2: # Common for binary classification
+            if _isinstance_safe(shap_values_calculated[1], np.ndarray) and shap_values_calculated[1].ndim == 2:
                 shap_values_positive_class_plot = shap_values_calculated[1] # Use SHAP for positive class
             else: # pragma: no cover
                 shap_analyze_logger.error(f"      (Error) SHAP values list element 1 has unexpected type/shape: {type(shap_values_calculated[1])}, {getattr(shap_values_calculated[1], 'shape', 'N/A')}")
-        elif isinstance(shap_values_calculated, np.ndarray) and shap_values_calculated.ndim == 2: # Single output or already selected class
+        elif _isinstance_safe(shap_values_calculated, np.ndarray) and shap_values_calculated.ndim == 2: # Single output or already selected class
             shap_values_positive_class_plot = shap_values_calculated
-        elif isinstance(shap_values_calculated, np.ndarray) and shap_values_calculated.ndim == 3: # For some model types, shape might be (n_outputs, n_samples, n_features)
+        elif _isinstance_safe(shap_values_calculated, np.ndarray) and shap_values_calculated.ndim == 3: # For some model types, shape might be (n_outputs, n_samples, n_features)
             # Try to infer the positive class or primary output
             if shap_values_calculated.shape[0] >= 2 and shap_values_calculated.shape[1] == X_shap.shape[0] and shap_values_calculated.shape[2] == X_shap.shape[1]:
                 shap_values_positive_class_plot = shap_values_calculated[1, :, :] # Assuming second output is positive class
@@ -2793,7 +2797,7 @@ def load_features_for_model(model_name: str, output_dir_load: str) -> list[str] 
     try:
         with open(features_file_path_load, 'r', encoding='utf-8') as f_load:
             features_loaded = json.load(f_load)
-        if isinstance(features_loaded, list) and all(isinstance(feat, str) for feat in features_loaded):
+        if _isinstance_safe(features_loaded, list) and all(_isinstance_safe(feat, str) for feat in features_loaded):
             load_feat_logger.info(f"      (Success) Loaded {len(features_loaded)} features for model '{model_name}' from '{os.path.basename(features_file_path_load)}'.")
             return features_loaded
         else: # pragma: no cover
@@ -2821,9 +2825,9 @@ def select_model_for_trade(context: dict, available_models: dict | None = None) 
     spike_score_value_switcher = context.get('spike_score', 0.0)
 
     # Ensure context values are numeric or None
-    if not isinstance(cluster_value_switcher, (int, float, np.number)) or pd.isna(cluster_value_switcher):  # type: ignore
+    if not _isinstance_safe(cluster_value_switcher, (int, float, np.number)) or pd.isna(cluster_value_switcher):  # type: ignore
         cluster_value_switcher = None # Standardize missing cluster to None
-    if not isinstance(spike_score_value_switcher, (int, float, np.number)) or pd.isna(spike_score_value_switcher):  # type: ignore
+    if not _isinstance_safe(spike_score_value_switcher, (int, float, np.number)) or pd.isna(spike_score_value_switcher):  # type: ignore
         spike_score_value_switcher = 0.0 # Default spike score if missing or NaN
 
     # These thresholds could eventually come from StrategyConfig
@@ -2984,7 +2988,7 @@ def train_and_export_meta_model(
         train_logger.info(f"     Optuna Trials: {optuna_n_trials_val}, CV Splits: {optuna_cv_splits_val}, Metric: {optuna_metric_to_optimize}, Direction: {optuna_direction_to_optimize}, Jobs: {optuna_n_jobs_val}")
     train_logger.info(f"   Early Stopping Rounds (Final Model): {early_stopping_rounds_val}")
 
-    if not output_dir or not isinstance(output_dir, str):
+    if not output_dir or not _isinstance_safe(output_dir, str):
         train_logger.critical("(Error) ไม่ได้ระบุ output_dir หรือไม่ใช่ string.")
         return None, []
     if not os.path.isdir(output_dir):
@@ -3011,13 +3015,13 @@ def train_and_export_meta_model(
 
     # --- Load Data ---
     trade_log_df_train = None
-    if trade_log_df_override is not None and isinstance(trade_log_df_override, pd.DataFrame):
+    if trade_log_df_override is not None and _isinstance_safe(trade_log_df_override, pd.DataFrame):
         if trade_log_df_override.empty: train_logger.error(f"(Error) Trade Log Override for '{model_purpose.upper()}' is empty."); return None, []
         required_log_cols_override_train = ["entry_time", "exit_reason"]; missing_cols_override_train = [col for col in required_log_cols_override_train if col not in trade_log_df_override.columns]
         if missing_cols_override_train: train_logger.error(f"(Error) Trade Log Override missing: {missing_cols_override_train}."); return None, []
         train_logger.info(f"   ใช้ Trade Log ที่ Filter แล้ว (Override) จำนวน {len(trade_log_df_override)} แถว สำหรับ Model Purpose: {model_purpose.upper()}")
         trade_log_df_train = trade_log_df_override.copy()
-    elif trade_log_path and isinstance(trade_log_path, str):
+    elif trade_log_path and _isinstance_safe(trade_log_path, str):
         train_logger.info(f"   กำลังโหลด Trade Log (Path: {trade_log_path})")
         try:
             trade_log_df_train = safe_load_csv_auto(trade_log_path); # type: ignore
@@ -3055,7 +3059,7 @@ def train_and_export_meta_model(
         train_logger.info("   กำลังเตรียม Index ของ M1 Data..."); m1_df_for_train.index = pd.to_datetime(m1_df_for_train.index, errors='coerce')
         rows_before_drop_m1_train = len(m1_df_for_train); m1_df_for_train = m1_df_for_train[m1_df_for_train.index.notna()]
         if len(m1_df_for_train) < rows_before_drop_m1_train: train_logger.warning(f"   ลบ {rows_before_drop_m1_train - len(m1_df_for_train)} แถวที่มี Index เป็น NaT ใน M1 Data.")
-        if not isinstance(m1_df_for_train.index, pd.DatetimeIndex): train_logger.error("   (Error) ไม่สามารถแปลง M1 index เป็น DatetimeIndex."); return None, []
+        if not _isinstance_safe(m1_df_for_train.index, pd.DatetimeIndex): train_logger.error("   (Error) ไม่สามารถแปลง M1 index เป็น DatetimeIndex."); return None, []
         if m1_df_for_train.empty: train_logger.error("   (Error) M1 DataFrame ว่างเปล่าหลังแปลง/ล้าง Index."); return None, []
         if not m1_df_for_train.index.is_monotonic_increasing: train_logger.info("      Sorting M1 DataFrame index..."); m1_df_for_train = m1_df_for_train.sort_index()
         if m1_df_for_train.index.has_duplicates:
@@ -3072,7 +3076,7 @@ def train_and_export_meta_model(
             trade_log_df_train["entry_time"] = pd.to_datetime(trade_log_df_train["entry_time"], errors='coerce'); trade_log_df_train.dropna(subset=["entry_time"], inplace=True)
         if trade_log_df_train.empty: train_logger.error("(Error) ไม่มี Trades ที่มี entry_time ถูกต้องหลังการแปลง (ก่อน Merge)."); return None, []
         if not trade_log_df_train["entry_time"].is_monotonic_increasing: trade_log_df_train = trade_log_df_train.sort_values("entry_time")
-        if not isinstance(m1_df_for_train.index, pd.DatetimeIndex): train_logger.error("   (Error) M1 index is not DatetimeIndex before merge."); return None, []
+        if not _isinstance_safe(m1_df_for_train.index, pd.DatetimeIndex): train_logger.error("   (Error) M1 index is not DatetimeIndex before merge."); return None, []
         if not m1_df_for_train.index.is_monotonic_increasing: train_logger.warning("   M1 index was not monotonic, sorting again before merge."); m1_df_for_train = m1_df_for_train.sort_index()
         merged_df_train = pd.merge_asof(trade_log_df_train, m1_df_for_train, left_on="entry_time", right_index=True, direction="backward", tolerance=pd.Timedelta(minutes=15))
         train_logger.info(f"   Merge completed. Shape after merge: {merged_df_train.shape}"); del trade_log_df_train, m1_df_for_train; gc.collect()
@@ -3165,7 +3169,7 @@ def train_and_export_meta_model(
     X_train_final_prep[numeric_cols_final_prep] = X_train_final_prep[numeric_cols_final_prep].replace([np.inf, -np.inf], np.nan).fillna(0)
     if X_train_final_prep.isnull().any().any(): train_logger.warning("NaNs found in X_train_final_prep after fill, this might affect final model.")
 
-    if features_to_drop_val and isinstance(features_to_drop_val, list):
+    if features_to_drop_val and _isinstance_safe(features_to_drop_val, list):
         features_actually_dropped = [f for f in features_to_drop_val if f in X_train_final_prep.columns]
         if features_actually_dropped:
             X_train_final_prep.drop(columns=features_actually_dropped, inplace=True)
@@ -3578,7 +3582,7 @@ def adjust_lot_tp2_boost(
     tp_count = 0
     for reason in recent_trades:
         # Ensure 'reason' is a string and check for "TP" while excluding "PARTIAL TP"
-        if isinstance(reason, str) and "TP" in reason.upper() and "PARTIAL" not in reason.upper():
+        if _isinstance_safe(reason, str) and "TP" in reason.upper() and "PARTIAL" not in reason.upper():
             tp_count += 1
 
     boost_logger.debug(f"   Recent {LOOKBACK_TRADES_FOR_BOOST} trades: {recent_trades}. Full TP count: {tp_count}")
@@ -3668,7 +3672,7 @@ def spike_guard_blocked(
 
         sg_logger.debug(f"Spike Guard (London Active): Score={spike_score:.2f} (Thresh={threshold:.2f}), Pattern='{pattern_label}', AllowedPatterns={allowed_patterns}")
 
-        if not isinstance(allowed_patterns, list): # pragma: no cover
+        if not _isinstance_safe(allowed_patterns, list): # pragma: no cover
             sg_logger.warning(f"spike_guard_london_patterns is not a list in config: {allowed_patterns}. Spike Guard may not function as expected.")
             return False # Fail safe if config is malformed
 
@@ -4123,7 +4127,7 @@ def is_entry_allowed(
             try:
                 X_pred_ml = pd.DataFrame([row_data[features_for_model]], columns=features_for_model)
                 global CatBoostClassifier_imported # From Part 1
-                if CatBoostClassifier_imported and isinstance(active_model_obj, CatBoostClassifier_imported) and hasattr(active_model_obj, 'get_cat_feature_indices'): # pragma: no cover
+                if CatBoostClassifier_imported and _isinstance_safe(active_model_obj, CatBoostClassifier_imported) and hasattr(active_model_obj, 'get_cat_feature_indices'): # pragma: no cover
                     cat_indices_pred = active_model_obj.get_cat_feature_indices()
                     for idx_cat_pred in cat_indices_pred:
                         col_name_cat_pred = X_pred_ml.columns[idx_cat_pred]
@@ -4329,11 +4333,11 @@ def close_trade(
     # Update equity
     equity_tracker_dict_ct['current_equity'] += net_pnl_usd_ct_val
     equity_tracker_dict_ct['peak_equity'] = max(equity_tracker_dict_ct['peak_equity'], equity_tracker_dict_ct['current_equity'])
-    if 'history' in equity_tracker_dict_ct and isinstance(equity_tracker_dict_ct['history'], dict):
+    if 'history' in equity_tracker_dict_ct and _isinstance_safe(equity_tracker_dict_ct['history'], dict):
         equity_tracker_dict_ct['history'][exit_time] = equity_tracker_dict_ct['current_equity']
 
     # Update run summary
-    if run_summary_dict_ct and isinstance(run_summary_dict_ct, dict): # pragma: no cover
+    if run_summary_dict_ct and _isinstance_safe(run_summary_dict_ct, dict): # pragma: no cover
         run_summary_dict_ct['total_commission'] = run_summary_dict_ct.get('total_commission', 0.0) + commission_usd_ct_val
         run_summary_dict_ct['total_spread'] = run_summary_dict_ct.get('total_spread', 0.0) + spread_cost_usd_ct_val
         run_summary_dict_ct['total_slippage'] = run_summary_dict_ct.get('total_slippage', 0.0) + abs(slippage_usd_ct_val) # Slippage is usually negative
@@ -4365,7 +4369,7 @@ def close_trade(
         "is_partial_tp_event": "Partial TP" in exit_reason or "PTP" in exit_reason,
         "current_partial_tp_level_processed": len(order.partial_tp_processed_levels) + (1 if ("Partial TP" in exit_reason or "PTP" in exit_reason) and not order.closed else 0),
     })
-    if isinstance(trade_log_list_ct, list):
+    if _isinstance_safe(trade_log_list_ct, list):
         trade_log_list_ct.append(log_entry_data_final_ct)
     else: # pragma: no cover
         close_trade_logger_detail.error("trade_log_list_ct is not a list. Cannot append entry.")
@@ -4639,7 +4643,7 @@ def _run_backtest_simulation_v34_full(
                         final_lot_new_val_call, risk_mode_new_val_call = adjust_lot_recovery_mode(config_obj, boosted_lot_new_val_call, consecutive_losses_runtime) # type: ignore
 
                         if final_lot_new_val_call >= config_obj.min_lot:
-                            if run_summary and isinstance(run_summary, dict): run_summary['total_ib_lot_accumulator'] = run_summary.get('total_ib_lot_accumulator', 0.0) + final_lot_new_val_call
+                            if run_summary and _isinstance_safe(run_summary, dict): run_summary['total_ib_lot_accumulator'] = run_summary.get('total_ib_lot_accumulator', 0.0) + final_lot_new_val_call
                             enable_ttp2_new_val_call = pd.notna(current_atr_open_val_calc_call) and current_atr_open_val_calc_call > config_obj.ttp2_atr_threshold_activate
 
                             new_order_instance_val_call = Order(
@@ -4719,7 +4723,7 @@ def _run_backtest_simulation_v34_full(
     except Exception as e_loop_main_sim_final_run_full_outer_v2: # pragma: no cover
         sim_logger.critical(f"   (CRITICAL) Outer error in simulation loop for {label}: {e_loop_main_sim_final_run_full_outer_v2}", exc_info=True)
         error_in_loop_runtime = True
-        if run_summary and isinstance(run_summary, dict): run_summary["error_msg"] = str(e_loop_main_sim_final_run_full_outer_v2)
+        if run_summary and _isinstance_safe(run_summary, dict): run_summary["error_msg"] = str(e_loop_main_sim_final_run_full_outer_v2)
 
     sim_logger.info(f"Simulation loop finished for {label}. Finalizing remaining orders...")
     if active_orders: # pragma: no cover
@@ -4748,7 +4752,7 @@ def _run_backtest_simulation_v34_full(
                     df_sim.loc[first_zero_idx_sim_df_val:, equity_col_final_df_sim_val] = 0.0
                 except IndexError: pass # No equity <= 0 found
 
-    if run_summary and isinstance(run_summary, dict):
+    if run_summary and _isinstance_safe(run_summary, dict):
         run_summary.update({ "error_in_loop": error_in_loop_runtime, "kill_switch_activated": kill_switch_activated_runtime, "final_risk_mode": current_risk_mode })
     else: # Should not happen if initialized correctly # pragma: no cover
         run_summary = { "error_in_loop": error_in_loop_runtime, "kill_switch_activated": kill_switch_activated_runtime, "final_risk_mode": current_risk_mode, "total_ib_lot_accumulator": 0.0 }
@@ -4766,15 +4770,15 @@ def _run_backtest_simulation_v34_full(
 # --- Enterprise Export Functions (NEW) ---
 def export_trade_log_to_csv(trades: Union[List[Dict[str, Any]], pd.DataFrame], label: str, output_dir: str, config: 'StrategyConfig'): # type: ignore
     export_logger_csv = logging.getLogger(f"{__name__}.export_trade_log_to_csv")
-    if not isinstance(output_dir, str) or not os.path.isdir(output_dir): # pragma: no cover
+    if not _isinstance_safe(output_dir, str) or not os.path.isdir(output_dir): # pragma: no cover
         export_logger_csv.error(f"[Export] Invalid output directory: {output_dir}. Cannot export trade log for '{label}'.")
         return None
     df_trades_export: Optional[pd.DataFrame] = None
-    if isinstance(trades, list):
+    if _isinstance_safe(trades, list):
         if not trades: export_logger_csv.warning(f"[Export] No trades in list for '{label}'"); return None
         try: df_trades_export = pd.DataFrame(trades)
         except Exception as e_df_create_export: export_logger_csv.error(f"[Export] Failed to create DataFrame for '{label}': {e_df_create_export}"); return None
-    elif isinstance(trades, pd.DataFrame):
+    elif _isinstance_safe(trades, pd.DataFrame):
         if trades.empty: export_logger_csv.warning(f"[Export] DataFrame empty for '{label}'"); return None
         df_trades_export = trades
     else: export_logger_csv.error(f"[Export] Invalid 'trades' type: {type(trades)} for '{label}'."); return None # pragma: no cover
@@ -4794,8 +4798,8 @@ def export_trade_log_to_csv(trades: Union[List[Dict[str, Any]], pd.DataFrame], l
 
 def export_run_summary_to_json(run_summary_exp: Dict[str, Any], label: str, output_dir: str, config: 'StrategyConfig'): # type: ignore
     export_logger_json = logging.getLogger(f"{__name__}.export_run_summary_to_json")
-    if not isinstance(output_dir, str) or not os.path.isdir(output_dir): export_logger_json.error(f"[Export] Invalid output dir for summary '{label}'."); return None # pragma: no cover
-    if not isinstance(run_summary_exp, dict) or not run_summary_exp: export_logger_json.warning(f"[Export] No summary data for '{label}'"); return None # pragma: no cover
+    if not _isinstance_safe(output_dir, str) or not os.path.isdir(output_dir): export_logger_json.error(f"[Export] Invalid output dir for summary '{label}'."); return None # pragma: no cover
+    if not _isinstance_safe(run_summary_exp, dict) or not run_summary_exp: export_logger_json.warning(f"[Export] No summary data for '{label}'"); return None # pragma: no cover
 
     timestamp_str_json = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename_prefix_json = getattr(config, 'summary_filename_prefix', "run_summary")
@@ -4852,7 +4856,7 @@ class DriftObserver:
 
     def analyze_fold(self, train_df_pd: pd.DataFrame, test_df_pd: pd.DataFrame, fold_num: int, config: 'StrategyConfig'):  # type: ignore
         self.logger.info(f"    (DriftObserver) Analyzing Drift for Fold {fold_num + 1} (M1 Features)...")
-        if not isinstance(train_df_pd, pd.DataFrame) or not isinstance(test_df_pd, pd.DataFrame) or train_df_pd.empty or test_df_pd.empty: # pragma: no cover
+        if not _isinstance_safe(train_df_pd, pd.DataFrame) or not _isinstance_safe(test_df_pd, pd.DataFrame) or train_df_pd.empty or test_df_pd.empty: # pragma: no cover
             self.logger.warning(f"      Skipping Drift for Fold {fold_num + 1}: Invalid/empty data.")
             self.results[fold_num] = {}
             return
@@ -4927,7 +4931,7 @@ class DriftObserver:
         fold_data = self.results[fold_num]
         if not fold_data:
             return np.nan
-        w_dists = [res["wasserstein"] for res in fold_data.values() if isinstance(res, dict) and pd.notna(res.get("wasserstein"))]
+        w_dists = [res["wasserstein"] for res in fold_data.values() if _isinstance_safe(res, dict) and pd.notna(res.get("wasserstein"))]
         return np.mean(w_dists) if w_dists else np.nan # type: ignore
 
     def summarize_and_save(self, output_dir: str, config: 'StrategyConfig'):  # type: ignore
@@ -4941,7 +4945,7 @@ class DriftObserver:
         for fold_num, fold_data_item in sorted(self.results.items()):
             if not fold_data_item: # pragma: no cover
                 continue
-            numeric_data = {feat: res for feat, res in fold_data_item.items() if isinstance(res, dict) and pd.notna(res.get("wasserstein"))}
+            numeric_data = {feat: res for feat, res in fold_data_item.items() if _isinstance_safe(res, dict) and pd.notna(res.get("wasserstein"))}
             if not numeric_data: # pragma: no cover
                 continue
             w_dists = [res["wasserstein"] for res in numeric_data.values() if res["wasserstein"] is not None] # Ensure not None
@@ -4969,7 +4973,7 @@ class DriftObserver:
         if fold_num not in self.results or not self.results[fold_num]: # pragma: no cover
             return
         fold_data = self.results[fold_num]
-        fold_summary_list: List[Dict[str, Any]] = [{'feature': f, **m} for f, m in fold_data.items() if isinstance(m, dict)]
+        fold_summary_list: List[Dict[str, Any]] = [{'feature': f, **m} for f, m in fold_data.items() if _isinstance_safe(m, dict)]
         if not fold_summary_list: # pragma: no cover
             return
         fold_df = pd.DataFrame(fold_summary_list)
@@ -5024,7 +5028,7 @@ def _calculate_metrics_full(
     for key, val in default_trade_metrics.items():
         metrics[f"{label} {key}"] = val
 
-    if trade_log_df is None or not isinstance(trade_log_df, pd.DataFrame) or trade_log_df.empty:
+    if trade_log_df is None or not _isinstance_safe(trade_log_df, pd.DataFrame) or trade_log_df.empty:
         metrics_logger.warning(f"    No trades logged for '{label}'.")
     else:
         log_df = trade_log_df.copy()
@@ -5105,9 +5109,9 @@ def _calculate_metrics_full(
 
     # Equity based metrics (Sharpe, Sortino, Max Drawdown)
     equity_series: Optional[pd.Series] = None
-    if isinstance(equity_history_segment, pd.Series):
+    if _isinstance_safe(equity_history_segment, pd.Series):
         equity_series = equity_history_segment.copy()
-    elif isinstance(equity_history_segment, dict) and equity_history_segment:
+    elif _isinstance_safe(equity_history_segment, dict) and equity_history_segment:
         try:
             equity_series = pd.Series({pd.to_datetime(k, errors='coerce'): v for k, v in equity_history_segment.items()}).dropna().sort_index()
             if not equity_series.empty:
@@ -5126,7 +5130,7 @@ def _calculate_metrics_full(
             metrics[f"{label} Max Drawdown (Equity based) (%)"] = abs(max_dd_val * 100.0) if pd.notna(max_dd_val) else 0.0
 
             # Risk-adjusted return metrics (Sharpe, Sortino, Calmar) - require daily-like returns
-            if isinstance(equity_series.index, pd.DatetimeIndex):
+            if _isinstance_safe(equity_series.index, pd.DatetimeIndex):
                 equity_resampled = equity_series.resample('B').last().ffill().dropna() # Resample to business days
                 if len(equity_resampled) > 20: # Need enough data points for meaningful stats
                     daily_ret = equity_resampled.pct_change().dropna()
@@ -5168,7 +5172,7 @@ def plot_equity_curve(
     equity_series_for_plot: Optional[pd.Series] = None
 
     # Convert input data to a sorted pandas Series with DatetimeIndex
-    if isinstance(equity_series_data, dict):
+    if _isinstance_safe(equity_series_data, dict):
         if equity_series_data: # pragma: no cover
             try:
                 equity_series_for_plot = pd.Series({pd.to_datetime(k, errors='coerce'): v for k, v in equity_series_data.items()}).dropna().sort_index()
@@ -5179,9 +5183,9 @@ def plot_equity_curve(
             except Exception as e: # pragma: no cover
                 plot_logger.error(f"Error converting equity dict for plot: {e}")
                 equity_series_for_plot = None
-    elif isinstance(equity_series_data, pd.Series):
+    elif _isinstance_safe(equity_series_data, pd.Series):
         equity_series_for_plot = equity_series_data.copy()
-        if not isinstance(equity_series_for_plot.index, pd.DatetimeIndex): # pragma: no cover
+        if not _isinstance_safe(equity_series_for_plot.index, pd.DatetimeIndex): # pragma: no cover
             try:
                 equity_series_for_plot.index = pd.to_datetime(equity_series_for_plot.index, errors='coerce')
                 equity_series_for_plot = equity_series_for_plot[equity_series_for_plot.index.notna()] # Remove NaT indices
@@ -5190,7 +5194,7 @@ def plot_equity_curve(
             except Exception as e: # pragma: no cover
                 plot_logger.error(f"Error converting equity index for plot: {e}")
                 equity_series_for_plot = None
-        if equity_series_for_plot is not None and isinstance(equity_series_for_plot.index, pd.DatetimeIndex):
+        if equity_series_for_plot is not None and _isinstance_safe(equity_series_for_plot.index, pd.DatetimeIndex):
             if not equity_series_for_plot.index.is_monotonic_increasing: # pragma: no cover
                 equity_series_for_plot.sort_index(inplace=True)
             if equity_series_for_plot.index.has_duplicates: # pragma: no cover
@@ -5202,11 +5206,11 @@ def plot_equity_curve(
 
     # <<< MODIFIED: [Patch v4.9.24] Added check for MagicMock plt. >>>
     # <<< MODIFIED: [Patch AI Studio v4.9.1] Applied specified patches to plot_equity_curve. >>>
-    if isinstance(plt, MagicMock): # pragma: no cover
+    if _isinstance_safe(plt, MagicMock): # pragma: no cover
         # Check if plt.subplots.return_value is also a MagicMock or not a (fig, ax) tuple
         # This is common in testing environments where plt is fully mocked.
-        if isinstance(plt.subplots.return_value, MagicMock) or \
-           not (isinstance(plt.subplots.return_value, tuple) and len(plt.subplots.return_value) == 2):
+        if _isinstance_safe(plt.subplots.return_value, MagicMock) or \
+           not (_isinstance_safe(plt.subplots.return_value, tuple) and len(plt.subplots.return_value) == 2):
             plot_logger.warning("   [Patch AI Studio v4.9.1] plt is MagicMock and plt.subplots.return_value is not a (fig, ax) tuple. Skipping plot generation in test context.")
             return
     # <<< END OF MODIFIED [Patch AI Studio v4.9.1] >>>
@@ -5225,7 +5229,7 @@ def plot_equity_curve(
             equity_series_for_plot.plot(ax=ax, label="Equity", legend=True, grid=True, linewidth=1.5, color="blue", alpha=0.8)
             ax.axhline(initial_capital_plot, color='red', linestyle=":", linewidth=1.5, label=f"Initial Capital (${initial_capital_plot:,.2f})")
 
-            if fold_boundaries and isinstance(fold_boundaries, list):
+            if fold_boundaries and _isinstance_safe(fold_boundaries, list):
                 valid_bounds = pd.to_datetime(fold_boundaries, errors='coerce').dropna().tolist()
                 if len(valid_bounds) >= 1: # pragma: no cover
                     plotted_labels: set[str] = set() # To avoid duplicate legend entries
@@ -5551,9 +5555,9 @@ def run_all_folds_with_threshold(
     eq_buy_hist_combined: Dict[pd.Timestamp, float] = {}
     eq_sell_hist_combined: Dict[pd.Timestamp, float] = {}
     for key_hist, hist_data_item in all_equity_histories_dict.items():
-        if isinstance(key_hist, str) and f"_BUY" in key_hist: # pragma: no cover
+        if _isinstance_safe(key_hist, str) and f"_BUY" in key_hist: # pragma: no cover
             eq_buy_hist_combined.update(hist_data_item)
-        elif isinstance(key_hist, str) and f"_SELL" in key_hist: # pragma: no cover
+        elif _isinstance_safe(key_hist, str) and f"_SELL" in key_hist: # pragma: no cover
             eq_sell_hist_combined.update(hist_data_item)
 
     eq_buy_series_final = pd.Series(dict(sorted(eq_buy_hist_combined.items()))).sort_index() if eq_buy_hist_combined else pd.Series(dtype='float64', index=pd.to_datetime([]))
@@ -5567,11 +5571,11 @@ def run_all_folds_with_threshold(
     # Calculate overall metrics for BUY and SELL
     total_ib_lot_buy_overall = sum(
         fold_metric.get("buy", {}).get(f"Fold_{i+1}_{fund_name_for_wfv_log} BUY Total Lots Traded (IB Accumulator)", 0.0)
-        for i, fold_metric in enumerate(all_fold_metrics_list) if isinstance(fold_metric.get("buy"), dict)
+        for i, fold_metric in enumerate(all_fold_metrics_list) if _isinstance_safe(fold_metric.get("buy"), dict)
     )
     total_ib_lot_sell_overall = sum(
         fold_metric.get("sell", {}).get(f"Fold_{i+1}_{fund_name_for_wfv_log} SELL Total Lots Traded (IB Accumulator)", 0.0)
-        for i, fold_metric in enumerate(all_fold_metrics_list) if isinstance(fold_metric.get("sell"), dict)
+        for i, fold_metric in enumerate(all_fold_metrics_list) if _isinstance_safe(fold_metric.get("sell"), dict)
     )
 
     metrics_buy_overall = _calculate_metrics_full(
@@ -5850,7 +5854,7 @@ def main(run_mode: str = 'FULL_PIPELINE', config_file: str = "config.yaml", suff
     # Remove existing file handlers if any, then add the new one
     # This ensures that if main() is called multiple times (e.g., in pipeline), logs go to the correct new file.
     for handler_main in logger.handlers[:]: # Iterate over a copy
-        if isinstance(handler_main, logging.FileHandler):
+        if _isinstance_safe(handler_main, logging.FileHandler):
             logger.removeHandler(handler_main)
             handler_main.close()
             main_exec_logger_func.debug(f"Removed existing FileHandler: {handler_main.baseFilename}")
