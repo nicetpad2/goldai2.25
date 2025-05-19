@@ -22,6 +22,8 @@ import time
 import warnings
 import traceback
 import pandas as pd  # [Patch AI Studio v4.9.42] - Global import for QA/CI/CD robustness
+# <<< [PATCH QA v4.9.42] >>>: Global import pandas as pd to ensure pd is always available in all backtest/simulation functions and their nested calls.
+# This patch fixes any ImportError or unbound pd reference in backtesting, walk-forward, and simulate_trades pipeline for all environments (prod/test/mocked).
 # import numpy as np  # Deferred: Will be imported robustly or via try_import_with_install
 import json
 import gzip
@@ -4470,9 +4472,13 @@ def _run_backtest_simulation_v34_full(
     initial_kill_switch_state: bool = False, initial_consecutive_losses: int = 0
 ) -> Tuple[pd.DataFrame, pd.DataFrame, float, Dict[pd.Timestamp, float], float, Dict[str, Any], List[Dict[str, Any]], Optional[str], Optional[str], bool, int, float]:
 
-    # [Patch AI Studio v4.9.42] - Ensure pd (pandas) is accessible for all simulation code paths
-    # (No local import needed, global is enough. Uncomment next line for local fallback if QA requires.)
-    # import pandas as pd
+    # [Patch AI Studio v4.9.42+] Fix UnboundLocalError: pd
+    try:
+        import pandas as pd  # noqa: F401
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError(
+            "[Patch AI Studio v4.9.42+] Critical: pandas must be installed and importable in _run_backtest_simulation_v34_full."
+        ) from exc
 
     sim_logger = logging.getLogger(f"{__name__}.run_backtest_simulation_v34.{label}.{side}")
     sim_logger.info(
@@ -6949,6 +6955,13 @@ def run_backtest_simulation_v34(
 
     [Patch AI Studio v4.9.34+] Arguments must satisfy strict type requirements.
     """
+    # [Patch AI Studio v4.9.42+] Robust pd import for test/CI edge case
+    try:
+        import pandas as pd  # noqa: F401
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError(
+            "[Patch AI Studio v4.9.42+] Critical: pandas must be installed and importable in run_backtest_simulation_v34."
+        ) from exc
     # [Patch AI Studio v4.9.41] Allow DataFrame-like objects (class name or subclass)
     if not _isinstance_safe(df_m1_segment_pd, pd.DataFrame):
         if not (hasattr(df_m1_segment_pd, "__class__") and df_m1_segment_pd.__class__.__name__ == "DataFrame"):
