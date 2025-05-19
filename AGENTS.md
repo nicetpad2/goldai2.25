@@ -1,10 +1,10 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.53+
+**Version:** v4.9.54+
 **Project:** Gold AI (Enterprise Refactor)  
 **Maintainer:** AI Studio QA/Dev Team  
-**Last updated:** 2025-05-25
+**Last updated:** 2025-05-27
 
 ---
 
@@ -70,7 +70,7 @@
 
 ## 🧩 Agent Test Runner – QA Key Features
 
-**Version:** 4.9.53+
+**Version:** 4.9.54+
 **Purpose:** Validates Gold AI: robust import handling, dynamic mocking, complete unit test execution.
 
 **Capabilities:**
