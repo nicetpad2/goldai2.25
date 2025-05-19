@@ -64,6 +64,12 @@
 - `__getitem__` now delegates to `tuple.__getitem__` to avoid runtime errors.
 - Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.54_FULL_PASS`.
 
+## [v4.9.55+] - 2025-05-27
+- `simulate_trades` now returns a dictionary by default for QA compatibility.
+- Legacy tuple output remains available via `return_tuple=True`.
+- Unit tests updated to request tuple output when needed.
+- Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.55_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
