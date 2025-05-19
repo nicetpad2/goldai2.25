@@ -1,7 +1,7 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.41+  
+**Version:** v4.9.42+  
 **Project:** Gold AI (Enterprise Refactor)  
 **Maintainer:** AI Studio QA/Dev Team  
 **Last updated:** 2025-05-20
@@ -12,7 +12,7 @@
 
 | Agent                  | Main Role           | Responsibilities                                                                                                                     |
 |------------------------|--------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.41+]` |
+| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.42+]` |
 | **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                       |
 | **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                       |
 | **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                              |
@@ -55,10 +55,10 @@
 ## 🔁 Patch Protocols & Version Control
 
 - **Explicit Versioning:**  
-  All patches/agent changes must log version (e.g., `v4.9.41+`) matching latest codebase.
+  All patches/agent changes must log version (e.g., `v4.9.42+`) matching latest codebase.
 
 - **Patch Logging:**  
-  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, etc.  
+  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, `[v4.9.42+]`, etc.  
   Any core logic change: notify relevant owners (GPT Dev, OMS_Guardian, ML_Innovator).
 
 - **Critical Constraints:**  
@@ -70,7 +70,7 @@
 
 ## 🧩 Agent Test Runner – QA Key Features
 
-**Version:** 4.9.41+  
+**Version:** 4.9.42+  
 **Purpose:** Validates Gold AI: robust import handling, dynamic mocking, complete unit test execution.
 
 **Capabilities:**
@@ -83,7 +83,8 @@
 - `[Patch AI Studio v4.9.34+]`: All edge/branch/minimal/failure/DataFrame guards covered
 - `[Patch AI Studio v4.9.39+]`: Robust formatter/typeguard for test mocks/edge
 - `[Patch AI Studio v4.9.40+]`: Numeric formatter covers all edge/mock cases
-- `[Patch AI Studio v4.9.41+]`: DataFrame subclass/typeguard (production + test) and equity tracker bug fixes; **robust equity history audit (TypeGuard Numeric)**  
+- `[Patch AI Studio v4.9.41+]`: DataFrame subclass/typeguard (production + test) and equity tracker bug fixes; robust equity history audit (TypeGuard Numeric)
+- `[Patch AI Studio v4.9.42+]`: **Global import patch/fix for pandas (pd) across all simulation and backtest functions (prevents UnboundLocalError in minimal/edge/CI runs)**
 - No dependencies beyond (`gold_ai2025.py`, `test_gold_ai.py`)
 
 ### 🧪 Mock Targets (for test_runner)
@@ -141,7 +142,7 @@ def _isinstance_safe(obj, expected_type):
         return False
     logging.error("[Patch AI Studio v4.9.40] _isinstance_safe: expected_type is not a valid type: %r, returning False.", expected_type)
     return False
-✅ QA Flow & Testing Requirements (v4.9.41+)
+✅ QA Flow & Testing Requirements (v4.9.42+)
 Coverage Target:
 All patches must bring test coverage to >90% for test_gold_ai.py + gold_ai2025.py (excluding placeholders).
 
@@ -162,7 +163,7 @@ Review vs. this AGENTS.md
 
 No merge without Execution_Test_Unit pass and log review
 
-ล่าสุด: [Patch AI Studio v4.9.41+]
+ล่าสุด: [Patch AI Studio v4.9.42+]
 เพิ่ม Robust Numeric TypeGuard สำหรับ equity history ใน simulation/backtest
 
 ตรวจสอบ audit log & error log ว่า non-numeric (str/NaT/None/nan) ถูก block อย่างถูกต้อง
@@ -171,67 +172,73 @@ No merge without Execution_Test_Unit pass and log review
 
 ระบบเทส/CI ต้องเห็น trace ใน log ทุกครั้งหากพบ input ไม่ใช่ numeric
 
-จุดเด่น:
+[Patch AI Studio v4.9.42+] เพิ่ม global import pandas (import pandas as pd) เพื่อป้องกัน UnboundLocalError และให้มั่นใจทุก simulation/backtest function รันได้ในทุก environment/mocking
 
-ตาราง agent/role และ responsibilities ครบทุกหมวด
+🚦 CI/CD, Release, and Compliance Requirements (Enterprise QA)
+CI/CD Integration
+All Patch/Merge Requests:
 
-อธิบาย Patch Protocol, QA/Testing flow และข้อจำกัดที่สำคัญ
+ต้อง รันผ่าน Execution_Test_Unit และได้ log result ในทุก environment ที่รองรับ (pytest -v --cov)
 
-Robust type guard patch ล่าสุด
+ผลเทส ต้องแนบ log และ coverage summary (เช่น ผ่าน/ล้มเหลว/skip/branch coverage)
 
-รองรับ edge/mock/failure path environment จริงและ pytest
+อัปเดตหมายเลข patch, เวอร์ชัน, ผู้รับผิดชอบใน Merge/Patch Log (เช่น [Patch AI Studio v4.9.42+], [Code_Runner_QA])
 
-Logic, formatter, typeguard, audit log ครบตามมาตรฐาน Gold AI Enterprise
+บันทึก ChangeLog.md ทุกครั้งที่มี logic หรือ core patch
 
-บังคับ QA Pass/Log Review ก่อน production
-## 🚦 CI/CD, Release, and Compliance Requirements (Enterprise QA)
+Production Constraints:
 
-### CI/CD Integration
+ห้าม merge/commit ตรงเข้าผลิต ถ้าไม่ได้รับ approval จาก Execution_Test_Unit, OMS_Guardian, หรือ Model_Inspector (ต้อง log ใน PR/commit ด้วย)
 
-- **All Patch/Merge Requests:**
-    - ต้อง **รันผ่าน Execution_Test_Unit** และได้ log result ในทุก environment ที่รองรับ (`pytest -v --cov`)
-    - ผลเทส **ต้องแนบ log และ coverage summary** (เช่น ผ่าน/ล้มเหลว/skip/branch coverage)
-    - อัปเดตหมายเลข patch, เวอร์ชัน, ผู้รับผิดชอบใน Merge/Patch Log (เช่น `[Patch AI Studio v4.9.41+]`, `[Code_Runner_QA]`)
-    - บันทึก **ChangeLog.md** ทุกครั้งที่มี logic หรือ core patch
+ทุก agent ที่ patch core logic หรือแก้ branch coverage ต้องแนบทั้ง log และ diff/PR (attach log, diff, result screenshot)
 
-- **Production Constraints:**
-    - **ห้าม merge/commit ตรงเข้าผลิต** ถ้าไม่ได้รับ approval จาก Execution_Test_Unit, OMS_Guardian, หรือ Model_Inspector (ต้อง log ใน PR/commit ด้วย)
-    - ทุก agent ที่ patch core logic หรือแก้ branch coverage ต้องแนบทั้ง log และ diff/PR (attach log, diff, result screenshot)
+Release Tagging:
 
-- **Release Tagging:**
-    - Release ทุกชุดต้องระบุ version ตรงกับ AGENTS.md/CHANGELOG.md (ตัวอย่าง: `v4.9.41-enterprise`, `v4.9.42-rc1`)
-    - ตรวจสอบ version bump ในทุกไฟล์สำคัญ: AGENTS.md, CHANGELOG.md, gold_ai2025.py, test_gold_ai.py
-    - ติด tag/label ใน CI เช่น `qa-passed`, `qa-blocked`, `release-candidate`
+Release ทุกชุดต้องระบุ version ตรงกับ AGENTS.md/CHANGELOG.md (ตัวอย่าง: v4.9.41-enterprise, v4.9.42-rc1)
 
-### Release Flow
+ตรวจสอบ version bump ในทุกไฟล์สำคัญ: AGENTS.md, CHANGELOG.md, gold_ai2025.py, test_gold_ai.py
 
-1. **Dev/Feature Branch**:  
-   - GPT Dev หรือทีม RnD ทำ patch, ส่ง PR → รัน test_gold_ai.py แบบ full suite
-2. **Execution_Test_Unit**:  
-   - รัน CI/CD full (pytest + coverage)  
-   - แนบ log, summary, และตรวจสอบกับ AGENTS.md/CHANGELOG.md  
-3. **QA Approval**:  
-   - หากผ่าน ให้ OMS_Guardian, Model_Inspector, AI Studio QA ตรวจสอบ (ต้อง log “QA-PASS”)
-   - ถ้าเจอข้อผิดพลาดต้องแนบ log fail และ patch/revert/rollback ตาม protocol
-4. **Release Tag & Publish**:  
-   - เมื่อตรวจสอบครบทุกฝ่ายให้ bump version/tag release ใน repository และบันทึก CHANGELOG.md  
-   - สร้าง release note สั้น + QA log แนบทุกครั้ง
+ติด tag/label ใน CI เช่น qa-passed, qa-blocked, release-candidate
 
-### Compliance/Audit
+Release Flow
+Dev/Feature Branch:
 
-- **Log & Audit**:
-    - ต้องเก็บ log สำคัญของทุก test/merge, โดยเฉพาะ error, warning, numeric/edge case typeguard, critical patch
-    - ทุกการแก้ไขระบบ (simulate_trades, WFV, RiskManager) ต้องมี [Patch AI Studio vX.Y.Z+] ใน log และสามารถ audit backward ได้
-    - Audit log ทั้งหมดต้องมี timestamp, agent, และรายละเอียดเหตุการณ์
+GPT Dev หรือทีม RnD ทำ patch, ส่ง PR → รัน test_gold_ai.py แบบ full suite
 
-- **Fail-safe Protocol**:
-    - หากเจอ failed test case หรือ branch ไม่ถูก cover → patch/new test/rollback **ทันที**
-    - ห้าม deploy ถ้า coverage <90% หรือเจอ log typeguard, numeric error, หรือ DataFrame issue โดยไม่ได้รับการตรวจสอบและอนุมัติ
+Execution_Test_Unit:
 
----
+รัน CI/CD full (pytest + coverage)
 
-### Example CI/CD Pipeline (yaml sketch)
-```yaml
+แนบ log, summary, และตรวจสอบกับ AGENTS.md/CHANGELOG.md
+
+QA Approval:
+
+หากผ่าน ให้ OMS_Guardian, Model_Inspector, AI Studio QA ตรวจสอบ (ต้อง log “QA-PASS”)
+
+ถ้าเจอข้อผิดพลาดต้องแนบ log fail และ patch/revert/rollback ตาม protocol
+
+Release Tag & Publish:
+
+เมื่อตรวจสอบครบทุกฝ่ายให้ bump version/tag release ใน repository และบันทึก CHANGELOG.md
+
+สร้าง release note สั้น + QA log แนบทุกครั้ง
+
+Compliance/Audit
+Log & Audit:
+
+ต้องเก็บ log สำคัญของทุก test/merge, โดยเฉพาะ error, warning, numeric/edge case typeguard, critical patch
+
+ทุกการแก้ไขระบบ (simulate_trades, WFV, RiskManager) ต้องมี [Patch AI Studio vX.Y.Z+] ใน log และสามารถ audit backward ได้
+
+Audit log ทั้งหมดต้องมี timestamp, agent, และรายละเอียดเหตุการณ์
+
+Fail-safe Protocol:
+
+หากเจอ failed test case หรือ branch ไม่ถูก cover → patch/new test/rollback ทันที
+
+ห้าม deploy ถ้า coverage <90% หรือเจอ log typeguard, numeric error, หรือ DataFrame issue โดยไม่ได้รับการตรวจสอบและอนุมัติ
+
+Example CI/CD Pipeline (yaml sketch)
 stages:
   - test
   - qa_review
@@ -247,20 +254,17 @@ test:
 qa_review:
   script:
     - grep 'QA-PASS' logs/patch.log || exit 1
-    - grep '[Patch AI Studio v4.9.41+]' logs/patch.log
+    - grep '[Patch AI Studio v4.9.42+]' logs/patch.log
 
 release:
   script:
-    - ./bump_version.sh v4.9.41-enterprise
-    - git tag v4.9.41-enterprise
-    - git push origin v4.9.41-enterprise
+    - ./bump_version.sh v4.9.42-enterprise
+    - git tag v4.9.42-enterprise
+    - git push origin v4.9.42-enterprise
     - echo "Release note: QA + coverage passed"
-หมายเหตุ:
-
+Note:
 ทุกรายละเอียดใน AGENTS.md นี้ใช้บังคับระดับ Enterprise QA/Release Pipeline
-
 ไม่อนุญาตข้ามขั้นตอน approval หรือปล่อย production logic หากยังไม่ได้ log ว่า QA-PASS + patch protocol ครบ
-
 Patch/Release ใดๆ ที่ไม่ตรง protocol หรือไม่มี log/trace ตามนี้ถือว่า invalid และต้อง rollback หรือ re-review ทันที
 
 QA Enterprise Status: ON
