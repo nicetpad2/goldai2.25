@@ -1980,13 +1980,13 @@ def tag_price_structure_patterns(
 ):
     import pandas as pd
 
-    # Force expected_type to pd.DataFrame (NEVER strategy_config object!)
-    expected_type = pd.DataFrame
-    if not _isinstance_safe(df, expected_type):
+    if not isinstance(df, pd.DataFrame):
         logging.error(
-            "[Patch] tag_price_structure_patterns: Input is not of expected DataFrame type."
+            "[Patch AI Studio v4.9.29] tag_price_structure_patterns: Input is not of expected DataFrame type."
         )
-        return None
+        raise TypeError(
+            "Input to tag_price_structure_patterns must be a pandas DataFrame."
+        )
     required_cols = ["High", "Low", "Close"]
     if (
         df is None
@@ -2009,13 +2009,13 @@ def calculate_m15_trend_zone(
 ):
     import pandas as pd
 
-    # Force expected_type to pd.DataFrame (NEVER strategy_config object!)
-    expected_type = pd.DataFrame
-    if not _isinstance_safe(df, expected_type):
+    if not isinstance(df, pd.DataFrame):
         logging.error(
-            "[Patch] calculate_m15_trend_zone: Input is not of expected DataFrame type."
+            "[Patch AI Studio v4.9.29] calculate_m15_trend_zone: Input is not of expected DataFrame type."
         )
-        return None
+        raise TypeError(
+            "Input to calculate_m15_trend_zone must be a pandas DataFrame."
+        )
     required_cols = ["High", "Low", "Close"]
     if (
         df is None
