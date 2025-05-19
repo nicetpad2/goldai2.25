@@ -47,6 +47,13 @@
 - Enhanced test TA mock with trend/momentum/volatility submodules.
 - Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.51_FULL_PASS`.
 
+## [v4.9.52+] - 2025-05-25
+- Added test-aware datetime fallback in `prepare_datetime`.
+- `simulate_trades` now absorbs `side` kwarg and unused kwargs without error.
+- Introduced `_ensure_datetimeindex` and `_raise_or_warn` helpers for flexible index validation.
+- Updated tests to provide dummy RiskManager to `TradeManager`.
+- Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.52_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
