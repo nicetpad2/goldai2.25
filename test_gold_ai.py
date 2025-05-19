@@ -807,7 +807,12 @@ class TestEdgeCases(unittest.TestCase):
         })
         df.index = self.ga.pd.date_range("2023-01-01", periods=10, freq="min")
         cfg = self.ga.StrategyConfig({})
-        result = self.ga.run_backtest_simulation_v34(df, config_obj=cfg)
+        result = self.ga.run_backtest_simulation_v34(
+            df,
+            config_obj=cfg,
+            label="Minimal",
+            initial_capital_segment=1000.0,
+        )
         self.assertIsInstance(result, dict)
         self.assertIn("trade_log", result)
         self.assertIn("run_summary", result)
@@ -1574,24 +1579,29 @@ def test_trade_manager_update_methods():
     tm = ga.TradeManager(cfg, rm)
     test_timestamp = pd.Timestamp("2023-01-01 00:00:00")
     tm.update_last_trade_time(test_timestamp)
-    # ตรวจสอบว่าค่า last_trade_time ถูกอัปเดตถ้า timestamp ไม่ใช่ NaT
-    if not pd.isna(test_timestamp):
-        assert tm.last_trade_time == test_timestamp
+    assert tm.last_trade_time == test_timestamp
     assert tm.risk_manager is rm
+    tm.update_last_trade_time(None)
+    assert tm.last_trade_time == test_timestamp
+    tm.update_last_trade_time(pd.NaT)
+    assert tm.last_trade_time == test_timestamp
+    with pytest.raises(TypeError):
+        tm.update_last_trade_time("2023-01-01 00:00:00")
 
 
 def test_run_backtest_simulation_minimal():
     ga = safe_import_gold_ai()
     pytest.importorskip("pandas")
     import pandas as pd
-    df = pd.DataFrame({
-        "Open": [1, 2, 3, 4, 5],
-        "High": [1, 2, 3, 4, 5],
-        "Low": [1, 2, 3, 4, 5],
-        "Close": [1, 2, 3, 4, 5],
-        "Date": ["20210101"] * 5,
-        "Timestamp": ["00:00:00"] * 5,
-    })
+    df = pd.DataFrame(
+        {
+            "Open": [1, 2, 3, 4, 5],
+            "High": [1, 2, 3, 4, 5],
+            "Low": [1, 2, 3, 4, 5],
+            "Close": [1, 2, 3, 4, 5],
+        },
+        index=pd.date_range("2023-01-01", periods=5, freq="T"),
+    )
     cfg = ga.StrategyConfig({})
     result = ga.run_backtest_simulation_v34(
         df,
