@@ -1,7 +1,7 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.42+  
+**Version:** v4.9.43+  
 **Project:** Gold AI (Enterprise Refactor)  
 **Maintainer:** AI Studio QA/Dev Team  
 **Last updated:** 2025-05-21
@@ -10,55 +10,55 @@
 
 ## 🧠 Core AI Units
 
-| Agent                  | Main Role           | Responsibilities                                                                                                                         |
-|------------------------|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.42+]`|
-| **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                           |
-| **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                           |
-| **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                                   |
-| **ML_Innovator**       | Advanced ML        | Researches SHAP, Meta Classifier, feature engineering, reinforcement learning                                                           |
-| **Model_Inspector**    | Model Diagnostics  | Checks overfitting, noise, data leakage, fallback correctness, metrics drift                                                            |
+| Agent                  | Main Role           | Responsibilities                                                                                                                              |
+|------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.43+]`      |
+| **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                                 |
+| **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                                 |
+| **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                                         |
+| **ML_Innovator**       | Advanced ML        | Researches SHAP, Meta Classifier, feature engineering, reinforcement learning                                                                 |
+| **Model_Inspector**    | Model Diagnostics  | Checks overfitting, noise, data leakage, fallback correctness, metrics drift                                                                  |
 
 ---
 
 ## 🛡 Risk & Execution
 
-| Agent                 | Main Role        | Responsibilities                                                         |
-|-----------------------|-----------------|--------------------------------------------------------------------------|
-| **OMS_Guardian**      | OMS Specialist  | Validates order management: risk, TP/SL, lot sizing, spike, forced entry |
-| **System_Deployer**   | Live Trading    | (Future) Manages deployment, monitoring, CI/CD, live risk switch         |
-| **Param_Tuner_AI**    | Param Tuning    | Analyzes folds, tunes TP/SL multipliers, gain_z thresholds, session logic|
+| Agent                 | Main Role        | Responsibilities                                                            |
+|-----------------------|-----------------|-----------------------------------------------------------------------------|
+| **OMS_Guardian**      | OMS Specialist  | Validates order management: risk, TP/SL, lot sizing, spike, forced entry    |
+| **System_Deployer**   | Live Trading    | (Future) Manages deployment, monitoring, CI/CD, live risk switch            |
+| **Param_Tuner_AI**    | Param Tuning    | Analyzes folds, tunes TP/SL multipliers, gain_z thresholds, session logic   |
 
 ---
 
 ## 🧪 Test & Mocking
 
-| Agent                   | Main Role         | Responsibilities                                                        |
-|-------------------------|------------------|-------------------------------------------------------------------------|
-| **Execution_Test_Unit** | QA Testing       | Checks test coverage, adds edge cases, audits completeness before prod   |
-| **Colab_Navigator**     | Colab Specialist | Handles get_ipython, drive.mount, GPU/Colab mocking and dependency      |
-| **API_Sentinel**        | API Guard        | Checks API Key handling, permissions, and safe usage                    |
+| Agent                   | Main Role         | Responsibilities                                                          |
+|-------------------------|------------------|---------------------------------------------------------------------------|
+| **Execution_Test_Unit** | QA Testing       | Checks test coverage, adds edge cases, audits completeness before prod     |
+| **Colab_Navigator**     | Colab Specialist | Handles get_ipython, drive.mount, GPU/Colab mocking and dependency        |
+| **API_Sentinel**        | API Guard        | Checks API Key handling, permissions, and safe usage                      |
 
 ---
 
 ## 📊 Analytics & Drift
 
-| Agent                    | Main Role         | Responsibilities                                                    |
-|--------------------------|------------------|---------------------------------------------------------------------|
-| **Pattern_Learning_AI**    | Pattern Anomaly   | Detects pattern errors, repeated SL, failed reentry                 |
-| **Session_Research_Unit**  | Session Winrate   | Analyzes session behavior: Asia, London, NY                         |
-| **Wave_Marker_Unit**       | Wave Tagging      | Auto-labels Elliott Waves, price structures                         |
-| **Insight_Visualizer**     | Visualization     | Builds equity curves, SHAP summaries, fold heatmaps                 |
+| Agent                    | Main Role         | Responsibilities                                                      |
+|--------------------------|------------------|-----------------------------------------------------------------------|
+| **Pattern_Learning_AI**    | Pattern Anomaly   | Detects pattern errors, repeated SL, failed reentry                   |
+| **Session_Research_Unit**  | Session Winrate   | Analyzes session behavior: Asia, London, NY                           |
+| **Wave_Marker_Unit**       | Wave Tagging      | Auto-labels Elliott Waves, price structures                           |
+| **Insight_Visualizer**     | Visualization     | Builds equity curves, SHAP summaries, fold heatmaps                   |
 
 ---
 
 ## 🔁 Patch Protocols & Version Control
 
 - **Explicit Versioning:**  
-  All patches/agent changes must log version (e.g., `v4.9.42+`) matching latest codebase.
+  All patches/agent changes must log version (e.g., `v4.9.43+`) matching latest codebase.
 
 - **Patch Logging:**  
-  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, `[v4.9.42+]`, etc.  
+  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, `[v4.9.42+]`, `[v4.9.43+]`, etc.  
   Any core logic change: notify relevant owners (GPT Dev, OMS_Guardian, ML_Innovator).
 
 - **Critical Constraints:**  
@@ -70,7 +70,7 @@
 
 ## 🧩 Agent Test Runner – QA Key Features
 
-**Version:** 4.9.42+  
+**Version:** 4.9.43+  
 **Purpose:** Validates Gold AI: robust import handling, dynamic mocking, complete unit test execution.
 
 **Capabilities:**
@@ -85,6 +85,7 @@
 - `[Patch AI Studio v4.9.40+]`: Numeric formatter covers all edge/mock cases
 - `[Patch AI Studio v4.9.41+]`: DataFrame subclass/typeguard (production + test) and equity tracker bug fixes; robust equity history audit (TypeGuard Numeric)
 - `[Patch AI Studio v4.9.42+]`: **Global import patch/fix for pandas (pd) across all simulation and backtest functions (prevents UnboundLocalError in minimal/edge/CI runs)**
+- `[Patch AI Studio v4.9.43+]`: **Robust Numeric TypeGuard for equity_tracker['history'] in simulation/backtest (prevents TypeError: '<=' not supported between str and int)**
 - No dependencies beyond (`gold_ai2025.py`, `test_gold_ai.py`)
 
 ### 🧪 Mock Targets (for test_runner)
@@ -142,8 +143,7 @@ def _isinstance_safe(obj, expected_type):
         return False
     logging.error("[Patch AI Studio v4.9.40] _isinstance_safe: expected_type is not a valid type: %r, returning False.", expected_type)
     return False
-✅ QA Flow & Testing Requirements (v4.9.42+)
-
+✅ QA Flow & Testing Requirements (v4.9.43+)
 Coverage Target:
 All patches must bring test coverage to >90% for test_gold_ai.py + gold_ai2025.py (excluding placeholders).
 
@@ -164,12 +164,12 @@ Review vs. this AGENTS.md
 
 No merge without Execution_Test_Unit pass and log review
 
-ล่าสุด: [Patch AI Studio v4.9.42+]
+ล่าสุด: [Patch AI Studio v4.9.43+]
 เพิ่ม Robust Numeric TypeGuard สำหรับ equity history ใน simulation/backtest
 
-ตรวจสอบ audit log & error log ว่า non-numeric (str/NaT/None/nan) ถูก block อย่างถูกต้อง
+ตรวจสอบ audit log & error log ว่า non-numeric (str/NaT/None/nan) ถูก block และ log warning อย่างถูกต้อง
 
-ข้อผิดพลาดเดิม (TypeError: '<=' not supported...) ถูกป้องกันและ log warning
+ป้องกันข้อผิดพลาด TypeError: '<=' not supported...
 
 ระบบเทส/CI ต้องเห็น trace ใน log ทุกครั้งหากพบ input ไม่ใช่ numeric
 
@@ -183,19 +183,17 @@ All Patch/Merge Requests:
 
 ผลเทส ต้องแนบ log และ coverage summary (เช่น ผ่าน/ล้มเหลว/skip/branch coverage)
 
-อัปเดตหมายเลข patch, เวอร์ชัน, ผู้รับผิดชอบใน Merge/Patch Log (เช่น [Patch AI Studio v4.9.42+], [Code_Runner_QA])
+อัปเดตหมายเลข patch, เวอร์ชัน, ผู้รับผิดชอบใน Merge/Patch Log (เช่น [Patch AI Studio v4.9.43+], [Code_Runner_QA])
 
 บันทึก ChangeLog.md ทุกครั้งที่มี logic หรือ core patch
 
 Production Constraints:
-
 ห้าม merge/commit ตรงเข้าผลิต ถ้าไม่ได้รับ approval จาก Execution_Test_Unit, OMS_Guardian, หรือ Model_Inspector (ต้อง log ใน PR/commit ด้วย)
 
 ทุก agent ที่ patch core logic หรือแก้ branch coverage ต้องแนบทั้ง log และ diff/PR (attach log, diff, result screenshot)
 
 Release Tagging:
-
-Release ทุกชุดต้องระบุ version ตรงกับ AGENTS.md/CHANGELOG.md (ตัวอย่าง: v4.9.42-enterprise, v4.9.42-rc1)
+Release ทุกชุดต้องระบุ version ตรงกับ AGENTS.md/CHANGELOG.md (ตัวอย่าง: v4.9.43-enterprise, v4.9.43-rc1)
 
 ตรวจสอบ version bump ในทุกไฟล์สำคัญ: AGENTS.md, CHANGELOG.md, gold_ai2025.py, test_gold_ai.py
 
@@ -203,30 +201,25 @@ Release ทุกชุดต้องระบุ version ตรงกับ AG
 
 Release Flow
 Dev/Feature Branch:
-
 GPT Dev หรือทีม RnD ทำ patch, ส่ง PR → รัน test_gold_ai.py แบบ full suite
 
 Execution_Test_Unit:
-
 รัน CI/CD full (pytest + coverage)
 
 แนบ log, summary, และตรวจสอบกับ AGENTS.md/CHANGELOG.md
 
 QA Approval:
-
 หากผ่าน ให้ OMS_Guardian, Model_Inspector, AI Studio QA ตรวจสอบ (ต้อง log “QA-PASS”)
 
 ถ้าเจอข้อผิดพลาดต้องแนบ log fail และ patch/revert/rollback ตาม protocol
 
 Release Tag & Publish:
-
 เมื่อตรวจสอบครบทุกฝ่ายให้ bump version/tag release ใน repository และบันทึก CHANGELOG.md
 
 สร้าง release note สั้น + QA log แนบทุกครั้ง
 
 Compliance/Audit
 Log & Audit:
-
 ต้องเก็บ log สำคัญของทุก test/merge, โดยเฉพาะ error, warning, numeric/edge case typeguard, critical patch
 
 ทุกการแก้ไขระบบ (simulate_trades, WFV, RiskManager) ต้องมี [Patch AI Studio vX.Y.Z+] ใน log และสามารถ audit backward ได้
@@ -234,10 +227,10 @@ Log & Audit:
 Audit log ทั้งหมดต้องมี timestamp, agent, และรายละเอียดเหตุการณ์
 
 Fail-safe Protocol:
-
 หากเจอ failed test case หรือ branch ไม่ถูก cover → patch/new test/rollback ทันที
 
 ห้าม deploy ถ้า coverage <90% หรือเจอ log typeguard, numeric error, หรือ DataFrame issue โดยไม่ได้รับการตรวจสอบและอนุมัติ
+
 Example CI/CD Pipeline (yaml sketch)
 stages:
   - test
@@ -254,18 +247,23 @@ test:
 qa_review:
   script:
     - grep 'QA-PASS' logs/patch.log || exit 1
-    - grep '[Patch AI Studio v4.9.42+]' logs/patch.log
+    - grep '[Patch AI Studio v4.9.43+]' logs/patch.log
 
 release:
   script:
-    - ./bump_version.sh v4.9.42-enterprise
-    - git tag v4.9.42-enterprise
-    - git push origin v4.9.42-enterprise
+    - ./bump_version.sh v4.9.43-enterprise
+    - git tag v4.9.43-enterprise
+    - git push origin v4.9.43-enterprise
     - echo "Release note: QA + coverage passed"
 Note:
+
 ทุกรายละเอียดใน AGENTS.md นี้ใช้บังคับระดับ Enterprise QA/Release Pipeline
+
 ไม่อนุญาตข้ามขั้นตอน approval หรือปล่อย production logic หากยังไม่ได้ log ว่า QA-PASS + patch protocol ครบ
+
 Patch/Release ใดๆ ที่ไม่ตรง protocol หรือไม่มี log/trace ตามนี้ถือว่า invalid และต้อง rollback หรือ re-review ทันที
 
 QA Enterprise Status: ON
 Release readiness: Only after ALL conditions above are met.
+
+
