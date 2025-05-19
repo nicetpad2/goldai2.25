@@ -1172,7 +1172,7 @@ def safe_load_csv_auto(file_path: str) -> pd.DataFrame | None:
 
     load_logger.info(f"      (safe_load) Attempting to load: {os.path.basename(file_path)}")
     if not os.path.exists(file_path):
-        load_logger.error(f"         (Error) File not found: {file_path}")
+        load_logger.error(f"         (Error) ไม่พบไฟล์: {file_path}")
         return None
 
     try:
