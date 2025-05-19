@@ -1987,6 +1987,10 @@ def tag_price_structure_patterns(
         raise TypeError(
             "Input to tag_price_structure_patterns must be a pandas DataFrame."
         )
+    # PATCH: สำหรับ DataFrame ว่าง ให้ return DataFrame ว่างที่มี column 'Pattern_Label'
+    if getattr(df, "empty", False):
+        import pandas as pd
+        return pd.DataFrame(columns=["Pattern_Label"])
     required_cols = ["High", "Low", "Close"]
     # --- Handle empty/None DataFrame and missing columns as "empty case" (return empty DataFrame)
     if (
@@ -2017,6 +2021,10 @@ def calculate_m15_trend_zone(
         raise TypeError(
             "Input to calculate_m15_trend_zone must be a pandas DataFrame."
         )
+    # PATCH: สำหรับ DataFrame ว่าง ให้ return DataFrame ว่างที่มี column 'Trend_Zone'
+    if getattr(df, "empty", False):
+        import pandas as pd
+        return pd.DataFrame(columns=["Trend_Zone"])
     required_cols = ["High", "Low", "Close"]
     # --- Handle empty/None DataFrame and missing columns as "empty case" (return empty DataFrame)
     if (

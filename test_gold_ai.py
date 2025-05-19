@@ -1512,7 +1512,7 @@ class TestBranchAndErrorPathCoverage:
         res = ga.tag_price_structure_patterns(df, config)
         assert isinstance(res, ga.pd.DataFrame)
         assert getattr(res, "empty", True)
-        assert "Pattern_Label" in res.columns
+        assert list(res.columns) == ["Pattern_Label"]
 
     def test_calculate_m15_trend_zone_empty_df(self):
         ga = safe_import_gold_ai()
@@ -1521,7 +1521,7 @@ class TestBranchAndErrorPathCoverage:
         res = ga.calculate_m15_trend_zone(df, config)
         assert isinstance(res, ga.pd.DataFrame)
         assert getattr(res, "empty", True)
-        assert "Trend_Zone" in res.columns
+        assert list(res.columns) == ["Trend_Zone"]
 
     def test_tag_price_structure_patterns_type_guard(self):
         ga = safe_import_gold_ai()
