@@ -4861,45 +4861,42 @@ def _run_backtest_simulation_v34_full(
         if not df_sim.empty:
             last_idx_sim_final_df_val = df_sim.index[-1]
             df_sim.loc[last_idx_sim_final_df_val, equity_col_final_df_sim_val] = equity_tracker['current_equity']
-            # [Patch AI Studio v4.9.41] Robust equity_tracker key handling: allow only int keys
+            # [Patch AI Studio v4.9.41+] Robust equity_tracker history update (type-checked, audit log)
             try:
-                idx_val = last_idx_sim_final_df_val
-                if isinstance(idx_val, str):
-                    if idx_val == "":
-                        logging.warning(
-                            "[Patch AI Studio v4.9.41] Skipping equity history update for blank key"
-                        )
+                if equity_tracker is not None and isinstance(equity_tracker, dict):
+                    # Coerce equity value to float, ignore/skip non-numeric
+                    eq_value = equity_tracker.get('current_equity', np.nan)
+                    eq_is_valid = False
+                    import numpy as np
+                    import pandas as pd
+
+                    def _is_numeric(val):
+                        if val is None:
+                            return False
+                        if isinstance(val, (int, float, np.integer, np.floating)):
+                            return not (val is np.nan or (hasattr(val, 'isnan') and val.isnan()))
+                        if isinstance(val, (np.generic,)):
+                            return np.issubdtype(type(val), np.number)
+                        if isinstance(val, (pd.Timestamp, pd.Timedelta)):
+                            return False
+                        try:
+                            v = float(val)
+                            if np.isnan(v):
+                                return False
+                            return True
+                        except Exception:
+                            return False
+
+                    if _is_numeric(eq_value):
+                        eq_value = float(eq_value)
+                        eq_is_valid = True
+                        equity_tracker.setdefault("history", []).append(eq_value)
+                        peak = equity_tracker.get("peak_equity", eq_value)
+                        if _is_numeric(peak) and eq_value > float(peak):
+                            equity_tracker["peak_equity"] = eq_value
                     else:
-                        try:
-                            idx_val_int = int(idx_val)
-                            if idx_val_int not in equity_tracker['history']:
-                                try:
-                                    eq_val_hist_final = float(equity_tracker['current_equity'])
-                                except Exception:
-                                    logging.error(
-                                        f"[Patch AI Studio v4.9.41] Non-numeric value in equity history: {equity_tracker['current_equity']} (type: {type(equity_tracker['current_equity'])})"
-                                    )
-                                    eq_val_hist_final = np.nan
-                                equity_tracker['history'][idx_val_int] = eq_val_hist_final
-                                logging.debug(
-                                    f"[Patch AI Studio v4.9.41] equity_tracker history updated for key {idx_val_int}"
-                                )
-                        except Exception:
-                            logging.error(
-                                f"[Patch AI Studio v4.9.41] Cannot convert key '{idx_val}' to int for equity history"
-                            )
-                elif isinstance(idx_val, int):
-                    if idx_val not in equity_tracker['history']:
-                        try:
-                            eq_val_hist_final = float(equity_tracker['current_equity'])
-                        except Exception:
-                            logging.error(
-                                f"[Patch AI Studio v4.9.41] Non-numeric value in equity history: {equity_tracker['current_equity']} (type: {type(equity_tracker['current_equity'])})"
-                            )
-                            eq_val_hist_final = np.nan
-                        equity_tracker['history'][idx_val] = eq_val_hist_final
-                        logging.debug(
-                            f"[Patch AI Studio v4.9.41] equity_tracker history updated for key {idx_val}"
+                        logging.warning(
+                            f"[Patch AI Studio v4.9.41+] Skipped non-numeric equity value in tracker history: {eq_value} (type={type(eq_value)})"
                         )
             except Exception as e:
                 logging.error(f"[Patch AI Studio v4.9.41] Error updating equity_tracker['history']: {e}")
