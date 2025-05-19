@@ -17,7 +17,7 @@ pip install -r requirements.txt
 pytest -v --cov=gold_ai2025 --cov-report=term-missing
 📝 Project Notes
 Patch Protocol:
-All logic patches and critical changes must log their version (e.g., [Patch AI Studio v4.9.40+]) in code and test logs per AGENTS.md.
+All logic patches and critical changes must log their version (e.g., [Patch AI Studio v4.9.42+]) in code and test logs per AGENTS.md.
 
 Type/Format Guards:
 Use only _isinstance_safe and _float_fmt as enforced by QA for all dynamic type or format operations.
