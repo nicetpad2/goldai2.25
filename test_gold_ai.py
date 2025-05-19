@@ -1976,7 +1976,7 @@ def test_risk_trade_manager_forced_entry_spike(monkeypatch):
         "enable_spike_guard": True,
         "spike_guard_threshold": 0.5,
     })
-    tm = TradeManager(config)
+    tm = TradeManager(config, MagicMock())
     rm = RiskManager(config)
     result = simulate_trades(df, config, side="BUY", trade_manager_obj=tm, risk_manager_obj=rm)
     log = result["trade_log"]
