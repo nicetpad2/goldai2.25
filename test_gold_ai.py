@@ -1,6 +1,6 @@
 """Gold AI Test Suite
 
-[Patch AI Studio v4.9.42] - Validate global pandas availability for backtesting functions.
+[Patch AI Studio v4.9.44] - Validate global pandas availability and new return structure.
 """
 
 import importlib
@@ -821,6 +821,22 @@ class TestEdgeCases(unittest.TestCase):
         self.assertIsInstance(result, dict)
         self.assertIn("trade_log", result)
         self.assertIn("run_summary", result)
+
+    def test_run_backtest_simulation_v34_return_tuple(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({"Open": [1], "High": [1], "Low": [1], "Close": [1], "Entry_Long": [0], "ATR_14_Shifted": [1.0], "Signal_Score": [1.0], "Trade_Reason": ["T"], "session": ["Asia"], "Gain_Z": [0.1], "MACD_hist_smooth": [0.1], "RSI": [50]})
+        df.index = self.ga.pd.date_range("2023-01-01", periods=1, freq="min")
+        cfg = self.ga.StrategyConfig({})
+        result = self.ga.run_backtest_simulation_v34(
+            df,
+            config_obj=cfg,
+            label="Minimal",
+            initial_capital_segment=1000.0,
+            return_tuple=True,
+        )
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 12)
 
 
 class TestWFVandLotSizing(unittest.TestCase):

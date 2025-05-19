@@ -1,7 +1,7 @@
 
 """
 Gold AI Enterprise v4.9.x
-[Patch AI Studio v4.9.42] - [Import Safety & QA-PASS]: Ensure 'import pandas as pd' is available to all simulation/backtest functions
+[Patch AI Studio v4.9.44] - [Return Dict Default]: `run_backtest_simulation_v34` now returns a dictionary by default with optional legacy tuple.
 """
 
 # ==============================================================================
@@ -32,7 +32,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.42_GLOBAL_PANDAS_IMPORT"  # Updated version
+MINIMAL_SCRIPT_VERSION = "4.9.44_RETURN_DICT"  # Updated version
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -6964,7 +6964,8 @@ def run_backtest_simulation_v34(
 ) -> Any:
     """Run backtest simulation with explicit argument contract.
 
-    [Patch AI Studio v4.9.34+] Arguments must satisfy strict type requirements.
+    [Patch AI Studio v4.9.44+] Returns a dict by default for QA/production compatibility.
+    Set ``return_tuple=True`` for legacy tuple output.
     """
     # [Patch AI Studio v4.9.42+] Robust pd import for test/CI edge case
     try:
@@ -7003,7 +7004,8 @@ def run_backtest_simulation_v34(
             % type(config_obj)
         )
     side_arg = kwargs.pop("side", "BUY")
-    return _run_backtest_simulation_v34_full(
+    return_tuple = kwargs.pop("return_tuple", False)
+    result_tuple = _run_backtest_simulation_v34_full(
         df_m1_segment_pd,
         label,
         initial_capital_segment,
@@ -7013,6 +7015,25 @@ def run_backtest_simulation_v34(
         trade_manager_obj,
         **kwargs,
     )
+    result_dict = {
+        "df_sim": result_tuple[0],
+        "trade_log": result_tuple[1],
+        "final_equity": result_tuple[2],
+        "equity_history": result_tuple[3],
+        "final_dd": result_tuple[4],
+        "run_summary": result_tuple[5],
+        "orderbook": result_tuple[6],
+        "label": label,
+        "side": side_arg,
+        "hard_kill_triggered": result_tuple[9],
+        "max_consec_loss": result_tuple[10],
+        "total_ib_lot": result_tuple[11],
+        "model_type_l1": result_tuple[7],
+        "model_type_l2": result_tuple[8],
+    }
+    if return_tuple:
+        return result_tuple
+    return result_dict
 
 
 # No functional code in this part for the current refactor.
