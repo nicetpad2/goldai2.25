@@ -4397,7 +4397,14 @@ def close_trade(
     equity_tracker_dict_ct['current_equity'] += net_pnl_usd_ct_val
     equity_tracker_dict_ct['peak_equity'] = max(equity_tracker_dict_ct['peak_equity'], equity_tracker_dict_ct['current_equity'])
     if 'history' in equity_tracker_dict_ct and _isinstance_safe(equity_tracker_dict_ct['history'], dict):
-        equity_tracker_dict_ct['history'][exit_time] = equity_tracker_dict_ct['current_equity']
+        try:
+            eq_val_hist = float(equity_tracker_dict_ct['current_equity'])
+        except Exception:
+            logging.error(
+                f"[Patch AI Studio v4.9.41] Non-numeric value in equity history: {equity_tracker_dict_ct['current_equity']} (type: {type(equity_tracker_dict_ct['current_equity'])})"
+            )
+            eq_val_hist = np.nan
+        equity_tracker_dict_ct['history'][exit_time] = eq_val_hist
 
     # Update run summary
     if run_summary_dict_ct and _isinstance_safe(run_summary_dict_ct, dict): # pragma: no cover
@@ -4466,7 +4473,7 @@ def _run_backtest_simulation_v34_full(
 
     # [Patch AI Studio v4.9.34+] Defensive index validation
     # [Patch AI Studio v4.9.41+] Robust type guard for DataFrame index
-    if not _isinstance_safe(df_m1_segment_pd.index, pd.DatetimeIndex):
+    if not (_isinstance_safe(df_m1_segment_pd.index, pd.DatetimeIndex) or type(df_m1_segment_pd.index).__name__ == "DatetimeIndex"):
         logging.critical(
             "[Patch AI Studio v4.9.34+] DataFrame index must be DatetimeIndex. Got: %r. Test/data pipeline must provide valid datetime index." % type(df_m1_segment_pd.index)
         )
@@ -4811,7 +4818,14 @@ def _run_backtest_simulation_v34_full(
             df_sim.loc[idx_bar, f"Max_Drawdown_At_Point{label_suffix_df}"] = max_drawdown_pct_overall
             df_sim.loc[idx_bar, f"Equity_Realistic{label_suffix_df}"] = equity_tracker['current_equity']
             df_sim.loc[idx_bar, f"Active_Order_Count{label_suffix_df}"] = len(active_orders)
-            equity_tracker['history'][now_bar] = equity_tracker['current_equity']
+            try:
+                eq_val_hist_loop = float(equity_tracker['current_equity'])
+            except Exception:
+                logging.error(
+                    f"[Patch AI Studio v4.9.41] Non-numeric value in equity history: {equity_tracker['current_equity']} (type: {type(equity_tracker['current_equity'])})"
+                )
+                eq_val_hist_loop = np.nan
+            equity_tracker['history'][now_bar] = eq_val_hist_loop
 
             prev_risk_mode_loop = current_risk_mode
             if consecutive_losses_runtime >= config_obj.recovery_mode_consecutive_losses:
@@ -4859,7 +4873,14 @@ def _run_backtest_simulation_v34_full(
                         try:
                             idx_val_int = int(idx_val)
                             if idx_val_int not in equity_tracker['history']:
-                                equity_tracker['history'][idx_val_int] = equity_tracker['current_equity']
+                                try:
+                                    eq_val_hist_final = float(equity_tracker['current_equity'])
+                                except Exception:
+                                    logging.error(
+                                        f"[Patch AI Studio v4.9.41] Non-numeric value in equity history: {equity_tracker['current_equity']} (type: {type(equity_tracker['current_equity'])})"
+                                    )
+                                    eq_val_hist_final = np.nan
+                                equity_tracker['history'][idx_val_int] = eq_val_hist_final
                                 logging.debug(
                                     f"[Patch AI Studio v4.9.41] equity_tracker history updated for key {idx_val_int}"
                                 )
@@ -4869,7 +4890,14 @@ def _run_backtest_simulation_v34_full(
                             )
                 elif isinstance(idx_val, int):
                     if idx_val not in equity_tracker['history']:
-                        equity_tracker['history'][idx_val] = equity_tracker['current_equity']
+                        try:
+                            eq_val_hist_final = float(equity_tracker['current_equity'])
+                        except Exception:
+                            logging.error(
+                                f"[Patch AI Studio v4.9.41] Non-numeric value in equity history: {equity_tracker['current_equity']} (type: {type(equity_tracker['current_equity'])})"
+                            )
+                            eq_val_hist_final = np.nan
+                        equity_tracker['history'][idx_val] = eq_val_hist_final
                         logging.debug(
                             f"[Patch AI Studio v4.9.41] equity_tracker history updated for key {idx_val}"
                         )
@@ -5245,7 +5273,15 @@ def _calculate_metrics_full(
         equity_series = equity_history_segment.copy()
     elif _isinstance_safe(equity_history_segment, dict) and equity_history_segment:
         try:
-            equity_series = pd.Series({pd.to_datetime(k, errors='coerce'): v for k, v in equity_history_segment.items()}).dropna().sort_index()
+            equity_series = pd.Series({
+                pd.to_datetime(k, errors='coerce'): (
+                    float(v)
+                    if isinstance(v, (int, float, np.number))
+                    or (isinstance(v, str) and v.replace('.', '', 1).isdigit())
+                    else np.nan
+                )
+                for k, v in equity_history_segment.items()
+            }).dropna().sort_index()
             if not equity_series.empty:
                 equity_series = equity_series[~equity_series.index.duplicated(keep='last')] # Ensure unique index
             else: # pragma: no cover
