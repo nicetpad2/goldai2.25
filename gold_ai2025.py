@@ -73,35 +73,37 @@ class DataLoadError(GoldAIError):
     """Raised when load_data fails."""
 
 
-# [Patch AI Studio v4.9.30] Robust isinstance for test/type-guard coverage
+# [Patch AI Studio v4.9.39+] Robust isinstance for test mocks/edge cases (fix TypeError)
 def _isinstance_safe(obj, expected_type):
-    """Safe ``isinstance`` wrapper that never raises ``TypeError``.
-
-    [Patch AI Studio v4.9.32] Only accepts ``type`` or tuple of types for
-    ``expected_type`` and logs all errors for robust test paths.
-    """
+    """Robust isinstance that never raises ``TypeError``."""
     import logging
-    logger = logging.getLogger()
-
-    # Robust guard: Only accept type/tuple of types as expected_type
-    if not isinstance(expected_type, (type, tuple)):
-        logger.error(
-            f"[Patch AI Studio v4.9.32] Invalid expected_type argument for isinstance: "
-            f"{repr(expected_type)} (type: {type(expected_type)}). "
-            f"Returning False for robust test-path."
+    if expected_type is None:
+        return False
+    try:
+        if isinstance(expected_type, type):
+            return isinstance(obj, expected_type)
+        if isinstance(expected_type, tuple) and all(isinstance(t, type) for t in expected_type):
+            return isinstance(obj, expected_type)
+        if hasattr(expected_type, "__class__") and expected_type.__class__.__name__ == "MagicMock":
+            logging.error(
+                "[Patch AI Studio v4.9.39] _isinstance_safe: expected_type is MagicMock, returning False."
+            )
+            return False
+        logging.error(
+            f"[Patch AI Studio v4.9.39] _isinstance_safe: expected_type is not a valid type: {expected_type!r}, returning False."
         )
         return False
-    try:
-        return isinstance(obj, expected_type)
-    except Exception as e:  # pragma: no cover - unexpected edge
-        logger.error(f"[Patch AI Studio v4.9.32] Exception in _isinstance_safe: {e}")
+    except Exception as ex:  # pragma: no cover - unexpected edge
+        logging.error(f"[Patch AI Studio v4.9.39] _isinstance_safe exception: {ex!r}")
         return False
 
 
-# [Patch AI Studio v4.9.36] Robust format guard
+# [Patch AI Studio v4.9.39+] Robust float formatter for any object (fix ValueError)
 def _float_fmt(val, ndigit: int = 3) -> str:
-    """Return formatted float string or fallback to str(val)."""
+    """Return formatted float string or fallback to ``str(val)``."""
     try:
+        if isinstance(val, (float, int)):
+            return f"{val:.{ndigit}f}"
         return f"{float(val):.{ndigit}f}"
     except Exception:
         return str(val)
@@ -914,21 +916,21 @@ class TradeManager:
         import pandas as pd
         import numpy as np
         if trade_time is None:
-            logging.warning("[Patch AI Studio v4.9.38] Attempted to update last_trade_time with None.")
+            logging.warning("[Patch AI Studio v4.9.39] Attempted to update last_trade_time with None.")
             return
-        if isinstance(trade_time, pd.Timestamp) and not pd.isna(trade_time):
+        if _isinstance_safe(trade_time, pd.Timestamp) and not pd.isna(trade_time):
             self.last_trade_time = trade_time
-            logging.info(f"[Patch AI Studio v4.9.38] Updated last_trade_time: {trade_time}")
-        elif isinstance(trade_time, (float, int, str)) and str(trade_time).lower() not in ["nan", "nat", "none"]:
+            logging.info(f"[Patch AI Studio v4.9.39] Updated last_trade_time: {trade_time}")
+        elif _isinstance_safe(trade_time, (float, int, str)) and str(trade_time).lower() not in ["nan", "nat", "none"]:
             try:
                 t = pd.to_datetime(trade_time)
                 if not pd.isna(t):
                     self.last_trade_time = t
-                    logging.info(f"[Patch AI Studio v4.9.38] Updated last_trade_time: {t}")
+                    logging.info(f"[Patch AI Studio v4.9.39] Updated last_trade_time: {t}")
             except Exception:
-                logging.warning(f"[Patch AI Studio v4.9.38] Could not parse trade_time: {trade_time}")
+                logging.warning(f"[Patch AI Studio v4.9.39] Could not parse trade_time: {trade_time}")
         else:
-            logging.warning(f"[Patch AI Studio v4.9.38] Invalid trade_time (NaT/None/Type): {trade_time}")
+            logging.warning(f"[Patch AI Studio v4.9.39] Invalid trade_time (NaT/None/Type): {trade_time}")
 
     def update_forced_entry_result(self, is_loss: bool):
         if is_loss:
