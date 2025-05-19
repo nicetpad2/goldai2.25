@@ -1,6 +1,6 @@
 """Gold AI Test Suite
 
-[Patch AI Studio v4.9.46] - Validate global pandas availability, import fixes, and new return structure.
+[Patch AI Studio v4.9.47] - Validate global pandas availability, import fixes, and new return structure.
 """
 
 import importlib
@@ -59,6 +59,15 @@ try:
 except Exception:  # pragma: no cover - coverage library not installed
     cov = None
 
+
+# === [Patch AI Studio v4.9.47] - Mock missing ML/TA libs for CI/CD ===
+import sys
+import types
+
+# Mock 'ta', 'optuna', 'catboost' if not available to avoid ImportError in test CI/CD
+for lib in ["ta", "optuna", "catboost"]:
+    if lib not in sys.modules:
+        sys.modules[lib] = types.ModuleType(lib)
 
 def _create_mock_module(name: str) -> types.ModuleType:
     module = types.ModuleType(name)
