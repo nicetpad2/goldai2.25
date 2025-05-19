@@ -12,7 +12,7 @@
 
 | Agent                  | Main Role           | Responsibilities                                                                                                                      |
 |------------------------|--------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]`, etc.      |
+| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]`, `[v4.9.40+]`, etc. |
 | **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                         |
 | **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                         |
 | **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                                |
@@ -58,7 +58,7 @@
   All patches/agent changes must log version (e.g., `v4.9.40+`) matching latest codebase.
 
 - **Patch Logging:**  
-  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, etc.  
+  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, etc.  
   Any core logic change: notify relevant owners (GPT Dev, OMS_Guardian, ML_Innovator).
 
 - **Critical Constraints:**  
@@ -82,6 +82,7 @@
 - `[Patch AI Studio v4.9.29+]`: All dynamic type guards use `_isinstance_safe`
 - `[Patch AI Studio v4.9.34+]`: All edge/branch/minimal/failure/DataFrame guards covered
 - `[Patch AI Studio v4.9.39+]`: Robust formatter/typeguard for test mocks/edge
+- `[Patch AI Studio v4.9.40+]`: Numeric formatter covers all edge/mock cases
 - No dependencies beyond (`gold_ai2025.py`, `test_gold_ai.py`)
 
 ### 🧪 Mock Targets (for test_runner)
@@ -105,17 +106,17 @@
 **All dynamic isinstance(obj, expected_type) checks must use:**
 ```python
 def _isinstance_safe(obj, expected_type):
+    import logging
     if expected_type is None:
         return False
     if isinstance(expected_type, type):
         return isinstance(obj, expected_type)
     if isinstance(expected_type, tuple) and all(isinstance(t, type) for t in expected_type):
         return isinstance(obj, expected_type)
-    import logging
     if hasattr(expected_type, "__class__") and expected_type.__class__.__name__ == "MagicMock":
-        logging.error(f"[Patch AI Studio v4.9.39] _isinstance_safe: expected_type is MagicMock, returning False.")
+        logging.error("[Patch AI Studio v4.9.40] _isinstance_safe: expected_type is MagicMock, returning False.")
         return False
-    logging.error(f"[Patch AI Studio v4.9.39] _isinstance_safe: expected_type is not a valid type: {expected_type!r}, returning False.")
+    logging.error("[Patch AI Studio v4.9.40] _isinstance_safe: expected_type is not a valid type: %r, returning False.", expected_type)
     return False
 ✅ QA Flow & Testing Requirements (v4.9.40+)
 Coverage Target:
@@ -138,13 +139,16 @@ Review vs. this AGENTS.md
 
 No merge without Execution_Test_Unit pass and log review
 
+จุดเด่น:
 
----
-**จุดเด่น:**  
-- **Professional Table** สำหรับแต่ละ agent/role  
-- **Protocol/Constraint** ทุกรายละเอียด  
-- **Example code** (type guard patch)  
-- **Flow QA** และข้อกำหนด patch/merge  
-- พร้อมบังคับใช้และอ้างอิงใน Gold AI ทุกหน่วย
+ตาราง agent/role และ responsibilities ครบทุกหมวด
 
-ถ้าต้องการเพิ่มหัวข้อ/รายละเอียดใด บอกได้ทันที!
+อธิบาย Patch Protocol, QA/Testing flow และข้อจำกัดที่สำคัญ
+
+แสดงตัวอย่าง robust type guard patch ที่ต้องใช้ทุก core agent
+
+รองรับทุก edge/mock/failure path ใน environment จริงและ pytest
+
+อัปเดตล่าสุดรองรับ logic robust formatter & typeguard เต็มรูปแบบ
+
+
