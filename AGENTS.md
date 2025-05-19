@@ -1,7 +1,7 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.52+
+**Version:** v4.9.53+
 **Project:** Gold AI (Enterprise Refactor)  
 **Maintainer:** AI Studio QA/Dev Team  
 **Last updated:** 2025-05-25
@@ -12,7 +12,7 @@
 
 | Agent                  | Main Role           | Responsibilities                                                                                                                              |
 |------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl, run_backtest_simulation_v34), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.52+]` |
+| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl, run_backtest_simulation_v34), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.53+]` |
 | **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                                 |
 | **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                                 |
 | **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                                         |
@@ -55,10 +55,10 @@
 ## 🔁 Patch Protocols & Version Control
 
 - **Explicit Versioning:**  
-  All patches/agent changes must log version (e.g., `v4.9.52+`) matching latest codebase.
+  All patches/agent changes must log version (e.g., `v4.9.53+`) matching latest codebase.
 
 - **Patch Logging:**  
-  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, `[v4.9.42+]`, `[v4.9.43+]`, `[v4.9.44+]`, `[v4.9.45+]`, `[v4.9.49+]`, `[v4.9.50+]`, `[v4.9.51+]`, `[v4.9.52+]`, etc.
+  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, `[v4.9.42+]`, `[v4.9.43+]`, `[v4.9.44+]`, `[v4.9.45+]`, `[v4.9.49+]`, `[v4.9.50+]`, `[v4.9.51+]`, `[v4.9.52+]`, `[v4.9.53+]`, etc.
   Any core logic change: notify relevant owners (GPT Dev, OMS_Guardian, ML_Innovator).
 
 - **Critical Constraints:**  
@@ -70,7 +70,7 @@
 
 ## 🧩 Agent Test Runner – QA Key Features
 
-**Version:** 4.9.52+
+**Version:** 4.9.53+
 **Purpose:** Validates Gold AI: robust import handling, dynamic mocking, complete unit test execution.
 
 **Capabilities:**
@@ -178,6 +178,10 @@ Release Note v4.9.52+ (Datetime & Index Guards)
 - Added `_ensure_datetimeindex` to softly convert/warn when index is not DatetimeIndex.
 - Added `_raise_or_warn` helper for test-friendly exceptions.
 - `simulate_trades` absorbs `side` kwarg without effect.
+
+Release Note v4.9.53+ (WFVResult Wrapper & np Safety)
+- Walk-forward orchestration now returns `WFVResult` for dict-style access while maintaining tuple compatibility.
+- Backtest simulation imports numpy locally to prevent `UnboundLocalError` under mocked imports.
 
 
 ✅ QA Flow & Testing Requirements (v4.9.43+)

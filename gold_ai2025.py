@@ -30,10 +30,10 @@ import json
 import gzip
 import gc
 from collections import defaultdict
-from typing import Union, Optional, Callable, Any, Dict, List, Tuple
+from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.52_FULL_PASS"  # Updated version
+MINIMAL_SCRIPT_VERSION = "4.9.53_FULL_PASS"  # Updated version
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -4600,12 +4600,13 @@ def _run_backtest_simulation_v34_full(
     initial_kill_switch_state: bool = False, initial_consecutive_losses: int = 0
 ) -> Tuple[pd.DataFrame, pd.DataFrame, float, Dict[pd.Timestamp, float], float, Dict[str, Any], List[Dict[str, Any]], Optional[str], Optional[str], bool, int, float]:
 
-    # [Patch AI Studio v4.9.42+] Fix UnboundLocalError: pd
+    # [Patch AI Studio v4.9.42+] Fix UnboundLocalError: pd/np
     try:
         import pandas as pd  # noqa: F401
+        import numpy as np  # noqa: F401
     except ImportError as exc:  # pragma: no cover
         raise RuntimeError(
-            "[Patch AI Studio v4.9.42+] Critical: pandas must be installed and importable in _run_backtest_simulation_v34_full."
+            "[Patch AI Studio v4.9.42+] Critical: pandas and numpy must be installed and importable in _run_backtest_simulation_v34_full."
         ) from exc
 
     sim_logger = logging.getLogger(f"{__name__}.run_backtest_simulation_v34.{label}.{side}")
@@ -5653,6 +5654,38 @@ def adjust_gain_z_threshold_by_drift(
 
 
 # --- Walk-Forward Orchestration (Refactored to use injected objects and config) ---
+
+class WFVResult(NamedTuple):
+    """Return type for ``run_all_folds_with_threshold`` supporting both tuple and
+    dict-style access."""
+
+    metrics_buy_overall: Dict[str, Any]
+    metrics_sell_overall: Dict[str, Any]
+    df_results: pd.DataFrame
+    trade_log: pd.DataFrame
+    equity_history: Dict[str, Any]
+    fold_metrics: List[Dict[str, Any]]
+    first_fold_test_data: Optional[pd.DataFrame]
+    model_type_l1: str
+    model_type_l2: str
+    total_ib_lot: float
+
+    def __contains__(self, item: str) -> bool:  # pragma: no cover - simple helper
+        return item in self._fields or item == "overall_metrics"
+
+    def __getitem__(self, key: Any) -> Any:
+        if isinstance(key, str):
+            if key == "overall_metrics":
+                return {"buy": self.metrics_buy_overall, "sell": self.metrics_sell_overall}
+            if key in self._fields:
+                return getattr(self, key)
+            raise KeyError(key)
+        return super().__getitem__(key)
+
+    def as_dict(self) -> Dict[str, Any]:  # pragma: no cover - convenience
+        data = {field: getattr(self, field) for field in self._fields}
+        data["overall_metrics"] = {"buy": self.metrics_buy_overall, "sell": self.metrics_sell_overall}
+        return data
 def run_all_folds_with_threshold(
     config_obj: Any,
     risk_manager_obj: Any = None,
@@ -5952,13 +5985,17 @@ def run_all_folds_with_threshold(
             df_walk_forward_results_final = pd.DataFrame() # Ensure it's an empty DF on error
 
     wfv_logger.info(f"--- Finished WFV Simulation for Fund: {fund_name_for_wfv_log} ---")
-    return (
-        metrics_buy_overall, metrics_sell_overall,
-        df_walk_forward_results_final, trade_log_overall,
-        all_equity_histories_dict, all_fold_metrics_list,
-        first_fold_test_data_output, # Return the test data of the first fold
-        model_type_l1_overall, model_type_l2_overall, # Overall model types used
-        total_ib_lot_accumulator_overall # Return total IB lots accumulated
+    return WFVResult(
+        metrics_buy_overall,
+        metrics_sell_overall,
+        df_walk_forward_results_final,
+        trade_log_overall,
+        all_equity_histories_dict,
+        all_fold_metrics_list,
+        first_fold_test_data_output,
+        model_type_l1_overall,
+        model_type_l2_overall,
+        total_ib_lot_accumulator_overall,
     )
 
 logger.info("Part 10 (Original Part 9): Walk-Forward Orchestration & Analysis Functions (Fuller Logic v4.9.18 - Corrected WFV Type Hint) Loaded and Refactored.")
