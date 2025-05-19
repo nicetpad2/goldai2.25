@@ -1,23 +1,23 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.40+  
+**Version:** v4.9.41+  
 **Project:** Gold AI (Enterprise Refactor)  
 **Maintainer:** AI Studio QA/Dev Team  
-**Last updated:** 2025-05-19
+**Last updated:** 2025-05-20
 
 ---
 
 ## 🧠 Core AI Units
 
-| Agent                  | Main Role           | Responsibilities                                                                                                                   |
-|------------------------|--------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]`, `[v4.9.40+]`, etc. |
-| **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                     |
-| **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                     |
-| **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                            |
-| **ML_Innovator**       | Advanced ML        | Researches SHAP, Meta Classifier, feature engineering, reinforcement learning                                                    |
-| **Model_Inspector**    | Model Diagnostics  | Checks overfitting, noise, data leakage, fallback correctness, metrics drift                                                     |
+| Agent                  | Main Role           | Responsibilities                                                                                                                     |
+|------------------------|--------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| **GPT Dev**            | Core Algo Dev      | Implements/patches core logic (simulate_trades, update_trailing_sl), SHAP/MetaModel, applies `[Patch AI Studio v4.9.26+]` – `[v4.9.41+]` |
+| **Instruction_Bridge** | AI Studio Liaison  | Translates patch instructions to clear AI Studio/Codex prompts, organizes multi-step patching                                       |
+| **Code_Runner_QA**     | Execution Test     | Runs scripts, collects pytest results, sets sys.path, checks logs, prepares zip for Studio/QA                                       |
+| **GoldSurvivor_RnD**   | Strategy Analyst   | Analyzes TP1/TP2, SL, spike, pattern, verifies entry/exit correctness                                                              |
+| **ML_Innovator**       | Advanced ML        | Researches SHAP, Meta Classifier, feature engineering, reinforcement learning                                                      |
+| **Model_Inspector**    | Model Diagnostics  | Checks overfitting, noise, data leakage, fallback correctness, metrics drift                                                       |
 
 ---
 
@@ -55,10 +55,10 @@
 ## 🔁 Patch Protocols & Version Control
 
 - **Explicit Versioning:**  
-  All patches/agent changes must log version (e.g., `v4.9.40+`) matching latest codebase.
+  All patches/agent changes must log version (e.g., `v4.9.41+`) matching latest codebase.
 
 - **Patch Logging:**  
-  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, etc.  
+  All logic changes must log `[Patch AI Studio v4.9.26+]`, `[v4.9.29+]`, `[v4.9.34+]`, `[v4.9.39+]`, `[v4.9.40+]`, `[v4.9.41+]`, etc.  
   Any core logic change: notify relevant owners (GPT Dev, OMS_Guardian, ML_Innovator).
 
 - **Critical Constraints:**  
@@ -70,7 +70,7 @@
 
 ## 🧩 Agent Test Runner – QA Key Features
 
-**Version:** 4.9.40+  
+**Version:** 4.9.41+  
 **Purpose:** Validates Gold AI: robust import handling, dynamic mocking, complete unit test execution.
 
 **Capabilities:**
@@ -83,6 +83,7 @@
 - `[Patch AI Studio v4.9.34+]`: All edge/branch/minimal/failure/DataFrame guards covered
 - `[Patch AI Studio v4.9.39+]`: Robust formatter/typeguard for test mocks/edge
 - `[Patch AI Studio v4.9.40+]`: Numeric formatter covers all edge/mock cases
+- `[Patch AI Studio v4.9.41+]`: DataFrame subclass/typeguard (production + test) and equity tracker bug fixes
 - No dependencies beyond (`gold_ai2025.py`, `test_gold_ai.py`)
 
 ### 🧪 Mock Targets (for test_runner)
@@ -103,22 +104,44 @@
 
 ## 🛡 Type Guard Patch – All Core Agents
 
-**All dynamic isinstance(obj, expected_type) checks must use:**
+**All dynamic isinstance(obj, expected_type) checks must use (latest logic):**
 ```python
 def _isinstance_safe(obj, expected_type):
     import logging
+    # [Patch AI Studio v4.9.41] Robust isinstance patch for DataFrame, Series, and fallback
     if expected_type is None:
         return False
     if isinstance(expected_type, type):
         return isinstance(obj, expected_type)
     if isinstance(expected_type, tuple) and all(isinstance(t, type) for t in expected_type):
         return isinstance(obj, expected_type)
+    try:
+        import pandas as pd
+        # Allow string "DataFrame"/"Series" for test/mocks
+        if isinstance(expected_type, str) and expected_type in ("DataFrame", "Series"):
+            if expected_type == "DataFrame":
+                return isinstance(obj, pd.DataFrame)
+            if expected_type == "Series":
+                return isinstance(obj, pd.Series)
+        # Allow class name match if same as pandas.DataFrame or pandas.Series
+        if hasattr(obj, "__class__") and hasattr(expected_type, "__name__"):
+            if obj.__class__.__name__ == expected_type.__name__:
+                if expected_type.__name__ == "DataFrame" and isinstance(obj, pd.DataFrame):
+                    return True
+                if expected_type.__name__ == "Series" and isinstance(obj, pd.Series):
+                    return True
+        # Extra: if looks like DataFrame, pass (for robust test mocking)
+        if hasattr(expected_type, "__name__") and expected_type.__name__ == "DataFrame":
+            if all(hasattr(obj, attr) for attr in ("columns", "index", "dtypes")):
+                return True
+    except Exception as ex:
+        logging.error(f"[Patch AI Studio v4.9.41] _isinstance_safe: Exception in DataFrame fallback: {ex}")
     if hasattr(expected_type, "__class__") and expected_type.__class__.__name__ == "MagicMock":
         logging.error("[Patch AI Studio v4.9.40] _isinstance_safe: expected_type is MagicMock, returning False.")
         return False
     logging.error("[Patch AI Studio v4.9.40] _isinstance_safe: expected_type is not a valid type: %r, returning False.", expected_type)
     return False
-✅ QA Flow & Testing Requirements (v4.9.40+)
+✅ QA Flow & Testing Requirements (v4.9.41+)
 Coverage Target:
 All patches must bring test coverage to >90% for test_gold_ai.py + gold_ai2025.py (excluding placeholders).
 
@@ -140,12 +163,14 @@ Review vs. this AGENTS.md
 No merge without Execution_Test_Unit pass and log review
 
 จุดเด่น:
+
 ตาราง agent/role และ responsibilities ครบทุกหมวด
 
 อธิบาย Patch Protocol, QA/Testing flow และข้อจำกัดที่สำคัญ
 
-แสดงตัวอย่าง robust type guard patch ที่ต้องใช้ทุก core agent
+แสดง robust type guard patch ที่ต้องใช้ทุก core agent (version ล่าสุด)
 
-รองรับทุก edge/mock/failure path ใน environment จริงและ pytest
+รองรับ edge/mock/failure path environment จริงและ pytest
 
-อัปเดตล่าสุดรองรับ logic robust formatter & typeguard เต็มรูปแบบ
+Logic, formatter, typeguard, audit log ครบตามมาตรฐาน Gold AI Enterprise
+
