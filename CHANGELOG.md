@@ -26,6 +26,10 @@
 - Mocked missing ML/TA libraries (`ta`, `optuna`, `catboost`) in `test_gold_ai.py` to ensure CI/CD environments without these packages pass all tests.
 - Documentation and version constants updated.
 
+## [v4.9.48+] - 2025-05-23
+- Added mock submodule `optuna.logging` in `test_gold_ai.py` to prevent `AttributeError` when `optuna` is missing.
+- Updated version constants and documentation references.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
