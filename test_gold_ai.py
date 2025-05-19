@@ -539,7 +539,7 @@ class TestGoldAI2025(unittest.TestCase):
         cfg.spike_guard_london_patterns = ["Breakout"]
         row = {"spike_score": 0.6, "Pattern_Label": "Breakout"}
         logging.getLogger("GoldAI_UnitTest").info(
-            "[Patch AI Studio v4.9.57+] Test spike_guard_blocked input: session=%s, row=%s, cfg.threshold=%.2f, allowed=%s",
+            "[Patch AI Studio v4.9.58+] spike_guard_blocked INPUT: session=%s, row=%s, cfg.threshold=%.2f, allowed=%s",
             "London",
             row,
             cfg.spike_guard_score_threshold,
@@ -547,11 +547,28 @@ class TestGoldAI2025(unittest.TestCase):
         )
         blocked = self.gold_ai.spike_guard_blocked(row, "London", cfg)
         logging.getLogger("GoldAI_UnitTest").info(
-            "[Patch AI Studio v4.9.57+] spike_guard_blocked returned: %s",
+            "[Patch AI Studio v4.9.58+] spike_guard_blocked OUTPUT: %s",
             blocked,
         )
-        self.assertTrue(blocked)
-        self.assertFalse(self.gold_ai.spike_guard_blocked(row, "Asia", cfg))
+        if not blocked:
+            logging.getLogger("GoldAI_UnitTest").error(
+                "[Patch AI Studio v4.9.58+] Assertion failed: spike_guard_blocked should be True. Debug state: row=%s, cfg=%s",
+                row,
+                cfg.__dict__,
+            )
+        self.assertTrue(
+            blocked,
+            "[Patch AI Studio v4.9.58+] spike_guard_blocked should be True (London session, score, pattern)",
+        )
+        asia_block = self.gold_ai.spike_guard_blocked(row, "Asia", cfg)
+        logging.getLogger("GoldAI_UnitTest").info(
+            "[Patch AI Studio v4.9.58+] spike_guard_blocked (Asia) OUTPUT: %s",
+            asia_block,
+        )
+        self.assertFalse(
+            asia_block,
+            "[Patch AI Studio v4.9.58+] spike_guard_blocked should be False for Asia",
+        )
         cfg.use_reentry = True
         cfg.reentry_cooldown_bars = 3
         cfg.reentry_min_proba_thresh = 0.5
@@ -1919,13 +1936,25 @@ def test_full_e2e_backtest_and_export(tmp_path, monkeypatch):
     trade_log = res["trade_log"]
     metrics = calculate_metrics(trade_log, side="BUY", fold_tag="e2e")
     trade_csv = tmp_path / "trade_log.csv"
-    # [Patch AI Studio v4.9.57+] Guard: ensure DataFrame before export
+    # [Patch AI Studio v4.9.58+] Guard: ensure DataFrame and check before export
     trade_log = ensure_dataframe(trade_log)
-    trade_log.to_csv(trade_csv, index=False)
     import logging
-    logging.getLogger("GoldAI_Export").info(
-        "[Patch AI Studio v4.9.57+] Export trade_log shape: %s", trade_log.shape
-    )
+    if (
+        hasattr(trade_log, "empty")
+        and not trade_log.empty
+        and hasattr(trade_log, "columns")
+        and len(trade_log.columns) > 0
+    ):
+        trade_log.to_csv(trade_csv, index=False)
+        logging.getLogger("GoldAI_Export").info(
+            "[Patch AI Studio v4.9.58+] Export trade_log shape: %s",
+            trade_log.shape,
+        )
+    else:
+        logging.getLogger("GoldAI_Export").warning(
+            "[Patch AI Studio v4.9.58+] trade_log is empty or has no columns, exporting header only (or skipping export)."
+        )
+        trade_log.to_csv(trade_csv, index=False)
 
     reloaded_trade = pd.read_csv(trade_csv)
     assert isinstance(metrics, dict)
@@ -2001,7 +2030,8 @@ def test_risk_trade_manager_forced_entry_spike(monkeypatch):
     result = simulate_trades(df, config, side="BUY", trade_manager_obj=tm, risk_manager_obj=rm)
     log = result["trade_log"]
     logging.getLogger("GoldAI_UnitTest").info(
-        "[Patch AI Studio v4.9.57+] Export trade_log shape: %s", log.shape if hasattr(log, "shape") else "N/A"
+        "[Patch AI Studio v4.9.58+] Export trade_log shape: %s",
+        log.shape if hasattr(log, "shape") else "N/A",
     )
     assert isinstance(log, pd.DataFrame)
     assert (log["exit_reason"] == "FORCED_ENTRY").any() or log.shape[0] > 0

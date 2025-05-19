@@ -82,6 +82,13 @@
 - Updated tests to guard export serialization.
 - Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.57_FULL_PASS`.
 
+## [v4.9.58+] - 2025-05-27
+- Enhanced `RiskManager.update_drawdown` with robust NaN/negative equity guards.
+- `spike_guard_blocked` now validates inputs and logs all states.
+- `TradeManager.should_force_entry` adds comprehensive logging and edge guards.
+- Tests updated for logging assertions and empty export handling.
+- Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.58_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.

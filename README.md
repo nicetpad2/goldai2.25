@@ -18,7 +18,7 @@ pytest -v --cov=gold_ai2025 --cov-report=term-missing
 📝 Project Notes
 Patch Protocol:
 All logic patches and critical changes must log their version (e.g., [Patch AI Studio v4.9.42+]) in code and test logs per AGENTS.md.
-The latest patch `[Patch AI Studio v4.9.57+]` adds `ensure_dataframe` for safe export and extends RiskManager/SpikeGuard logging.
+The latest patch `[Patch AI Studio v4.9.58+]` adds additional spike guard logging, robust drawdown handling, and safe export guards.
 
 Type/Format Guards:
 Use only _isinstance_safe and _float_fmt as enforced by QA for all dynamic type or format operations.
