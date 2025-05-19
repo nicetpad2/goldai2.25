@@ -6991,11 +6991,13 @@ def run_backtest_simulation_v34(
             "[Patch AI Studio v4.9.34+] config_obj must be StrategyConfig, got %r"
             % type(config_obj)
         )
+    side_arg = kwargs.pop("side", "BUY")
     return _run_backtest_simulation_v34_full(
         df_m1_segment_pd,
-        config_obj,
         label,
         initial_capital_segment,
+        side_arg,
+        config_obj,
         risk_manager_obj,
         trade_manager_obj,
         **kwargs,
