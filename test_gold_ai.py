@@ -1646,7 +1646,7 @@ def test_safe_load_csv_auto_nonexistent(caplog):
 
 
 class TestRobustFormatAndTypeGuard(unittest.TestCase):
-    """[Patch AI Studio v4.9.40] Test robust _float_fmt, safe_isinstance, TradeManager.update_last_trade_time"""
+    """[Patch AI Studio v4.9.40] Test robust safe_float_fmt, _isinstance_safe, TradeManager.update_last_trade_time"""
 
     def test_float_fmt_cases(self):
         ga = safe_import_gold_ai()
@@ -1655,18 +1655,13 @@ class TestRobustFormatAndTypeGuard(unittest.TestCase):
             (1, "1.000"),
             ("2.718", "2.718"),
             ("bad", "bad"),
-            (None, "None"),
+            (None, "N/A"),
             (complex(2, 3), "(2+3j)"),
             ([1, 2], "[1, 2]"),
         ]
         for val, expected in cases:
-            result = ga._float_fmt(val)
-            if isinstance(val, (float, int)) or (
-                isinstance(val, str) and val.replace(".", "", 1).isdigit()
-            ):
-                self.assertTrue(all(ch.isdigit() or ch == "." for ch in result))
-            else:
-                self.assertEqual(result, str(val))
+            result = ga.safe_float_fmt(val)
+            self.assertEqual(result, expected)
 
     def test_isinstance_safe(self):
         ga = safe_import_gold_ai()
