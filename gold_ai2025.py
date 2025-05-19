@@ -1988,6 +1988,7 @@ def tag_price_structure_patterns(
             "Input to tag_price_structure_patterns must be a pandas DataFrame."
         )
     required_cols = ["High", "Low", "Close"]
+    # --- Handle empty/None DataFrame and missing columns as "empty case" (return empty DataFrame)
     if (
         df is None
         or not hasattr(df, "columns")
@@ -2017,6 +2018,7 @@ def calculate_m15_trend_zone(
             "Input to calculate_m15_trend_zone must be a pandas DataFrame."
         )
     required_cols = ["High", "Low", "Close"]
+    # --- Handle empty/None DataFrame and missing columns as "empty case" (return empty DataFrame)
     if (
         df is None
         or not hasattr(df, "columns")
