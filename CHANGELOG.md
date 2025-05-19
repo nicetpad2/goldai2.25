@@ -70,6 +70,12 @@
 - Unit tests updated to request tuple output when needed.
 - Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.55_FULL_PASS`.
 
+## [v4.9.56+] - 2025-05-27
+- Ensured `simulate_trades` logs return type and enforces tuple/dict contract.
+- `calculate_metrics` now absorbs extra kwargs and warns when provided.
+- Updated tests to request tuple output explicitly where required.
+- Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.56_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.

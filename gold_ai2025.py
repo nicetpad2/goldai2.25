@@ -33,7 +33,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.55_FULL_PASS"  # Updated version
+MINIMAL_SCRIPT_VERSION = "4.9.56_FULL_PASS"  # [Patch AI Studio v4.9.56+] Fix simulate_trades/test contracts & kwargs guard
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -7143,17 +7143,26 @@ def simulate_trades(
 
     run_summary["num_trades"] = len(trade_log)
     result_tuple = (trade_log, equity_curve, run_summary)
-    if return_tuple:
-        return result_tuple
-    return {
+    result_dict = {
         "trade_log": trade_log,
         "equity_curve": equity_curve,
         "run_summary": run_summary,
     }
+    if return_tuple:
+        sim_logger.debug(
+            "[Patch AI Studio v4.9.56+] Returning tuple for legacy/test compatibility"
+        )
+        return result_tuple
+    sim_logger.debug("[Patch AI Studio v4.9.56+] Returning dict (default)")
+    return result_dict
 
-def calculate_metrics(trade_log: list, fold_tag: str = "") -> Dict[str, Any]:
+def calculate_metrics(trade_log: list, fold_tag: str = "", **kwargs) -> Dict[str, Any]:
     """Calculate basic metrics for a list-based trade log."""
     metrics_logger = logging.getLogger(f"{__name__}.calculate_metrics_basic")
+    if kwargs:
+        metrics_logger.warning(
+            f"[Patch AI Studio v4.9.56+] Extra kwargs ignored in calculate_metrics: {list(kwargs.keys())}"
+        )
     metrics = {"fold_tag": fold_tag, "num_trades": len(trade_log)}
     metrics["num_tp"] = sum(1 for t in trade_log if str(t.get("exit_reason", "")).upper() == "TP")
     metrics["num_sl"] = sum(1 for t in trade_log if str(t.get("exit_reason", "")).upper() == "SL")

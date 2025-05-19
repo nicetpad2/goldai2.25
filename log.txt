@@ -1,13 +1,13 @@
 เอาต์พุตของการสตรีมมีการตัดเหลือเพียง 5000 บรรทัดสุดท้าย
 PASSED
-test_gold_ai.py::TestEdgeCases::test_calculate_metrics_basic 13:12:24 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestEdgeCases::test_calculate_metrics_basic 13:12:24 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:24 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:24 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:24 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:24 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:24 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:24 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:24 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:24 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -298,14 +298,14 @@ test_gold_ai.py::TestEdgeCases::test_try_import_install_success_no_version
 13:12:26 [INFO] [gold_ai2025.try_import_with_install]    ติดตั้ง NOVERS สำเร็จ (pip stdout): <MagicMock name='run().stdout.__getitem__()' id='132831157027280'>...
 13:12:26 [INFO] [gold_ai2025.try_import_with_install] [Patch] Successfully installed and imported NOVERS.
 PASSED
-test_gold_ai.py::TestWFVandLotSizing::test_calculate_lot_by_fund_mode_bounds 13:12:26 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestWFVandLotSizing::test_calculate_lot_by_fund_mode_bounds 13:12:26 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:26 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:26 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:26 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:26 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:26 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:26 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:26 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:26 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -406,14 +406,14 @@ test_gold_ai.py::TestWFVandLotSizing::test_simulate_trades_multi_order_with_reen
 13:12:27 [DEBUG] [gold_ai2025.simulate_trades] [Patch AI Studio v4.9.28] Triggered BE-SL: OrderIdx:0, Side:BUY, Entry:1000.0, Exit:1000.0, PNL:0.0
 13:12:27 [INFO] [gold_ai2025.is_reentry_allowed.BUY] Re-entry ALLOWED for side BUY at 2023-01-01 00:01:00.
 PASSED
-test_gold_ai.py::TestTP2AndBESL::test_besl_trigger 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestTP2AndBESL::test_besl_trigger 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -481,14 +481,14 @@ test_gold_ai.py::TestTP2AndBESL::test_simulate_trades_with_kill_switch_activatio
 13:12:27 [DEBUG] [gold_ai2025.simulate_trades] [Patch AI Studio v4.9.26] Triggered SL: {'entry_idx': 0, 'entry_time': Timestamp('2023-01-01 00:00:00'), 'entry_price': 1000, 'stop_loss': 998.5, 'take_profit': 1002.7, 'side': 'BUY', 'exit_price': 998.5, 'exit_reason': 'SL', 'exit_idx': 0, 'exit_time': Timestamp('2023-01-01 00:00:00'), 'pnl_usd_net': -1.5}
 13:12:27 [INFO] [gold_ai2025.simulate_trades] [Patch AI Studio v4.9.26] Kill switch activated at bar 0
 PASSED
-test_gold_ai.py::TestWFVandLotSizingFix::test_multi_order_reentry_succeeds 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestWFVandLotSizingFix::test_multi_order_reentry_succeeds 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -569,14 +569,14 @@ test_gold_ai.py::TestWFVandLotSizingFix::test_simulate_trades_reentry_strict
 13:12:27 [DEBUG] [gold_ai2025.simulate_trades] [Patch AI Studio v4.9.28] Triggered BE-SL: OrderIdx:0, Side:BUY, Entry:1000, Exit:999, PNL:0.0
 13:12:27 [DEBUG] [gold_ai2025.simulate_trades] [Patch AI Studio v4.9.28] Triggered BE-SL: OrderIdx:2, Side:BUY, Entry:1004, Exit:1003, PNL:0.0
 PASSED
-test_gold_ai.py::TestWarningEdgeCases::test_safe_load_csv_auto_corrupt_encoding 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestWarningEdgeCases::test_safe_load_csv_auto_corrupt_encoding 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -676,14 +676,14 @@ test_gold_ai.py::TestWarningEdgeCases::test_set_thai_font_without_matplotlib
 13:12:28 [WARNING] [gold_ai2025.set_thai_font]       -> Error finding font 'Laksaman': matplotlib not available
 13:12:28 [WARNING] [gold_ai2025.set_thai_font]    (Warning) Could not find any suitable Thai fonts (['Loma', 'TH Sarabun New', 'THSarabunNew', 'Garuda', 'Norasi', 'Kinnari', 'Waree', 'Laksaman']) using findfont.
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_ema_normal 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_ema_normal 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -715,14 +715,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_ema_normal 13:12:28 - INFO
 13:12:28 [DEBUG] [gold_ai2025.StrategyConfig]   Default Signal Thresh: GainZ=0.3, RSI Buy=50
 13:12:28 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_ema_empty 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_ema_empty 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -756,14 +756,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_ema_empty 13:12:28 - INFO 
 -------------------------------- live log call ---------------------------------
 13:12:28 [DEBUG] [gold_ai2025.ema] [Patch AI Studio v4.9.26] Empty input detected in ema, returning empty pd.Series
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_sma_normal 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_sma_normal 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -795,14 +795,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_sma_normal 13:12:28 - INFO
 13:12:28 [DEBUG] [gold_ai2025.StrategyConfig]   Default Signal Thresh: GainZ=0.3, RSI Buy=50
 13:12:28 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_sma_invalid_period 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_sma_invalid_period 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -836,14 +836,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_sma_invalid_period 13:12:2
 -------------------------------- live log call ---------------------------------
 13:12:29 [ERROR] [gold_ai2025.sma] Invalid period (0). Must be a positive integer.
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_rsi_normal 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_rsi_normal 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -875,14 +875,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_rsi_normal 13:12:29 - INFO
 13:12:29 [DEBUG] [gold_ai2025.StrategyConfig]   Default Signal Thresh: GainZ=0.3, RSI Buy=50
 13:12:29 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_rsi_empty 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_rsi_empty 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:29 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -916,14 +916,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_rsi_empty 13:12:29 - INFO 
 -------------------------------- live log call ---------------------------------
 13:12:29 [DEBUG] [gold_ai2025.rsi] [Patch AI Studio v4.9.26] Empty input detected in rsi, returning empty pd.Series
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_atr_valid 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_atr_valid 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -957,14 +957,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_atr_valid 13:12:30 - INFO 
 -------------------------------- live log call ---------------------------------
 13:12:30 [WARNING] [gold_ai2025.atr]    (Warning) TA library ATR calculation failed: module 'ta.volatility' has no attribute 'AverageTrueRange'. Falling back to manual.
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_atr_missing_cols 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_atr_missing_cols 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -998,14 +998,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_atr_missing_cols 13:12:30 
 -------------------------------- live log call ---------------------------------
 13:12:30 [WARNING] [gold_ai2025.atr]    (Warning) ATR calculation skipped: Missing columns ['High', 'Low', 'Close'].
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_macd_normal 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_macd_normal 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -1039,14 +1039,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_macd_normal 13:12:30 - INF
 -------------------------------- live log call ---------------------------------
 13:12:30 [WARNING] [gold_ai2025.macd]    (Warning) MACD calculation skipped: Not enough valid data points (5 < 26).
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_macd_empty 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_macd_empty 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:30 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -1080,14 +1080,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_macd_empty 13:12:30 - INFO
 -------------------------------- live log call ---------------------------------
 13:12:31 [DEBUG] [gold_ai2025.macd] Input series is None or empty, returning empty series for MACD components.
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_rolling_zscore_short_series 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_rolling_zscore_short_series 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -1121,14 +1121,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_rolling_zscore_short_serie
 -------------------------------- live log call ---------------------------------
 13:12:31 [DEBUG] [gold_ai2025.rolling_zscore] Input series too short (< 2), returning zeros.
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_tag_price_structure_patterns_missing_col 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_tag_price_structure_patterns_missing_col 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -1160,14 +1160,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_tag_price_structure_patter
 13:12:31 [DEBUG] [gold_ai2025.StrategyConfig]   Default Signal Thresh: GainZ=0.3, RSI Buy=50
 13:12:31 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_calculate_m15_trend_zone_minimal 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_calculate_m15_trend_zone_minimal 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:31 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -1199,14 +1199,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_calculate_m15_trend_zone_m
 13:12:31 [DEBUG] [gold_ai2025.StrategyConfig]   Default Signal Thresh: GainZ=0.3, RSI Buy=50
 13:12:31 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_get_session_tag_na 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_get_session_tag_na 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -1238,14 +1238,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_get_session_tag_na 13:12:3
 13:12:32 [DEBUG] [gold_ai2025.StrategyConfig]   Default Signal Thresh: GainZ=0.3, RSI Buy=50
 13:12:32 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_get_session_tag_zones 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_get_session_tag_zones 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -1277,14 +1277,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_get_session_tag_zones 13:1
 13:12:32 [DEBUG] [gold_ai2025.StrategyConfig]   Default Signal Thresh: GainZ=0.3, RSI Buy=50
 13:12:32 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_engineer_m1_features_empty 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_engineer_m1_features_empty 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -1319,14 +1319,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_engineer_m1_features_empty
 13:12:32 [INFO] [gold_ai2025.engineer_m1_features] (Processing) กำลังสร้าง Features M1 (using StrategyConfig)...
 13:12:32 [WARNING] [gold_ai2025.engineer_m1_features]    (Warning) ข้ามการสร้าง Features M1: DataFrame ว่างเปล่า.
 PASSED
-test_gold_ai.py::TestFeatureEngineeringCoverage::test_clean_m1_data_empty 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestFeatureEngineeringCoverage::test_clean_m1_data_empty 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:32 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log setup --------------------------------
@@ -1361,14 +1361,14 @@ test_gold_ai.py::TestFeatureEngineeringCoverage::test_clean_m1_data_empty 13:12:
 13:12:32 [INFO] [gold_ai2025.clean_m1_data] (Processing) กำหนด Features M1 สำหรับ Drift และแปลงประเภท (using StrategyConfig)...
 13:12:32 [WARNING] [gold_ai2025.clean_m1_data]    (Warning) ข้ามการทำความสะอาดข้อมูล M1: DataFrame ว่างเปล่า.
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_ema_negative_period 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_ema_negative_period 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1395,14 +1395,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_ema_negative_period 13:12:
 13:12:33 [DEBUG] [gold_ai2025.Part14_FutureAdditions] Part 14: Placeholder for Future Additions reached.
 13:12:33 [INFO] [gold_ai2025.Part15_EndOfScript] Reached End of Part 15 (Definitive End of Script Marker). Gold AI script processing complete.
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_sma_not_series 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_sma_not_series 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1431,14 +1431,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_sma_not_series 13:12:33 - 
 13:12:33 [ERROR] [root] [Patch AI Studio v4.9.40] _isinstance_safe: expected_type is MagicMock, returning False.
 13:12:33 [ERROR] [gold_ai2025.sma] Input must be a pandas Series, got <class 'list'>
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_rsi_not_series 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_rsi_not_series 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1466,14 +1466,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_rsi_not_series 13:12:33 - 
 13:12:33 [INFO] [gold_ai2025.Part15_EndOfScript] Reached End of Part 15 (Definitive End of Script Marker). Gold AI script processing complete.
 13:12:33 [ERROR] [gold_ai2025.rsi] Input must be a pandas Series, got <class 'list'>
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_atr_invalid_type 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_atr_invalid_type 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1502,14 +1502,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_atr_invalid_type 13:12:34 
 13:12:34 [ERROR] [root] [Patch AI Studio v4.9.40] _isinstance_safe: expected_type is MagicMock, returning False.
 13:12:34 [ERROR] [gold_ai2025.atr] Input must be a pandas DataFrame, got <class 'list'>
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_macd_invalid_type 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_macd_invalid_type 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1538,14 +1538,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_macd_invalid_type 13:12:34
 13:12:34 [ERROR] [root] [Patch AI Studio v4.9.40] _isinstance_safe: expected_type is MagicMock, returning False.
 13:12:34 [ERROR] [gold_ai2025.macd] Input must be a pandas Series, got <class 'list'>
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_rolling_zscore_nan 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_rolling_zscore_nan 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1572,14 +1572,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_rolling_zscore_nan 13:12:3
 13:12:34 [DEBUG] [gold_ai2025.Part14_FutureAdditions] Part 14: Placeholder for Future Additions reached.
 13:12:34 [INFO] [gold_ai2025.Part15_EndOfScript] Reached End of Part 15 (Definitive End of Script Marker). Gold AI script processing complete.
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_tag_price_structure_patterns_empty 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_tag_price_structure_patterns_empty 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:34 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1612,14 +1612,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_tag_price_structure_patter
 13:12:35 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 13:12:35 [ERROR] [root] [Patch AI Studio v4.9.33] tag_price_structure_patterns: Input is not of expected DataFrame type or empty. Returning DataFrame with only ['Pattern_Label'] column for test compatibility.
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_calculate_m15_trend_zone_empty 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_calculate_m15_trend_zone_empty 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1652,14 +1652,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_calculate_m15_trend_zone_e
 13:12:35 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 13:12:35 [ERROR] [root] [Patch AI Studio v4.9.33] calculate_m15_trend_zone: Input is not of expected DataFrame type or empty. Returning DataFrame with only ['Trend_Zone'] column for test compatibility.
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_tag_price_structure_patterns_empty_df 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_tag_price_structure_patterns_empty_df 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:35 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1692,14 +1692,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_tag_price_structure_patter
 13:12:35 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 13:12:35 [ERROR] [root] [Patch AI Studio v4.9.33] tag_price_structure_patterns: Input is not of expected DataFrame type or empty. Returning DataFrame with only ['Pattern_Label'] column for test compatibility.
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_calculate_m15_trend_zone_empty_df 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_calculate_m15_trend_zone_empty_df 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1732,14 +1732,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_calculate_m15_trend_zone_e
 13:12:36 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 13:12:36 [ERROR] [root] [Patch AI Studio v4.9.33] calculate_m15_trend_zone: Input is not of expected DataFrame type or empty. Returning DataFrame with only ['Trend_Zone'] column for test compatibility.
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_tag_price_structure_patterns_type_guard 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_tag_price_structure_patterns_type_guard 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1772,14 +1772,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_tag_price_structure_patter
 13:12:36 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 13:12:36 [ERROR] [root] [Patch AI Studio v4.9.33] tag_price_structure_patterns: Input is not of expected DataFrame type or empty. Returning DataFrame with only ['Pattern_Label'] column for test compatibility.
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_tag_price_structure_patterns_expected_type_guard 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_tag_price_structure_patterns_expected_type_guard 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:36 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1813,14 +1813,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_tag_price_structure_patter
 13:12:36 [ERROR] [root] [Patch AI Studio v4.9.33] tag_price_structure_patterns: Input is not of expected DataFrame type or empty. Returning DataFrame with only ['Pattern_Label'] column for test compatibility.
 13:12:36 [ERROR] [root] [Patch AI Studio v4.9.33] tag_price_structure_patterns: Input is not of expected DataFrame type or empty. Returning DataFrame with only ['Pattern_Label'] column for test compatibility.
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_calculate_m15_trend_zone_empty_guard 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_calculate_m15_trend_zone_empty_guard 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1853,14 +1853,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_calculate_m15_trend_zone_e
 13:12:37 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 13:12:37 [ERROR] [root] [Patch AI Studio v4.9.33] calculate_m15_trend_zone: Input is not of expected DataFrame type or empty. Returning DataFrame with only ['Trend_Zone'] column for test compatibility.
 PASSED
-test_gold_ai.py::TestBranchAndErrorPathCoverage::test_calculate_m15_trend_zone_expected_type_guard 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestBranchAndErrorPathCoverage::test_calculate_m15_trend_zone_expected_type_guard 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1893,14 +1893,14 @@ test_gold_ai.py::TestBranchAndErrorPathCoverage::test_calculate_m15_trend_zone_e
 13:12:37 [DEBUG] [gold_ai2025.StrategyConfig]   Dynamic TP2 Params: HighVolBoost=1.2, LotBoostMult=1.1
 13:12:37 [ERROR] [root] [Patch AI Studio v4.9.33] calculate_m15_trend_zone: Input is not of expected DataFrame type or empty. Returning DataFrame with only ['Trend_Zone'] column for test compatibility.
 PASSED
-test_gold_ai.py::test_trade_manager_update_methods 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::test_trade_manager_update_methods 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1939,14 +1939,14 @@ test_gold_ai.py::test_trade_manager_update_methods 13:12:37 - INFO - [GoldAI_Ent
 13:12:38 [INFO] [root] [Patch AI Studio v4.9.40] Updated last_trade_time: 2023-01-02 00:00:00
 13:12:38 [WARNING] [root] [Patch AI Studio v4.9.40] Invalid trade_time (NaT/None/Type): nan
 PASSED
-test_gold_ai.py::test_run_backtest_simulation_minimal 13:12:38 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::test_run_backtest_simulation_minimal 13:12:38 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:38 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:38 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:38 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:38 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:38 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:38 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:38 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:38 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -1992,14 +1992,14 @@ test_gold_ai.py::test_run_backtest_simulation_minimal 13:12:38 - INFO - [GoldAI_
 13:12:38 [ERROR] [root] [Patch AI Studio v4.9.41] Error updating equity_tracker['history']: 'dict' object has no attribute 'append'
 13:12:38 [INFO] [gold_ai2025.run_backtest_simulation_v34.Test.BUY]   (Finished) Test (BUY) simulation complete. Final Equity: $1000.00
 PASSED
-test_gold_ai.py::test_calculate_metrics_minimal 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::test_calculate_metrics_minimal 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -2027,14 +2027,14 @@ test_gold_ai.py::test_calculate_metrics_minimal 13:12:39 - INFO - [GoldAI_Enterp
 13:12:39 [INFO] [gold_ai2025.Part15_EndOfScript] Reached End of Part 15 (Definitive End of Script Marker). Gold AI script processing complete.
 13:12:39 [DEBUG] [gold_ai2025.calculate_metrics_basic] Metrics calculated for fold 'minimal_test': {'fold_tag': 'minimal_test', 'num_trades': 1, 'num_tp': 1, 'num_sl': 0, 'num_be': 0, 'net_profit': 10.0}
 PASSED
-test_gold_ai.py::test_safe_load_csv_auto_nonexistent 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::test_safe_load_csv_auto_nonexistent 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -2062,14 +2062,14 @@ test_gold_ai.py::test_safe_load_csv_auto_nonexistent 13:12:39 - INFO - [GoldAI_E
 13:12:39 [INFO] [gold_ai2025.Part15_EndOfScript] Reached End of Part 15 (Definitive End of Script Marker). Gold AI script processing complete.
 13:12:39 [ERROR] [gold_ai2025.safe_load_csv_auto]          (Error) ไม่พบไฟล์: file_that_does_not_exist.csv
 PASSED
-test_gold_ai.py::TestRobustFormatAndTypeGuard::test_float_fmt_cases 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestRobustFormatAndTypeGuard::test_float_fmt_cases 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -2096,14 +2096,14 @@ test_gold_ai.py::TestRobustFormatAndTypeGuard::test_float_fmt_cases 13:12:39 - I
 13:12:39 [DEBUG] [gold_ai2025.Part14_FutureAdditions] Part 14: Placeholder for Future Additions reached.
 13:12:39 [INFO] [gold_ai2025.Part15_EndOfScript] Reached End of Part 15 (Definitive End of Script Marker). Gold AI script processing complete.
 PASSED
-test_gold_ai.py::TestRobustFormatAndTypeGuard::test_isinstance_safe 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestRobustFormatAndTypeGuard::test_isinstance_safe 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -2134,14 +2134,14 @@ test_gold_ai.py::TestRobustFormatAndTypeGuard::test_isinstance_safe 13:12:40 - I
 13:12:40 [ERROR] [root] [Patch AI Studio v4.9.40] _isinstance_safe: expected_type is not a valid type: (123, 'bad'), returning False.
 13:12:40 [ERROR] [root] [Patch AI Studio v4.9.40] _isinstance_safe: expected_type is not a valid type: <test_gold_ai.TestRobustFormatAndTypeGuard.test_isinstance_safe.<locals>.DummyType object at 0x78cf24a54ed0>, returning False.
 PASSED
-test_gold_ai.py::TestRobustFormatAndTypeGuard::test_trade_manager_update_last_trade_time 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::TestRobustFormatAndTypeGuard::test_trade_manager_update_last_trade_time 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:40 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 
 -------------------------------- live log call ---------------------------------
@@ -2183,7 +2183,7 @@ test_gold_ai.py::TestRobustFormatAndTypeGuard::test_trade_manager_update_last_tr
 13:12:40 [WARNING] [root] [Patch AI Studio v4.9.40] Invalid trade_time (NaT/None/Type): nan
 13:12:40 [WARNING] [root] [Patch AI Studio v4.9.40] Could not parse trade_time: not-a-date
 PASSED
-test_gold_ai.py::test_full_e2e_backtest_and_export 13:12:41 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.55_FULL_PASS - Logger Initialized (Import Phase).
+test_gold_ai.py::test_full_e2e_backtest_and_export 13:12:41 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.56_FULL_PASS - Logger Initialized (Import Phase).
 13:12:41 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
 13:12:41 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
 13:12:41 - INFO - [GoldAI_Enterprise_v4.9] - 
@@ -2219,7 +2219,7 @@ test_gold_ai.py::test_full_e2e_backtest_and_export 13:12:41 - INFO - [GoldAI_Ent
 (Processing) Setting up environment (Colab, GPU)...
 13:12:55 - INFO - [GoldAI_Enterprise_v4.9] -    Not running in Google Colab environment (get_ipython is None).
 13:12:55 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-13:12:55 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.55_FULL_PASS
+13:12:55 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.56_FULL_PASS
 13:12:55 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 13:12:55 [INFO] [gold_ai2025.Part2_DeprecatedParams] Part 2: Core Parameters & Strategy Settings (DEPRECATED - Parameters now in StrategyConfig from YAML).
 13:12:55 [WARNING] [gold_ai2025.Part2_DeprecatedParams] Part 2: Is DEPRECATED. All tunable strategy parameters should be managed by StrategyConfig.
