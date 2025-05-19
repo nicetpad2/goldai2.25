@@ -73,29 +73,38 @@ class DataLoadError(GoldAIError):
     """Raised when load_data fails."""
 
 
-# [Patch AI Studio v4.9.29] Robust isinstance for test/type-guard coverage
+# [Patch AI Studio v4.9.30] Robust isinstance for test/type-guard coverage
 def _isinstance_safe(obj, expected_type):
     """Safe isinstance wrapper for dynamic expected_type.
 
-    [Patch AI Studio v4.9.29]
-    - If expected_type is not a type or tuple of types, logs an error and returns False.
-    - Handles exceptions from isinstance and logs them for debugging robustness.
+    [Patch AI Studio v4.9.30] FINAL HOTFIX: Never raises TypeError. Always
+    returns False and logs if ``expected_type`` is not a type or tuple of types.
+    Handles unexpected exceptions for extra robustness.
     """
     import logging
     logger = logging.getLogger()
 
-    if not isinstance(expected_type, (type, tuple)):
-        logger.error(
-            "[Patch AI Studio v4.9.29] Invalid expected_type argument for isinstance: %r (type: %r). Returning False for robust test-path.",
-            expected_type,
-            type(expected_type),
-        )
-        return False
     try:
-        return isinstance(obj, expected_type)
+        if not isinstance(expected_type, (type, tuple)):
+            logger.error(
+                "[Patch AI Studio v4.9.30] Invalid expected_type argument for isinstance: %r (type: %r). Returning False for robust test-path.",
+                expected_type,
+                type(expected_type),
+            )
+            return False
+        try:
+            return isinstance(obj, expected_type)
+        except Exception as e:
+            logger.error(
+                "[Patch AI Studio v4.9.30] Exception in isinstance: %s | obj=%r | expected_type=%r",
+                e,
+                obj,
+                expected_type,
+            )
+            return False
     except Exception as e:
         logger.error(
-            "[Patch AI Studio v4.9.29] Exception in isinstance: %s | obj=%r | expected_type=%r",
+            "[Patch AI Studio v4.9.30] UNEXPECTED OUTER EXCEPTION in _isinstance_safe: %s | obj=%r | expected_type=%r",
             e,
             obj,
             expected_type,
