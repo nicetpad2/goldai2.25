@@ -74,7 +74,8 @@ def _create_mock_module(name: str) -> types.ModuleType:
     module.__version__ = "0.0"
 
     def _getattr(attr: str):
-        if attr in ["random", "randn", "rand", "choice"]:
+        # [Patch][QA] ป้องกัน RecursionError ใน numpy.random และ ML mock
+        if attr in ["random", "rand", "randn"]:
             return lambda *a, **kw: 0.5
         return MagicMock(name=f"{name}.{attr}")
 
@@ -2501,6 +2502,22 @@ class TestForcedEntryAudit(unittest.TestCase):
         for t in trade_log:
             if t.get("forced_entry_flag"):
                 self.assertEqual(t.get("exit_reason"), "FORCED_ENTRY", "[Patch][QA] Forced entry not annotated correctly")
+
+    def test_forced_entry_audit_in_trade_log(self):
+        ga = safe_import_gold_ai()
+        import pandas as pd
+        df = pd.DataFrame({
+            "Open": [1000, 1002],
+            "High": [1003, 1004],
+            "Low": [999, 1001],
+            "Close": [1002, 1003],
+            "forced_entry_flag": [1, 0],
+            "Trade_Reason": ["FORCED", ""],
+        }, index=pd.date_range("2023-01-01", periods=2, freq="min"))
+        cfg = ga.StrategyConfig({})
+        trade_log, *_ = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+        forced = [t for t in trade_log if t.get("exit_reason") == "FORCED_ENTRY"]
+        self.assertGreaterEqual(len(forced), 1, "[Patch][QA] Forced entry audit failed")
 
     def test_forced_entry_multi_case(self):
         ga = safe_import_gold_ai()

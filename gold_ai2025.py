@@ -39,7 +39,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.82_FULL_PASS"  # [Patch AI Studio v4.9.82] encoding & ATR fallback, forced entry QA
+MINIMAL_SCRIPT_VERSION = "4.9.83_FULL_PASS"  # [Patch AI Studio v4.9.83] encoding & forced entry audit
 
 
 
@@ -1444,14 +1444,14 @@ def safe_load_csv_auto(file_path: str) -> pd.DataFrame | None:
             with gzip.open(file_path, 'rt', encoding='utf-8') as f:
                 return pd.read_csv(f, **read_csv_kwargs)
         else:
-            load_logger.debug("         -> No .gz extension, using standard pd.read_csv.")
+            load_logger.debug("[Patch][QA] No .gz extension, using standard pd.read_csv.")
             try:
                 return pd.read_csv(file_path, encoding="utf-8", **read_csv_kwargs)
             except UnicodeDecodeError as ude:
                 load_logger.warning("[Patch][QA] UTF-8 decode failed, trying latin1 for file %r (%r)", file_path, ude)
                 return pd.read_csv(file_path, encoding="latin1", **read_csv_kwargs)
     except pd.errors.EmptyDataError:
-        load_logger.warning(f"         (Warning) File is empty: {file_path}")
+        load_logger.warning(f"[Patch][QA] (Warning) File is empty: {file_path}")
         return pd.DataFrame()
     except (OSError, PermissionError, UnicodeDecodeError) as e:
         load_logger.error("[Patch][QA] (Error) Failed to load file '%s': %r", file_path, e)
