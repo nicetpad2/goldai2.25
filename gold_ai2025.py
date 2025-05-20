@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.64_FULL_PASS"  # [Patch AI Studio v4.9.64+] trade_log column fix
+MINIMAL_SCRIPT_VERSION = "4.9.65_FULL_PASS"  # [Patch AI Studio v4.9.65+] import flag fix
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -463,26 +463,39 @@ def import_core_libraries() -> None:
     warnings.filterwarnings("ignore", category=FutureWarning, module='sklearn')
     warnings.filterwarnings("ignore", category=UserWarning, message="Could not infer format", module='pandas')
 
-    pd = try_import_with_install("pandas", import_as_name="pd", success_flag_global_name="pandas_imported")
+    pd_module = try_import_with_install("pandas", import_as_name="pd", success_flag_global_name="pandas_imported")
+    pandas_imported = pd_module is not None
     if not pandas_imported:
         logger.critical("[CRITICAL IMPORT FAIL] Pandas library could not be imported or installed. Many functionalities will fail.")
         globals()['pd'] = DummyPandas()
+    else:
+        pd = pd_module
 
-    np = try_import_with_install("numpy", import_as_name="np", success_flag_global_name="numpy_imported")
+    np_module = try_import_with_install("numpy", import_as_name="np", success_flag_global_name="numpy_imported")
+    numpy_imported = np_module is not None
     if not numpy_imported:
         logger.critical("[CRITICAL IMPORT FAIL] NumPy library could not be imported or installed. Many functionalities will fail.")
         globals()['np'] = DummyNumpy()
+    else:
+        np = np_module
 
     tqdm_module = try_import_with_install("tqdm.notebook", pip_install_name="tqdm", import_as_name="tqdm", success_flag_global_name="tqdm_imported", log_name="TQDM.NOTEBOOK")
-    if not tqdm_imported or tqdm_module is None:
+    tqdm_imported = tqdm_module is not None
+    if not tqdm_imported:
         tqdm = lambda x, *args, **kwargs: x
         logger.warning("   (Fallback) Using dummy tqdm as tqdm.notebook import failed.")
     else:
         tqdm = tqdm_module
 
-    ta = try_import_with_install("ta", success_flag_global_name="ta_imported")
+    ta_module = try_import_with_install("ta", success_flag_global_name="ta_imported")
+    ta_imported = ta_module is not None
+    if ta_imported:
+        ta = ta_module
 
-    optuna = try_import_with_install("optuna", success_flag_global_name="optuna_imported")
+    optuna_module = try_import_with_install("optuna", success_flag_global_name="optuna_imported")
+    optuna_imported = optuna_module is not None
+    if optuna_imported:
+        optuna = optuna_module
     if optuna_imported and optuna:
         try:
             # [Patch AI Studio v4.9.49+] Robust Optuna Logging Compatibility
@@ -509,7 +522,8 @@ def import_core_libraries() -> None:
     EShapCalcType = None
     EFeaturesSelectionAlgorithm = None
     catboost_module = try_import_with_install("catboost", success_flag_global_name="catboost_imported")
-    if catboost_imported and catboost_module:
+    catboost_imported = catboost_module is not None
+    if catboost_imported:
         try:
             CatBoostClassifier = getattr(catboost_module, 'CatBoostClassifier')
             Pool = getattr(catboost_module, 'Pool')
@@ -518,15 +532,26 @@ def import_core_libraries() -> None:
             logger.info(f"   (Success) CatBoost components (Classifier, Pool) loaded. EShapCalcType: {'Found' if EShapCalcType else 'Not Found'}, EFeaturesSelectionAlgorithm: {'Found' if EFeaturesSelectionAlgorithm else 'Not Found'}")
         except AttributeError as e_cat_attr:
             logger.error(f"   (Error) Could not get CatBoost components from module: {e_cat_attr}")
-            catboost_imported = False
             CatBoostClassifier = None
             Pool = None
             EShapCalcType = None
             EFeaturesSelectionAlgorithm = None
+            catboost_imported = False
 
-    shap = try_import_with_install("shap", success_flag_global_name="shap_imported")
-    GPUtil = try_import_with_install("GPUtil", import_as_name="GPUtil", success_flag_global_name="gputil_imported")
-    psutil = try_import_with_install("psutil", success_flag_global_name="psutil_imported")
+    shap_module = try_import_with_install("shap", success_flag_global_name="shap_imported")
+    shap_imported = shap_module is not None
+    if shap_imported:
+        shap = shap_module
+
+    gputil_module = try_import_with_install("GPUtil", import_as_name="GPUtil", success_flag_global_name="gputil_imported")
+    gputil_imported = gputil_module is not None
+    if gputil_imported:
+        GPUtil = gputil_module
+
+    psutil_module = try_import_with_install("psutil", success_flag_global_name="psutil_imported")
+    psutil_imported = psutil_module is not None
+    if psutil_imported:
+        psutil = psutil_module
 
     torch = None
     try:
@@ -7241,7 +7266,7 @@ def simulate_trades(
     if trade_log_df.empty:
         trade_log_df = pd.DataFrame(columns=["exit_reason"])
         sim_logger.debug(
-            "[Patch AI Studio v4.9.64+] Initialized empty trade_log_df with exit_reason column"
+            "[Patch AI Studio v4.9.65+] Initialized empty trade_log_df with exit_reason column"
         )
     if return_tuple:
         sim_logger.debug(

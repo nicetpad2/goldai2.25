@@ -124,6 +124,10 @@
 - `simulate_trades` initializes an empty DataFrame with `exit_reason` column when no trades occur.
 - Bumped version constant to `4.9.64_FULL_PASS`.
 
+## [v4.9.65+] - 2025-06-01
+- Fixed import flag logic in `import_core_libraries` to correctly reflect successful library imports.
+- Bumped version constant to `4.9.65_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
