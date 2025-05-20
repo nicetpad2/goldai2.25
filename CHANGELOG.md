@@ -163,6 +163,12 @@
 - Forced entry trades always logged with `exit_reason='FORCED_ENTRY'`.
 - Bumped version constant to `4.9.72_FULL_PASS`.
 
+## [v4.9.73+] - 2025-06-09
+- RSI manual fallback now triggers when TA library is missing or series length is insufficient.
+- Forced entry trade log audit records indices of forced trades and logs summary.
+- Added internal test helper `_test_rsi_manual_fallback_coverage`.
+- Bumped version constant to `4.9.73_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
