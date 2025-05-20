@@ -957,6 +957,8 @@ class TestEdgeCases(unittest.TestCase):
 
     def test_rsi_manual_fallback_coverage(self):
         """[Patch AI Studio v4.9.73+] Additional audit for manual RSI fallback."""
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
         series = self.ga.pd.Series([10, 9, 8, 7, 6, 5], dtype="float32")
         orig = getattr(getattr(self.ga.ta, "momentum", object()), "RSIIndicator", None)
         if hasattr(self.ga.ta.momentum, "RSIIndicator"):
@@ -2225,6 +2227,34 @@ def test_forced_entry_multi_order_audit():
     if not all(t.get("exit_reason", "") == "FORCED_ENTRY" for t in forced_trades):
         print("[Patch AI Studio v4.9.73+] Multi-order trade log for debug:", trade_log)
     assert len(forced_trades) >= 2, "[Patch AI Studio v4.9.73+] Multi-order: ไม่พบ forced entry สองรายการใน trade_log"
+
+
+def test_forced_entry_audit_short():
+    """[Patch AI Studio v4.9.76+] Forced SELL entry must keep exit_reason='FORCED_ENTRY'"""
+    pd = safe_import_gold_ai().pd
+    ga = safe_import_gold_ai()
+    df = pd.DataFrame({
+        "Open": [1000, 995],
+        "High": [1005, 1000],
+        "Low": [990, 990],
+        "Close": [995, 992],
+        "Entry_Short": [1, 1],
+        "ATR_14_Shifted": [1.0, 1.0],
+        "Signal_Score": [2.0, 2.0],
+        "Trade_Reason": ["FORCED_SELL", "NORMAL"],
+        "session": ["Asia", "Asia"],
+        "Gain_Z": [0.3, 0.3],
+        "MACD_hist_smooth": [0.1, 0.1],
+        "RSI": [50, 50],
+    }, index=pd.date_range("2023-01-01", periods=2, freq="min"))
+    cfg = ga.StrategyConfig({})
+    trade_log, equity_curve, run_summary = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+    forced_trades = [t for t in trade_log if str(t.get("Trade_Reason", "")).upper().startswith("FORCED")]
+    for t in forced_trades:
+        assert t.get("exit_reason", None) == "FORCED_ENTRY", (
+            f"[Patch AI Studio v4.9.76+] Forced SELL entry trade does not have exit_reason='FORCED_ENTRY': {t}"
+        )
+    assert len(forced_trades) >= 1
 
 
 # ---------------------------
