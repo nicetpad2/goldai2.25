@@ -216,3 +216,9 @@
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
+## [v4.9.80+] - 2025-06-16
+- Forced entry logic mapping and post-process audits enhanced.
+- engineer_m1_features logs error on empty DataFrame and provides robust ATR fallback.
+- _isinstance_safe supports MagicMock DataFrame mocks.
+- Version bumped to `4.9.80_FULL_PASS`.
+
