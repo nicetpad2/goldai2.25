@@ -190,6 +190,11 @@
 - Engineer M1 features now safely imports `atr` with fallback logging.
 - Bumped version constant to `4.9.77_FULL_PASS`.
 
+## [v4.9.78+] - 2025-06-14
+- Added comprehensive forced entry audit patch ensuring all trade_log entries with forced indicators use `exit_reason='FORCED_ENTRY'`.
+- Logged audit summary and indices of modified trades.
+- Bumped version constant to `4.9.78_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
