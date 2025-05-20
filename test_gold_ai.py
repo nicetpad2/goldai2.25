@@ -948,8 +948,22 @@ class TestEdgeCases(unittest.TestCase):
         try:
             with self.assertLogs(f"{self.ga.__name__}.rsi", level="WARNING"):
                 result = self.ga.rsi(series, 3)
-            # [Patch AI Studio v4.9.72+] Robust: series notna should be True, all value should be 50
-            self.assertTrue(result.notna().any())
+            # [Patch AI Studio v4.9.73+] Robust: series notna should be True, all value should be 50
+            self.assertTrue(result.notna().all(), "[Patch AI Studio v4.9.73+] RSI fallback result must have no NaN")
+            self.assertTrue((result == 50).all(), "[Patch AI Studio v4.9.73+] RSI fallback must be all 50")
+        finally:
+            if orig is not None:
+                self.ga.ta.momentum.RSIIndicator = orig
+
+    def test_rsi_manual_fallback_coverage(self):
+        """[Patch AI Studio v4.9.73+] Additional audit for manual RSI fallback."""
+        series = self.ga.pd.Series([10, 9, 8, 7, 6, 5], dtype="float32")
+        orig = getattr(getattr(self.ga.ta, "momentum", object()), "RSIIndicator", None)
+        if hasattr(self.ga.ta.momentum, "RSIIndicator"):
+            delattr(self.ga.ta.momentum, "RSIIndicator")
+        try:
+            result = self.ga.rsi(series, 20)  # period > len(series) triggers fallback
+            self.assertTrue(result.notna().all())
             self.assertTrue((result == 50).all())
         finally:
             if orig is not None:
@@ -2152,6 +2166,31 @@ def test_risk_trade_manager_forced_entry_spike(monkeypatch):
     assert blocked, (
         f"[Patch AI Studio v4.9.60+] [Patch] risk_trade_manager_forced_entry_spike expected blocked==True (row: {row}, cfg: {config.__dict__})"
     )
+
+def test_forced_entry_audit_logic():
+    """[Patch AI Studio v4.9.73+] Forced entry audit: exit_reason must always be FORCED_ENTRY if triggered."""
+    pd = safe_import_gold_ai().pd
+    ga = safe_import_gold_ai()
+    df = pd.DataFrame({
+        "Open": [1000, 1005],
+        "High": [1010, 1015],
+        "Low": [995, 1000],
+        "Close": [1008, 1012],
+        "Entry_Long": [1, 1],
+        "ATR_14_Shifted": [1.0, 1.0],
+        "Signal_Score": [2.0, 2.0],
+        "Trade_Reason": ["FORCED_BUY", "NORMAL"],
+        "session": ["Asia", "Asia"],
+        "Gain_Z": [0.3, 0.3],
+        "MACD_hist_smooth": [0.1, 0.1],
+        "RSI": [50, 50],
+    }, index=pd.date_range("2023-01-01", periods=2, freq="min"))
+    cfg = ga.StrategyConfig({})
+    trade_log, equity_curve, run_summary = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+    forced_logged = [t for t in trade_log if t.get("exit_reason", "") == "FORCED_ENTRY"]
+    assert len(forced_logged) == 1, "Forced entry must log exit_reason='FORCED_ENTRY'"
+    for t in forced_logged:
+        assert t["exit_reason"] == "FORCED_ENTRY"
 
 
 # ---------------------------
