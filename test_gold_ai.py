@@ -1,6 +1,6 @@
 """Gold AI Test Suite
 
-[Patch AI Studio v4.9.65] - Validate global pandas availability and import flag handling.
+[Patch AI Studio v4.9.66] - Validate global pandas availability and import flag handling.
 """
 
 import importlib
@@ -1763,6 +1763,21 @@ def test_calculate_metrics_minimal():
     result = ga.calculate_metrics(trade_log_list, fold_tag="minimal_test")
     assert "num_tp" in result
     assert result["num_tp"] == 1
+
+
+def test_calculate_metrics_with_string_entries():
+    ga = safe_import_gold_ai()
+    trade_log_mixed = [
+        '{"exit_reason": "TP", "pnl_usd_net": 15}',
+        {"exit_reason": "SL", "pnl_usd_net": -5},
+        "invalid_entry",
+    ]
+    result = ga.calculate_metrics(trade_log_mixed, fold_tag="mixed")
+    assert result["num_trades"] == 2
+    assert result["num_tp"] == 1
+    assert result["num_sl"] == 1
+    assert result["num_be"] == 0
+    assert result["net_profit"] == 10
 
 
 def test_safe_load_csv_auto_nonexistent(caplog):

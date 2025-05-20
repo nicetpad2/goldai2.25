@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.65_FULL_PASS"  # [Patch AI Studio v4.9.65+] import flag fix
+MINIMAL_SCRIPT_VERSION = "4.9.66_FULL_PASS"  # [Patch AI Studio v4.9.66+] trade_log type guard
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -7289,11 +7289,30 @@ def calculate_metrics(trade_log: list, fold_tag: str = "", **kwargs) -> Dict[str
         metrics_logger.warning(
             f"[Patch AI Studio v4.9.56+] Extra kwargs ignored in calculate_metrics: {list(kwargs.keys())}"
         )
-    metrics = {"fold_tag": fold_tag, "num_trades": len(trade_log)}
-    metrics["num_tp"] = sum(1 for t in trade_log if str(t.get("exit_reason", "")).upper() == "TP")
-    metrics["num_sl"] = sum(1 for t in trade_log if str(t.get("exit_reason", "")).upper() == "SL")
-    metrics["num_be"] = sum(1 for t in trade_log if "BE" in str(t.get("exit_reason", "")).upper())
-    metrics["net_profit"] = sum(t.get("pnl_usd_net", 0.0) for t in trade_log)
+
+    valid_trades: List[Dict[str, Any]] = []
+    for idx, item in enumerate(trade_log):
+        if isinstance(item, dict):
+            valid_trades.append(item)
+            continue
+        parsed = None
+        if isinstance(item, str):
+            try:
+                parsed = json.loads(item)
+            except Exception:
+                parsed = None
+        if isinstance(parsed, dict):
+            valid_trades.append(parsed)
+        else:
+            metrics_logger.warning(
+                f"[Patch AI Studio v4.9.66+] Ignoring non-dict trade_log entry at {idx}: {item!r}"
+            )
+
+    metrics = {"fold_tag": fold_tag, "num_trades": len(valid_trades)}
+    metrics["num_tp"] = sum(1 for t in valid_trades if str(t.get("exit_reason", "")).upper() == "TP")
+    metrics["num_sl"] = sum(1 for t in valid_trades if str(t.get("exit_reason", "")).upper() == "SL")
+    metrics["num_be"] = sum(1 for t in valid_trades if "BE" in str(t.get("exit_reason", "")).upper())
+    metrics["net_profit"] = sum(t.get("pnl_usd_net", 0.0) for t in valid_trades)
     metrics_logger.debug(f"Metrics calculated for fold '{fold_tag}': {metrics}")
     return metrics
 
