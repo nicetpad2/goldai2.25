@@ -179,6 +179,11 @@
 - Added multi-order forced entry unit tests.
 - Bumped version constant to `4.9.75_FULL_PASS`.
 
+## [v4.9.76+] - 2025-06-12
+- Added forced SELL entry unit test and ensured audit keeps `exit_reason='FORCED_ENTRY'`.
+- `test_rsi_manual_fallback_coverage` now skips when pandas is unavailable.
+- Bumped version constant to `4.9.76_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
