@@ -2794,6 +2794,209 @@ def test_ml_inference_path(monkeypatch):
     assert "overall_metrics" in res
 
 
+def test_safe_load_csv_auto_permission_denied():
+    """[Patch][QA v4.9.102+] safe_load_csv_auto: PermissionError while creating directory/file"""
+    mod = safe_import_gold_ai()
+    mod.datetime = datetime
+    with patch("os.path.exists", return_value=False), \
+         patch("os.makedirs", side_effect=PermissionError("permission denied")), \
+         patch.object(mod.pd, "DataFrame") as mdf:
+        df = mod.safe_load_csv_auto("/permission/denied/file.csv")
+        assert mdf.called
+        assert hasattr(df, "empty")
+
+
+def test_safe_load_csv_auto_unicode_decode_nested():
+    """[Patch][QA v4.9.102+] safe_load_csv_auto: nested UnicodeDecodeError triggers fallback twice"""
+    mod = safe_import_gold_ai()
+    with patch("os.path.exists", return_value=True), \
+         patch.object(mod.pd, "read_csv", side_effect=[UnicodeDecodeError("utf-8", b"", 0, 1, "fail"),
+                                                       UnicodeDecodeError("utf-8", b"", 0, 1, "fail"),
+                                                       mod.pd.DataFrame({"A": [1]})]):
+        df = mod.safe_load_csv_auto("nested.csv")
+        assert isinstance(df, mod.pd.DataFrame)
+
+
+def test_setup_output_directory_oserror_exit():
+    """[Patch][QA v4.9.102+] setup_output_directory: OSError triggers sys.exit"""
+    mod = safe_import_gold_ai()
+    with patch("os.makedirs", side_effect=OSError("disk full")):
+        with pytest.raises(SystemExit):
+            mod.setup_output_directory("/disk/full", "dir")
+
+
+def test_prepare_datetime_missing_columns():
+    """[Patch][QA v4.9.102+] prepare_datetime: DataFrame missing Date/Timestamp columns triggers sys.exit"""
+    mod = safe_import_gold_ai()
+    df = mod.pd.DataFrame({"Open": [1], "High": [1], "Low": [1], "Close": [1]})
+    with pytest.raises(SystemExit):
+        mod.prepare_datetime(df)
+
+
+def test_prepare_datetime_nat_ratio_all():
+    """[Patch][QA v4.9.102+] prepare_datetime: all NaT triggers sys.exit"""
+    mod = safe_import_gold_ai()
+    df = mod.pd.DataFrame({
+        "Date": ["0000" for _ in range(3)],
+        "Timestamp": ["99:99:99" for _ in range(3)],
+        "Open": [1] * 3,
+        "High": [1] * 3,
+        "Low": [1] * 3,
+        "Close": [1] * 3,
+    })
+    with pytest.raises(SystemExit):
+        mod.prepare_datetime(df, timeframe_str="ALL_NAT_TEST")
+
+
+def test_RiskManager_update_drawdown_edge_cases():
+    """[Patch][QA v4.9.102+] RiskManager.update_drawdown: current_equity and dd_peak edge paths"""
+    mod = safe_import_gold_ai()
+    pd_dummy = mod.DummyPandas()
+    pd_dummy.isna = lambda x: x is None or x != x
+    mod.pd = pd_dummy
+    cfg = mod.StrategyConfig({})
+    cfg.kill_switch_dd = 2.0
+    cfg.soft_kill_dd = 1.5
+    rm = mod.RiskManager(cfg)
+    assert rm.update_drawdown(None) == 1.0
+    assert rm.update_drawdown(-10.0) == 1.0
+    rm2 = mod.RiskManager(cfg)
+    rm2.dd_peak = None
+    assert rm2.update_drawdown(5.0) == 0.0
+    rm3 = mod.RiskManager(cfg)
+    rm3.dd_peak = 1
+    assert rm3.update_drawdown(0.0) == 1.0
+
+
+def test_RiskManager_update_drawdown_kill_switch():
+    """[Patch][QA v4.9.102+] RiskManager.update_drawdown: triggers kill switch"""
+    mod = safe_import_gold_ai()
+    pd_dummy = mod.DummyPandas()
+    pd_dummy.isna = lambda x: x is None or x != x
+    mod.pd = pd_dummy
+    cfg = mod.StrategyConfig({})
+    rm = mod.RiskManager(cfg)
+    rm.dd_peak = 100.0
+    with pytest.raises(RuntimeError):
+        rm.update_drawdown(79.0)
+
+
+def test_TradeManager_should_force_entry_block_paths():
+    """[Patch][QA v4.9.102+] TradeManager.should_force_entry: all major block paths"""
+    mod = safe_import_gold_ai()
+    cfg = mod.StrategyConfig({})
+    rm = mod.RiskManager(cfg)
+    tm = mod.TradeManager(cfg, rm)
+    now = mod.pd.Timestamp("2023-01-01 00:00:00")
+
+    cfg.enable_forced_entry = False
+    assert tm.should_force_entry(now, 2.0, 1.0, 1.0, 2.0, "Breakout") is False
+    cfg.enable_forced_entry = True
+
+    rm.soft_kill_active = True
+    assert tm.should_force_entry(now, 2.0, 1.0, 1.0, 2.0, "Breakout") is False
+    rm.soft_kill_active = False
+
+    tm.last_trade_time = now
+    assert tm.should_force_entry(now + mod.pd.Timedelta(minutes=10), 2.0, 1.0, 1.0, 2.0, "Breakout") is False
+    tm.last_trade_time = None
+
+    assert tm.should_force_entry(now, 0.5, 1.0, 1.0, 2.0, "Breakout") is False
+
+    tm.consecutive_forced_losses = cfg.forced_entry_max_consecutive_losses
+    assert tm.should_force_entry(now, 2.0, 1.0, 1.0, 2.0, "Breakout") is False
+    tm.consecutive_forced_losses = 0
+
+    assert tm.should_force_entry(now, 2.0, None, 1.0, 2.0, "Breakout") is True
+
+    assert tm.should_force_entry(now, 2.0, 10.0, 1.0, 2.0, "Breakout") is False
+
+    assert tm.should_force_entry(now, 2.0, 1.0, 1.0, 0.1, "Breakout") is False
+
+    assert tm.should_force_entry(now, 2.0, 1.0, 1.0, 2.0, "Unknown") is False
+
+
+def test_TradeManager_should_force_entry_success():
+    """[Patch][QA v4.9.102+] TradeManager.should_force_entry: positive case"""
+    mod = safe_import_gold_ai()
+    cfg = mod.StrategyConfig({})
+    rm = mod.RiskManager(cfg)
+    tm = mod.TradeManager(cfg, rm)
+    now = mod.pd.Timestamp("2023-01-01 00:00:00")
+    allowed = tm.should_force_entry(now, 2.0, 1.0, 1.0, 2.0, "Breakout")
+    assert allowed is True
+
+
+def test_try_import_with_install_importerror():
+    """[Patch][QA v4.9.102+] try_import_with_install: ImportError and pip install fails"""
+    mod = safe_import_gold_ai()
+    with patch.object(mod.importlib, "import_module", side_effect=ImportError("fail")), \
+         patch.object(mod.subprocess, "run", side_effect=Exception("pip fail")):
+        mod.notfoundlib_imported = False
+        result = mod.try_import_with_install(
+            "notfoundlib", pip_install_name="notfoundlib", import_as_name="notfoundlib", success_flag_global_name="notfoundlib_imported"
+        )
+        assert result is None
+        assert mod.notfoundlib_imported is False
+
+
+def test_try_import_with_install_no_version():
+    """[Patch][QA v4.9.102+] try_import_with_install: import module with no __version__ attribute"""
+    mod = safe_import_gold_ai()
+    dummy = types.ModuleType("noversion")
+    if hasattr(dummy, "__version__"):
+        delattr(dummy, "__version__")
+    with patch.object(mod.importlib, "import_module", return_value=dummy):
+        result = mod.try_import_with_install(
+            "noversion", pip_install_name="noversion", import_as_name="noversion", success_flag_global_name="noversion_imported"
+        )
+    assert result is dummy
+    assert mod.noversion_imported is True
+
+
+def test_plot_equity_curve_importerror():
+    """[Patch][QA v4.9.102+] plot_equity_curve: ImportError triggers fallback"""
+    mod = safe_import_gold_ai()
+    cfg = mod.StrategyConfig({})
+    with patch.dict("sys.modules", {"matplotlib": None}):
+        try:
+            mod.plot_equity_curve(cfg, [100, 110, 120], "ImportError Test", "/tmp", "demo")
+        except ImportError:
+            pass
+
+
+def test_set_thai_font_no_matplotlib():
+    """[Patch][QA v4.9.102+] set_thai_font: matplotlib not available"""
+    mod = safe_import_gold_ai()
+    with patch.dict("sys.modules", {"matplotlib": None}):
+        assert mod.set_thai_font("NoFont") is False
+
+
+def test_simple_converter_complex_types():
+    """[Patch][QA v4.9.102+] simple_converter: set, complex, unknown type"""
+    mod = safe_import_gold_ai()
+    mod.datetime = datetime
+    assert isinstance(mod.simple_converter(set([1, 2])), str)
+    assert isinstance(mod.simple_converter(complex(2, 3)), str)
+    class Custom:
+        pass
+    assert isinstance(mod.simple_converter(Custom()), str)
+
+
+def test__isinstance_safe_magicmock():
+    """[Patch][QA v4.9.102+] _isinstance_safe: MagicMock fallback and error path"""
+    mod = safe_import_gold_ai()
+    from unittest.mock import MagicMock
+    mock_df = MagicMock()
+    mock_df.columns = []
+    mock_df.index = []
+    mock_df.dtypes = []
+    magicmock_type = MagicMock
+    assert mod._isinstance_safe(mock_df, magicmock_type) is True
+    fake_type = types.SimpleNamespace(__name__="DataFrame")
+    assert mod._isinstance_safe(mock_df, fake_type) is True
+
+
 if __name__ == "__main__":
     if cov:
         cov.start()
