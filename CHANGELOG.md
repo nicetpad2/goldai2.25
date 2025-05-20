@@ -287,4 +287,5 @@
 - Test cases updated for new plot_equity_curve signature and robust StrategyConfig passing
 - Version bump to `4.9.91_FULL_PASS`
 - AGENTS.md references, versioning, and all log/patch tags updated to [Patch AI Studio v4.9.91+]
+- QA hotfix: real numpy.random assigned, headless plotting tests updated, forced entry audit improvements
 
