@@ -148,6 +148,10 @@
 - Patch log added to all fallback/guard critical paths.
 - Bumped version constant to `4.9.69_FULL_PASS`.
 
+## [v4.9.70+] - 2025-06-07
+- Fixed `simulate_trades` local variable check that caused `UnboundLocalError` for `atr` when assigning NaN fallback.
+- Bumped version constant to `4.9.70_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
