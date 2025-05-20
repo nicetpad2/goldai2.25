@@ -94,6 +94,16 @@ def _create_mock_module(name: str) -> types.ModuleType:
         return MagicMock(name=f"{name}.{attr}")
 
     module.__getattr__ = _getattr  # type: ignore
+    if name == "shap":
+        class TreeExplainer:
+            def __init__(self, model, *a, **k):
+                pass
+            def shap_values(self, X):
+                import numpy as np
+                return np.zeros((getattr(X, "shape", [1])[0], 1))
+        module.TreeExplainer = TreeExplainer
+        module.summary_plot = lambda *a, **k: None
+        module.summary_plot_interaction = lambda *a, **k: None
     if name == "yaml":
         def safe_load(content):
             if hasattr(content, "read"):
@@ -661,7 +671,7 @@ class TestGoldAI2025(unittest.TestCase):
              patch("os.path.exists", return_value=True):
             mock_run.return_value = MagicMock(returncode=0)
             res = mod.set_thai_font("Loma")
-            # Accept either True or False, never fail the test on missing font
+            # Accept either True or False (fallback), never fail test if font missing
             self.assertIn(res, [True, False])
             mod.setup_fonts()
 
@@ -675,6 +685,7 @@ class TestGoldAI2025(unittest.TestCase):
 
     def test_load_data_and_plotting(self):
         # [Patch][QA v4.9.90] Coverage: load_data, plot_equity_curve
+        cfg = self.gold_ai.StrategyConfig({})
         df = self.gold_ai.pd.DataFrame({
             "Date": ["20240101"],
             "Timestamp": ["00:00:00"],
@@ -688,7 +699,9 @@ class TestGoldAI2025(unittest.TestCase):
         try:
             df2 = self.gold_ai.load_data(path)
             self.assertIsInstance(df2, self.gold_ai.pd.DataFrame)
-            self.gold_ai.plot_equity_curve([100, 110, 120], "unit_test")
+            # Mock outdir creation if needed
+            with patch("os.makedirs") as makedirs:
+                self.gold_ai.plot_equity_curve(cfg, [100, 110, 120], "Unit Test", "/tmp", "demo")
         finally:
             if os.path.exists(path):
                 os.remove(path)
@@ -1215,7 +1228,7 @@ class TestWFVandLotSizing(unittest.TestCase):
         import matplotlib
         matplotlib.use("Agg")
         try:
-            ga.plot_equity_curve([100, 110, 120], "demo")
+            ga.plot_equity_curve(cfg, [100, 110, 120], "Unit Test", "/tmp", "demo")
         except ImportError as e:
             self.fail(f"plot_equity_curve raised ImportError in headless: {e}")
         allowed = self.ga.is_reentry_allowed(

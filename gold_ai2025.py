@@ -39,7 +39,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.90_FULL_PASS"  # [Patch][QA v4.9.90] updated default paths
+MINIMAL_SCRIPT_VERSION = "4.9.91_FULL_PASS"  # [Patch][QA v4.9.91] updated for font fallback/shap/test patch
 
 
 
@@ -271,9 +271,15 @@ def safe_isinstance(obj, typ):
 
 
 # --- Dummy Library Classes for Fallbacks ---
+class DummyDataFrame:
+    def __init__(self, data=None, **kwargs):
+        self.data = data
+    def to_csv(self, *a, **k):
+        pass
+
 class DummyPandas:
     __version__ = "0.0"
-    DataFrame = type('DummyDataFrame', (object,), {})
+    DataFrame = DummyDataFrame
     Series = type('DummySeries', (object,), {})
     Timestamp = type('DummyTimestamp', (object,), {})
     NaT = None
@@ -1307,23 +1313,19 @@ def setup_output_directory(base_dir: str, dir_name: str) -> str:
 
 # --- Font Setup Helpers ---
 def set_thai_font(font_name: str = "Loma") -> bool:
-    """
-    Attempts to set the specified Thai font for Matplotlib using findfont.
-    Prioritizes specified font, then searches common fallbacks.
-    """
+    """[Patch][QA v4.9.91+] Robust fallback for Thai font: logs only once and uses DejaVu Sans if none found."""
     try:
         import matplotlib  # noqa: F401
     except ImportError:
-        logging.warning("[Patch][Font][QA v4.9.86] matplotlib not available for font setting.")
+        logging.warning("[Patch][Font][QA v4.9.91+] matplotlib not available for font setting.")
         return False
     except Exception as e:
-        logging.warning("[Patch][Font][QA v4.9.86] Could not set font: %r", e)
+        logging.warning("[Patch][Font][QA v4.9.91+] Could not set font: %r", e)
         return False
 
-    # [Patch][QA v4.9.90] Font robust detection, fallback, and log all candidates
     font_logger = logging.getLogger(f"{__name__}.set_thai_font")
     preferred_fonts = [font_name] + ["TH Sarabun New", "THSarabunNew", "Garuda", "Norasi", "Kinnari", "Waree", "Laksaman", "Loma"]
-    preferred_fonts = list(dict.fromkeys(preferred_fonts))  # Remove duplicates
+    preferred_fonts = list(dict.fromkeys(preferred_fonts))
     found_fonts = []
     for pref_font in preferred_fonts:
         try:
@@ -1332,28 +1334,29 @@ def set_thai_font(font_name: str = "Loma") -> bool:
                 prop = fm.FontProperties(fname=found_path)
                 actual_font_name = prop.get_name()
                 found_fonts.append((actual_font_name, found_path))
-                font_logger.info(f"[Patch][QA v4.9.90] Found font: '{actual_font_name}' (requested: '{pref_font}') at {found_path}")
+                font_logger.info(f"[Patch][QA v4.9.91+] Found font: '{actual_font_name}' (requested: '{pref_font}') at {found_path}")
+        except FileNotFoundError as fnfe:
+            font_logger.debug(f"[Patch][QA v4.9.91+] Font '{pref_font}' not found: {fnfe}")
         except Exception as e_find:
-            font_logger.debug(f"[Patch][QA v4.9.90] Font '{pref_font}' not found: {e_find}")
+            font_logger.debug(f"[Patch][QA v4.9.91+] Font '{pref_font}' not found: {e_find}")
     if found_fonts:
-        # Use the first found font
         actual_font_name, target_font_path = found_fonts[0]
         try:
             plt.rcParams['font.family'] = actual_font_name
             plt.rcParams['axes.unicode_minus'] = False
-            font_logger.info(f"[Patch][QA v4.9.90] Set default font to '{actual_font_name}'.")
+            font_logger.info(f"[Patch][QA v4.9.91+] Set default font to '{actual_font_name}'.")
             fig_test, ax_test = plt.subplots(figsize=(0.5, 0.5))
             ax_test.set_title(f"ทดสอบ ({actual_font_name})", fontname=actual_font_name)
             plt.close(fig_test)
-            font_logger.info(f"[Patch][QA v4.9.90] Font '{actual_font_name}' set and tested successfully.")
+            font_logger.info(f"[Patch][QA v4.9.91+] Font '{actual_font_name}' set and tested successfully.")
             return True
         except Exception as e_set:
-            font_logger.warning(f"[Patch][QA v4.9.90] Font '{actual_font_name}' set, but test failed: {e_set}")
+            font_logger.warning(f"[Patch][QA v4.9.91+] Font '{actual_font_name}' set, but test failed: {e_set}")
             plt.rcParams['font.family'] = 'DejaVu Sans'
-            font_logger.info("[Patch][QA v4.9.90] Fallback: set font.family to 'DejaVu Sans'")
+            font_logger.warning("[Patch][QA v4.9.91+] Fallback: set font.family to 'DejaVu Sans'")
             return False
     else:
-        font_logger.warning(f"[Patch][QA v4.9.90] No Thai fonts found in: {preferred_fonts}. Fallback to DejaVu Sans.")
+        font_logger.warning(f"[Patch][QA v4.9.91+] No Thai fonts found in: {preferred_fonts}. Fallback to DejaVu Sans.")
         plt.rcParams['font.family'] = 'DejaVu Sans'
         return False
 
@@ -1414,8 +1417,12 @@ def setup_fonts(output_dir: str | None = None): # output_dir is not used current
                 if set_thai_font(fb_font):
                     font_set_successfully = True
                     break
-        if not font_set_successfully: font_setup_logger.critical("\n   (CRITICAL WARNING) Could not set any preferred Thai font. Plots WILL NOT render Thai characters correctly.")
-        else: font_setup_logger.info("\n   (Info) Font setup process complete.")
+        if not font_set_successfully:
+            import matplotlib.pyplot as plt
+            plt.rcParams['font.family'] = 'DejaVu Sans'
+            font_setup_logger.warning("[Patch][QA v4.9.91+] Could not set any Thai font. Defaulting to 'DejaVu Sans'. Plots may not render Thai characters correctly.")
+        else:
+            font_setup_logger.info("\n   (Info) Font setup process complete.")
     except Exception as e:
         font_setup_logger.error(f"   (Error) Critical error during font setup: {e}", exc_info=True)
 
