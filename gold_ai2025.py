@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.77_FULL_PASS"  # [Patch AI Studio v4.9.77+] ATR import fallback and forced entry fix
+MINIMAL_SCRIPT_VERSION = "4.9.78_FULL_PASS"  # [Patch AI Studio v4.9.78+] Forced entry audit patch
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -7470,12 +7470,49 @@ def simulate_trades(
     sim_logger.info(
         f"[Patch AI Studio v4.9.73+] [Patch] Forced Entry Audit: {len(forced_entry_audit_log)} forced entries logged: {forced_entry_audit_log}"
     )
+    # [Patch AI Studio v4.9.78+] --- Forced Entry Audit Patch (ครอบคลุมทุกกรณี) ---
+    forced_entry_audit_count = 0
+    forced_entry_audit_indices: List[int] = []
+    if isinstance(trade_log, list):
+        for i, t in enumerate(trade_log):
+            is_forced = (
+                t.get("_forced_entry_flag", False)
+                or (
+                    isinstance(t.get("Trade_Reason", None), str)
+                    and "FORCED" in t.get("Trade_Reason", "").upper()
+                )
+                or (
+                    isinstance(t.get("Reason", None), str)
+                    and "FORCED" in t.get("Reason", "").upper()
+                )
+            )
+            if is_forced and t.get("exit_reason", None) != "FORCED_ENTRY":
+                t["exit_reason"] = "FORCED_ENTRY"
+                forced_entry_audit_count += 1
+                forced_entry_audit_indices.append(i)
+        if forced_entry_audit_count > 0:
+            logger.info(
+                "[Patch AI Studio v4.9.78+] [Patch] Forced Entry Audit: พบ forced entries จำนวน %d ที่ถูกแก้ไข/บันทึกลง trade_log ที่ index %s",
+                forced_entry_audit_count,
+                forced_entry_audit_indices,
+            )
+        else:
+            logger.info(
+                "[Patch AI Studio v4.9.78+] [Patch] Forced Entry Audit: ไม่พบ forced entry ที่ต้องแก้ไขเพิ่มเติม"
+            )
+    # --- END PATCH --- #
     trade_log_df = pd.DataFrame(trade_log)
     if trade_log_df.empty:
         trade_log_df = pd.DataFrame(columns=["exit_reason"])
         sim_logger.debug(
             "[Patch AI Studio v4.9.65+] Initialized empty trade_log_df with exit_reason column"
         )
+    forced_entries = [t for t in trade_log if t.get("exit_reason") == "FORCED_ENTRY"]
+    logger.info(
+        "[Patch AI Studio v4.9.78+] [Patch] Forced Entry Audit Summary: บันทึก forced entries ทั้งหมด %d รายการ : %s",
+        len(forced_entries),
+        forced_entries,
+    )
     if return_tuple:
         sim_logger.debug(
             "[Patch AI Studio v4.9.63+] Returning tuple for legacy/test compatibility"

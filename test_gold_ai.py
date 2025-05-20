@@ -2291,6 +2291,32 @@ def test_forced_entry_audit_short():
     assert len(forced_trades) >= 1
 
 
+def test_forced_entry_reason_audit():
+    """[Patch AI Studio v4.9.78+] Forced entry audit must flag entries using 'Reason' field"""
+    pd = safe_import_gold_ai().pd
+    ga = safe_import_gold_ai()
+    df = pd.DataFrame(
+        {
+            "Open": [1000, 1005],
+            "High": [1010, 1015],
+            "Low": [995, 1000],
+            "Close": [1008, 1012],
+            "Entry_Long": [1, 0],
+            "ATR_14_Shifted": [1.0, 1.0],
+            "Signal_Score": [2.0, 2.0],
+            "Reason": ["Forced manual", "Normal"],
+            "session": ["Asia", "Asia"],
+            "Gain_Z": [0.3, 0.3],
+            "MACD_hist_smooth": [0.1, 0.1],
+            "RSI": [50, 50],
+        },
+        index=pd.date_range("2023-01-01", periods=2, freq="min"),
+    )
+    cfg = ga.StrategyConfig({})
+    trade_log, _, _ = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+    assert trade_log[0].get("exit_reason") == "FORCED_ENTRY"
+
+
 # ---------------------------
 # Integration: ML path coverage (mock inference/catboost/shap)
 # ---------------------------
