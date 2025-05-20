@@ -39,7 +39,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.80_FULL_PASS"  #  # [Patch AI Studio v4.9.79+] Coverage patch+[Patch AI Studio v4.9.79+] ATR fallback refinement + Patch AI Studio v4.9.79+] Forced entry exit_reason audit
+MINIMAL_SCRIPT_VERSION = "4.9.81_FULL_PASS"  # [Patch AI Studio v4.9.81] ATR fallback, true pandas/numpy in test, forced entry QA
 
 
 
@@ -66,7 +66,11 @@ LOG_FILENAME: str = f"gold_ai_v{MINIMAL_SCRIPT_VERSION.split('_')[0]}_temp_impor
 
 # --- Logger Setup ---
 logger = logging.getLogger("GoldAI_Enterprise_v4.9")
-logger.setLevel(logging.DEBUG)
+import os
+if os.environ.get("PROD", "") == "1":
+    logger.setLevel(logging.INFO)
+else:
+    logger.setLevel(logging.DEBUG)
 logger.propagate = False
 
 if not logger.handlers:
@@ -2455,12 +2459,13 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
         else: # pragma: no cover
             df["MACD_hist_smooth"] = np.nan
             eng_m1_logger.warning("      (Warning) ไม่สามารถคำนวณ MACD_hist_smooth.")
-        # [Patch AI Studio v4.9.80] Robust ATR import fallback for QA/pytest environment
+        # [Patch AI Studio v4.9.81] Robust sys.modules guard for ATR fallback
         import sys
-        atr_func = getattr(sys.modules[__name__], 'atr', None)
-        if atr_func is None:
-            eng_m1_logger.error("[Patch AI Studio v4.9.79+] ATR import failed")
-        if not callable(atr_func):
+        atr_module = sys.modules.get(__name__)
+        atr_func = getattr(atr_module, "atr", None) if atr_module else None
+        if not atr_func:
+            logger.error("[Patch] ATR fallback: getattr(sys.modules.get(__name__), 'atr', None) returned None. Manual ATR fallback logic will run if needed.")
+        if atr_func is None or not callable(atr_func):
             eng_m1_logger.error("[Patch AI Studio v4.9.80] ATR func is not callable, fallback to dummy")
             def atr_func(df, period=14):
                 eng_m1_logger.error("[Patch AI Studio v4.9.80] [Fallback] Dummy ATR used in feature engineering (for test only).")
@@ -7351,7 +7356,7 @@ def simulate_trades(
                 if side == "BUY"
                 else open_price - risk * getattr(config, "base_tp_multiplier", 2.0)
             )
-            active_orders.append({
+            trade_dict = {
                 "entry_idx": bar_i,
                 "entry_time": current_time,
                 "entry_price": open_price,
@@ -7360,11 +7365,14 @@ def simulate_trades(
                 "side": side,
                 "Trade_Reason": row.get("Trade_Reason", ""),
                 "_forced_entry_flag": is_forced_entry,
-            })
+            }
+            active_orders.append(trade_dict)
             if is_forced_entry:
                 forced_entry_audit_log.append(bar_i)
                 logger.info(
-                    f"[Patch AI Studio v4.9.73+] [Patch] Forced entry detected at idx={bar_i}: exit_reason='FORCED_ENTRY'."
+                    "[Patch][Audit] Forced entry detected: row_idx=%r, trade=%r",
+                    bar_i,
+                    trade_dict,
                 )
 
         for order in list(active_orders):
@@ -7421,7 +7429,9 @@ def simulate_trades(
                         trade_out["exit_reason"] = "FORCED_ENTRY"
                     trade_out["audit_patch"] = "[Patch] [Diff] Forced Entry flag/exit_reason set by simulate_trades"
                     logger.info(
-                        f"[Patch] Forced Entry detected at idx={row.name}: set _forced_entry_flag=True, exit_reason='FORCED_ENTRY'"
+                        "[Patch][Audit] Forced entry detected: row_idx=%r, trade=%r",
+                        row.name,
+                        trade_out,
                     )
                 trade_log.append(trade_out)
                 active_orders.remove(order)
@@ -7452,7 +7462,9 @@ def simulate_trades(
                         trade_out["exit_reason"] = "FORCED_ENTRY"
                     trade_out["audit_patch"] = "[Patch] [Diff] Forced Entry flag/exit_reason set by simulate_trades"
                     logger.info(
-                        f"[Patch] Forced Entry detected at idx={row.name}: set _forced_entry_flag=True, exit_reason='FORCED_ENTRY'"
+                        "[Patch][Audit] Forced entry detected: row_idx=%r, trade=%r",
+                        row.name,
+                        trade_out,
                     )
                 trade_log.append(trade_out)
                 active_orders.remove(order)
@@ -7479,7 +7491,9 @@ def simulate_trades(
                         trade_out["exit_reason"] = "FORCED_ENTRY"
                     trade_out["audit_patch"] = "[Patch] [Diff] Forced Entry flag/exit_reason set by simulate_trades"
                     logger.info(
-                        f"[Patch] Forced Entry detected at idx={row.name}: set _forced_entry_flag=True, exit_reason='FORCED_ENTRY'"
+                        "[Patch][Audit] Forced entry detected: row_idx=%r, trade=%r",
+                        row.name,
+                        trade_out,
                     )
                 trade_log.append(trade_out)
                 active_orders.remove(order)
@@ -7534,7 +7548,9 @@ def simulate_trades(
                         trade_out["exit_reason"] = "FORCED_ENTRY"
                     trade_out["audit_patch"] = "[Patch] [Diff] Forced Entry flag/exit_reason set by simulate_trades"
                     logger.info(
-                        f"[Patch] Forced Entry detected at idx={bar_i}: set _forced_entry_flag=True, exit_reason='FORCED_ENTRY'"
+                        "[Patch][Audit] Forced entry detected: row_idx=%r, trade=%r",
+                        bar_i,
+                        trade_out,
                     )
                 trade_log.append(trade_out)
 

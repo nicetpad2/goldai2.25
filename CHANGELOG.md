@@ -222,3 +222,9 @@
 - _isinstance_safe supports MagicMock DataFrame mocks.
 - Version bumped to `4.9.80_FULL_PASS`.
 
+## [v4.9.81+] - 2025-06-XX
+- [Patch AI Studio v4.9.81] Robust ATR fallback (sys.modules.get(__name__)) ลด KeyError ใน engineer_m1_features
+- Test suite ใช้ pandas/numpy จริงอัตโนมัติถ้ามี (safe_import_gold_ai)
+- เพิ่ม log [Patch] ใน fallback, forced entry QA
+- Version bumped to 4.9.81_FULL_PASS
+
