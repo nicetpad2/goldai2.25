@@ -18,7 +18,7 @@ pytest -v --cov=gold_ai2025 --cov-report=term-missing
 📝 Project Notes
 Patch Protocol:
 All logic patches and critical changes must log their version (e.g., [Patch AI Studio v4.9.42+]) in code and test logs per AGENTS.md.
-The latest patch `[Patch AI Studio v4.9.65+]` fixes library import flags to correctly detect installed dependencies.
+The latest patch `[Patch AI Studio v4.9.67+]` adds manual fallbacks for MACD, RSI, and ADX when TA functions are missing.
 
 Type/Format Guards:
 Use only _isinstance_safe and _float_fmt as enforced by QA for all dynamic type or format operations.

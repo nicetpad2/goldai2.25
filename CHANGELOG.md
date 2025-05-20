@@ -133,6 +133,10 @@
   skips non-dict items.
 - Bumped version constant to `4.9.66_FULL_PASS`.
 
+## [v4.9.67+] - 2025-06-03
+- Added manual fallbacks for RSI, MACD, and ADX when TA functions are missing.
+- Bumped version constant to `4.9.67_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.

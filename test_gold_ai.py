@@ -938,6 +938,38 @@ class TestEdgeCases(unittest.TestCase):
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), 12)
 
+    def test_rsi_manual_fallback(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        series = self.ga.pd.Series([1, 2, 3, 4, 5, 6], dtype="float32")
+        orig = getattr(getattr(self.ga.ta, "momentum", object()), "RSIIndicator", None)
+        if hasattr(self.ga.ta.momentum, "RSIIndicator"):
+            delattr(self.ga.ta.momentum, "RSIIndicator")
+        try:
+            with self.assertLogs(f"{self.ga.__name__}.rsi", level="WARNING"):
+                result = self.ga.rsi(series, 3)
+            self.assertTrue(result.notna().any())
+        finally:
+            if orig is not None:
+                self.ga.ta.momentum.RSIIndicator = orig
+
+    def test_macd_manual_fallback(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        series = self.ga.pd.Series([1, 2, 3, 4, 5, 6], dtype="float32")
+        orig = getattr(getattr(self.ga.ta, "trend", object()), "MACD", None)
+        if hasattr(self.ga.ta.trend, "MACD"):
+            delattr(self.ga.ta.trend, "MACD")
+        try:
+            with self.assertLogs(f"{self.ga.__name__}.macd", level="WARNING"):
+                macd_line, macd_signal, macd_diff = self.ga.macd(series, 5, 3, 2)
+            self.assertTrue(macd_line.notna().any())
+            self.assertTrue(macd_signal.notna().any())
+            self.assertTrue(macd_diff.notna().any())
+        finally:
+            if orig is not None:
+                self.ga.ta.trend.MACD = orig
+
 
 class TestWFVandLotSizing(unittest.TestCase):
     """Additional tests for multi-order simulation, WFV, and lot sizing."""

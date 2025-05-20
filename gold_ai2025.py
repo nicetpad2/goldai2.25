@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.66_FULL_PASS"  # [Patch AI Studio v4.9.66+] trade_log type guard
+MINIMAL_SCRIPT_VERSION = "4.9.67_FULL_PASS"  # [Patch AI Studio v4.9.67+] manual TA fallback
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -2050,23 +2050,43 @@ def rsi(series: pd.Series | Any, period: int = 14) -> pd.Series:
     if not _isinstance_safe(series, pd.Series):
         rsi_logger.error(f"Input must be a pandas Series, got {type(series)}")
         raise TypeError("Input must be a pandas Series.")
-    if 'ta' not in globals() or ta is None: # pragma: no cover
-        rsi_logger.error("   (Error) RSI calculation failed: 'ta' library not loaded.")
-        return pd.Series(np.nan, index=series.index, dtype='float32')
+    use_manual = False
+    if 'ta' not in globals() or ta is None:
+        rsi_logger.warning(
+            "[Patch AI Studio v4.9.67+] RSIIndicator missing library; using manual calculation."
+        )
+        use_manual = True
+    elif not hasattr(ta, "momentum") or not hasattr(ta.momentum, "RSIIndicator"):
+        rsi_logger.warning(
+            "[Patch AI Studio v4.9.67+] ta.momentum.RSIIndicator not available; using manual calculation."
+        )
+        use_manual = True
     series_numeric = pd.to_numeric(series, errors='coerce').replace([np.inf, -np.inf], np.nan).dropna()
     if series_numeric.empty or len(series_numeric) < period: # pragma: no cover
         rsi_logger.warning(f"   (Warning) RSI calculation skipped: Not enough valid data points ({len(series_numeric)} < {period}).")
         return pd.Series(np.nan, index=series.index, dtype='float32')
-    try:
-        rsi_indicator = ta.momentum.RSIIndicator(close=series_numeric, window=period, fillna=False)  # type: ignore
-        rsi_values = rsi_indicator.rsi()
-        rsi_final = rsi_values.reindex(series.index).ffill() # Forward fill to propagate last valid RSI
-        del series_numeric, rsi_indicator, rsi_values
-        gc.collect()
-        return rsi_final.astype('float32')
-    except Exception as e: # pragma: no cover
-        rsi_logger.error(f"   (Error) RSI calculation error for period {period}: {e}.", exc_info=True)
-        return pd.Series(np.nan, index=series.index, dtype='float32')
+    rsi_values = None
+    if not use_manual:
+        try:
+            rsi_indicator = ta.momentum.RSIIndicator(close=series_numeric, window=period, fillna=False)  # type: ignore
+            rsi_values = rsi_indicator.rsi()
+        except Exception as e:  # pragma: no cover
+            rsi_logger.warning(
+                f"[Patch AI Studio v4.9.67+] TA RSIIndicator failed: {e}. Falling back to manual calculation."
+            )
+            rsi_values = None
+    if rsi_values is None:
+        delta = series_numeric.diff()
+        up = delta.clip(lower=0.0)
+        down = -delta.clip(upper=0.0)
+        roll_up = up.ewm(alpha=1 / period, adjust=False, min_periods=period).mean()
+        roll_down = down.ewm(alpha=1 / period, adjust=False, min_periods=period).mean()
+        rs = roll_up / roll_down.replace(0, np.nan)
+        rsi_values = 100 - 100 / (1 + rs)
+    rsi_final = rsi_values.reindex(series.index).ffill()
+    del series_numeric, rsi_values
+    gc.collect()
+    return rsi_final.astype('float32')
 
 def atr(df_in: pd.DataFrame | Any, period: int = 14) -> pd.DataFrame:
     """Calculates Average True Range and adds ATR_{period} and ATR_{period}_Shifted columns."""
@@ -2165,20 +2185,41 @@ def macd(series: pd.Series | Any, window_slow: int = 26, window_fast: int = 12, 
         macd_logger.warning(f"   (Warning) MACD calculation skipped: Not enough valid data points ({len(series_numeric)} < {window_slow}).")
         return nan_series_indexed, nan_series_indexed.copy(), nan_series_indexed.copy()
 
-    if 'ta' not in globals() or ta is None: # pragma: no cover
-        macd_logger.error("   (Error) MACD calculation failed: 'ta' library not loaded.")
-        return nan_series_indexed, nan_series_indexed.copy(), nan_series_indexed.copy()
-    try:
-        macd_indicator = ta.trend.MACD(close=series_numeric, window_slow=window_slow, window_fast=window_fast, window_sign=window_sign, fillna=False)  # type: ignore
-        macd_line_final = macd_indicator.macd().reindex(series.index).ffill().astype('float32')
-        macd_signal_final = macd_indicator.macd_signal().reindex(series.index).ffill().astype('float32')
-        macd_diff_final = macd_indicator.macd_diff().reindex(series.index).ffill().astype('float32')
-        del series_numeric, macd_indicator
-        gc.collect()
-        return (macd_line_final, macd_signal_final, macd_diff_final)
-    except Exception as e: # pragma: no cover
-        macd_logger.error(f"   (Error) MACD calculation error: {e}.", exc_info=True)
-        return nan_series_indexed, nan_series_indexed.copy(), nan_series_indexed.copy()
+    use_manual = False
+    if 'ta' not in globals() or ta is None:
+        macd_logger.warning(
+            "[Patch AI Studio v4.9.67+] MACD function missing library; using manual calculation."
+        )
+        use_manual = True
+    elif not hasattr(ta, "trend") or not hasattr(ta.trend, "MACD"):
+        macd_logger.warning(
+            "[Patch AI Studio v4.9.67+] ta.trend.MACD not available; using manual calculation."
+        )
+        use_manual = True
+    macd_line = macd_signal = macd_diff = None
+    if not use_manual:
+        try:
+            macd_indicator = ta.trend.MACD(close=series_numeric, window_slow=window_slow, window_fast=window_fast, window_sign=window_sign, fillna=False)  # type: ignore
+            macd_line = macd_indicator.macd()
+            macd_signal = macd_indicator.macd_signal()
+            macd_diff = macd_indicator.macd_diff()
+        except Exception as e:  # pragma: no cover
+            macd_logger.warning(
+                f"[Patch AI Studio v4.9.67+] TA MACD failed: {e}. Falling back to manual calculation."
+            )
+            macd_line = macd_signal = macd_diff = None
+    if macd_line is None:
+        exp_fast = series_numeric.ewm(span=window_fast, adjust=False, min_periods=window_fast).mean()
+        exp_slow = series_numeric.ewm(span=window_slow, adjust=False, min_periods=window_slow).mean()
+        macd_line = exp_fast - exp_slow
+        macd_signal = macd_line.ewm(span=window_sign, adjust=False, min_periods=window_sign).mean()
+        macd_diff = macd_line - macd_signal
+    macd_line_final = macd_line.reindex(series.index).ffill().astype('float32')
+    macd_signal_final = macd_signal.reindex(series.index).ffill().astype('float32')
+    macd_diff_final = macd_diff.reindex(series.index).ffill().astype('float32')
+    del series_numeric, macd_line, macd_signal, macd_diff
+    gc.collect()
+    return (macd_line_final, macd_signal_final, macd_diff_final)
 
 def rolling_zscore(series: pd.Series | Any, window: int, min_periods: int | None = None) -> pd.Series:
     """Calculates Rolling Z-Score."""
@@ -2398,19 +2439,47 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
         eng_m1_logger.warning("         (Warning) ไม่สามารถคำนวณ Volatility_Index. Setting to 1.0.")
 
     # ADX
-    if all(c in df.columns for c in ['High', 'Low', 'Close']) and ta:
-        try:
-            if len(df.dropna(subset=['High', 'Low', 'Close'])) >= 14 * 2 + 10: # Ensure enough data for ADX
-                adx_indicator = ta.trend.ADXIndicator(df['High'], df['Low'], df['Close'], window=14, fillna=False)  # type: ignore
-                df['ADX'] = adx_indicator.adx().ffill().fillna(25.0).astype('float32') # Fill initial NaNs
-            else: # pragma: no cover
-                df['ADX'] = 25.0 # Default if not enough data
-                eng_m1_logger.warning("         (Warning) ไม่สามารถคำนวณ ADX: ข้อมูลไม่เพียงพอ. Setting to 25.0.")
-        except Exception as e_adx: # pragma: no cover
-            df['ADX'] = 25.0 # Default on error
-            eng_m1_logger.warning(f"         (Warning) ไม่สามารถคำนวณ ADX: {e_adx}. Setting to 25.0.")
-    else: # pragma: no cover
-        df['ADX'] = 25.0 # Default if HLC or ta missing
+    if all(c in df.columns for c in ['High', 'Low', 'Close']):
+        use_manual_adx = False
+        if 'ta' not in globals() or ta is None:
+            use_manual_adx = True
+            eng_m1_logger.warning("[Patch AI Studio v4.9.67+] ta library missing; using manual ADX.")
+        elif not hasattr(ta, 'trend') or not hasattr(ta.trend, 'ADXIndicator'):
+            use_manual_adx = True
+            eng_m1_logger.warning("[Patch AI Studio v4.9.67+] ta.trend.ADXIndicator not available; using manual ADX.")
+
+        adx_series = None
+        if not use_manual_adx:
+            try:
+                if len(df.dropna(subset=['High', 'Low', 'Close'])) >= 14 * 2 + 10:
+                    adx_indicator = ta.trend.ADXIndicator(df['High'], df['Low'], df['Close'], window=14, fillna=False)  # type: ignore
+                    adx_series = adx_indicator.adx()
+                else:  # pragma: no cover
+                    adx_series = None
+                    eng_m1_logger.warning("         (Warning) ไม่สามารถคำนวณ ADX: ข้อมูลไม่เพียงพอ.")
+            except Exception as e_adx:  # pragma: no cover
+                eng_m1_logger.warning(f"         (Warning) ไม่สามารถคำนวณ ADX: {e_adx}. Using manual method.")
+                adx_series = None
+        if adx_series is None:
+            high = pd.to_numeric(df['High'], errors='coerce')
+            low = pd.to_numeric(df['Low'], errors='coerce')
+            close = pd.to_numeric(df['Close'], errors='coerce')
+            delta_high = high.diff()
+            delta_low = low.diff()
+            plus_dm = np.where((delta_high > delta_low) & (delta_high > 0), delta_high, 0.0)
+            minus_dm = np.where((delta_low > delta_high) & (delta_low > 0), delta_low, 0.0)
+            tr1 = high - low
+            tr2 = (high - close.shift()).abs()
+            tr3 = (low - close.shift()).abs()
+            tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+            atr = tr.ewm(alpha=1 / 14, adjust=False, min_periods=14).mean()
+            plus_di = 100 * pd.Series(plus_dm, index=df.index).ewm(alpha=1 / 14, adjust=False, min_periods=14).mean() / atr
+            minus_di = 100 * pd.Series(minus_dm, index=df.index).ewm(alpha=1 / 14, adjust=False, min_periods=14).mean() / atr
+            dx = (abs(plus_di - minus_di) / (plus_di + minus_di).replace(0, np.nan)) * 100
+            adx_series = dx.ewm(alpha=1 / 14, adjust=False, min_periods=14).mean()
+        df['ADX'] = adx_series.ffill().fillna(25.0).astype('float32')
+    else:  # pragma: no cover
+        df['ADX'] = 25.0  # Default if HLC missing
 
     # Price Structure Patterns (uses config for thresholds)
     df = tag_price_structure_patterns(df, config) # Pass config here
