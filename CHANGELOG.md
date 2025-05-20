@@ -109,6 +109,12 @@
 - Updated tests to use datasets with valid entry signals.
 - Version bumped to `4.9.61_FULL_PASS`.
 
+## [v4.9.62+] - 2025-05-30
+- Equity tracker history now stored as dict keyed by timestamp for WFV merge.
+- `simulate_trades` always returns DataFrame trade log.
+- `run_all_folds_with_threshold` handles list-based histories for backward compatibility.
+- Bumped version constant to `4.9.62_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.

@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.61_FULL_PASS"  # [Patch AI Studio v4.9.61+] Spike guard & equity tracker fixes
+MINIMAL_SCRIPT_VERSION = "4.9.62_FULL_PASS"  # [Patch AI Studio v4.9.62+] Spike guard & equity tracker fixes
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -4678,12 +4678,13 @@ def _run_backtest_simulation_v34_full(
     timeframe_m1_for_sim = config_obj.timeframe_minutes_m1
 
     init_capital_safe = _safe_numeric(initial_capital_segment, default=0.0, log_ctx="init_capital")
+    start_ts_for_history = df_m1_segment_pd.index[0] if not df_m1_segment_pd.empty else pd.Timestamp.now(tz='UTC')
     equity_tracker: Dict[str, Any] = {
         'current_equity': init_capital_safe,
         'peak_equity': risk_manager_obj.dd_peak if risk_manager_obj.dd_peak is not None and risk_manager_obj.dd_peak >= init_capital_safe else init_capital_safe,
-        'history': [init_capital_safe]
+        'history': {start_ts_for_history: init_capital_safe}
     }
-    sim_logger.info("[Patch AI Studio v4.9.61+] Equity tracker history initialized as list")
+    sim_logger.info("[Patch AI Studio v4.9.62+] Equity tracker history initialized as dict")
     if risk_manager_obj.dd_peak is None or risk_manager_obj.dd_peak < initial_capital_segment: # Ensure peak is at least initial capital
         risk_manager_obj.dd_peak = initial_capital_segment
 
@@ -5006,9 +5007,9 @@ def _run_backtest_simulation_v34_full(
                 default=np.nan,
                 log_ctx="sim_loop.history"
             )
-            if not isinstance(equity_tracker.get('history'), list):
-                equity_tracker['history'] = []
-            equity_tracker['history'].append(eq_val_hist_loop)
+            if not isinstance(equity_tracker.get('history'), dict):
+                equity_tracker['history'] = {}
+            equity_tracker['history'][now_bar] = eq_val_hist_loop
 
             prev_risk_mode_loop = current_risk_mode
             if consecutive_losses_runtime >= config_obj.recovery_mode_consecutive_losses:
@@ -5056,7 +5057,7 @@ def _run_backtest_simulation_v34_full(
                     eq_value = _safe_numeric(eq_value, default=np.nan, log_ctx="final.history")
                     if not np.isnan(eq_value):
                         eq_is_valid = True
-                        equity_tracker.setdefault("history", []).append(eq_value)
+                        equity_tracker.setdefault("history", {})[last_idx_sim_final_df_val] = eq_value
                         peak = _safe_numeric(equity_tracker.get("peak_equity", eq_value), default=eq_value, log_ctx="final.history.peak")
                         if eq_value > peak:
                             equity_tracker["peak_equity"] = eq_value
@@ -5087,9 +5088,9 @@ def _run_backtest_simulation_v34_full(
         f"  (Finished) {label} ({side}) simulation complete. Final Equity: ${_float_fmt(equity_tracker['current_equity'], 2)}"
     )
     sim_logger.info(
-        "[Patch AI Studio v4.9.61+] Fold summary: final equity=%.2f, len(history)=%d, trade_log=%d",
+        "[Patch AI Studio v4.9.62+] Fold summary: final equity=%.2f, len(history)=%d, trade_log=%d",
         equity_tracker['current_equity'],
-        len(equity_tracker.get('history', [])),
+        len(equity_tracker.get('history', {})),
         len(trade_log_df_final_output_full_val),
     )
     gc.collect()
@@ -5995,10 +5996,13 @@ def run_all_folds_with_threshold(
     eq_buy_hist_combined: Dict[pd.Timestamp, float] = {}
     eq_sell_hist_combined: Dict[pd.Timestamp, float] = {}
     for key_hist, hist_data_item in all_equity_histories_dict.items():
-        if _isinstance_safe(key_hist, str) and f"_BUY" in key_hist: # pragma: no cover
-            eq_buy_hist_combined.update(hist_data_item)
-        elif _isinstance_safe(key_hist, str) and f"_SELL" in key_hist: # pragma: no cover
-            eq_sell_hist_combined.update(hist_data_item)
+        hist_dict = hist_data_item
+        if isinstance(hist_data_item, list):  # backward compat
+            hist_dict = {i: v for i, v in enumerate(hist_data_item)}
+        if _isinstance_safe(key_hist, str) and f"_BUY" in key_hist:  # pragma: no cover
+            eq_buy_hist_combined.update(hist_dict)
+        elif _isinstance_safe(key_hist, str) and f"_SELL" in key_hist:  # pragma: no cover
+            eq_sell_hist_combined.update(hist_dict)
 
     eq_buy_series_final = pd.Series(dict(sorted(eq_buy_hist_combined.items()))).sort_index() if eq_buy_hist_combined else pd.Series(dtype='float64', index=pd.to_datetime([]))
     if not eq_buy_series_final.empty: # pragma: no cover
@@ -7089,11 +7093,12 @@ def simulate_trades(
     run_summary: dict = {}
 
     if df is None or df.empty:
-        result_tuple = (trade_log, equity_curve, run_summary)
+        trade_log_df = pd.DataFrame(trade_log)
+        result_tuple = (trade_log_df, equity_curve, run_summary)
         if return_tuple:
             return result_tuple
         return {
-            "trade_log": trade_log,
+            "trade_log": trade_log_df,
             "equity_curve": equity_curve,
             "run_summary": run_summary,
         }
@@ -7232,9 +7237,10 @@ def simulate_trades(
                 })
 
     run_summary["num_trades"] = len(trade_log)
-    result_tuple = (trade_log, equity_curve, run_summary)
+    trade_log_df = pd.DataFrame(trade_log)
+    result_tuple = (trade_log_df, equity_curve, run_summary)
     result_dict = {
-        "trade_log": trade_log,
+        "trade_log": trade_log_df,
         "equity_curve": equity_curve,
         "run_summary": run_summary,
     }
