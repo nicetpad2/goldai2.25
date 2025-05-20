@@ -120,6 +120,10 @@
   backward compatibility with unit tests.
 - Updated `MINIMAL_SCRIPT_VERSION` to `4.9.63_FULL_PASS`.
 
+## [v4.9.64+] - 2025-05-31
+- `simulate_trades` initializes an empty DataFrame with `exit_reason` column when no trades occur.
+- Bumped version constant to `4.9.64_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
