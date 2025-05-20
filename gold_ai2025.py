@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.63_FULL_PASS"  # [Patch AI Studio v4.9.63+] Simulate trades tuple fix
+MINIMAL_SCRIPT_VERSION = "4.9.64_FULL_PASS"  # [Patch AI Studio v4.9.64+] trade_log column fix
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -7238,6 +7238,11 @@ def simulate_trades(
 
     run_summary["num_trades"] = len(trade_log)
     trade_log_df = pd.DataFrame(trade_log)
+    if trade_log_df.empty:
+        trade_log_df = pd.DataFrame(columns=["exit_reason"])
+        sim_logger.debug(
+            "[Patch AI Studio v4.9.64+] Initialized empty trade_log_df with exit_reason column"
+        )
     if return_tuple:
         sim_logger.debug(
             "[Patch AI Studio v4.9.63+] Returning tuple for legacy/test compatibility"
