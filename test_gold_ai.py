@@ -953,6 +953,15 @@ class TestEdgeCases(unittest.TestCase):
             if orig is not None:
                 self.ga.ta.momentum.RSIIndicator = orig
 
+    def test_rsi_fallback_short_series(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        series = self.ga.pd.Series([1, 2], dtype="float32")
+        with self.assertLogs(f"{self.ga.__name__}.rsi", level="WARNING"):
+            result = self.ga.rsi(series, 14)
+        self.assertTrue(result.notna().any())
+        self.assertTrue((result == 50).all())
+
     def test_macd_manual_fallback(self):
         if not self.pandas_available:
             self.skipTest("pandas not available")
@@ -969,6 +978,25 @@ class TestEdgeCases(unittest.TestCase):
         finally:
             if orig is not None:
                 self.ga.ta.trend.MACD = orig
+
+    def test_simulate_trades_indicator_guard(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1, 2],
+            "High": [1, 2],
+            "Low": [1, 2],
+            "Close": [1, 2],
+            "Entry_Long": [1, 0],
+            "Signal_Score": [1.0, 0.0],
+            "Trade_Reason": ["T", "T"],
+            "session": ["Asia", "Asia"],
+            "Gain_Z": [0.1, 0.1],
+        })
+        df.index = self.ga.pd.date_range("2023-01-01", periods=2, freq="min")
+        cfg = self.ga.StrategyConfig({})
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+        self.assertIsInstance(trade_log, list)
 
 
 class TestWFVandLotSizing(unittest.TestCase):
