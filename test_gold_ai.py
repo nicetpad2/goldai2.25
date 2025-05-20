@@ -2114,6 +2114,41 @@ def test_safe_load_csv_auto_nonexistent():
     assert hasattr(result, "empty")
 
 
+def test_parse_datetime_safely_invalid_and_empty():
+    ga = safe_import_gold_ai()
+    pd = ga.pd
+
+    with pytest.raises(TypeError):
+        ga.parse_datetime_safely(["2024-01-01 00:00:00"])  # not a Series
+
+    empty = pd.Series([], dtype="object")
+    out = ga.parse_datetime_safely(empty)
+    assert out.empty and str(out.dtype).startswith("datetime")
+
+
+def test_parse_datetime_safely_unknown_format():
+    ga = safe_import_gold_ai()
+    pd = ga.pd
+    series = pd.Series(["01-31-2024 10:00:00", "2024/02/01 11:00:00"])
+    parsed = ga.parse_datetime_safely(series)
+    assert parsed.notna().all()
+
+
+def test_risk_manager_update_drawdown_edge_cases():
+    ga = safe_import_gold_ai()
+    cfg = ga.StrategyConfig({})
+    rm = ga.RiskManager(cfg)
+    with pytest.raises(RuntimeError):
+        rm.update_drawdown(float("nan"))
+    rm.dd_peak = 100
+    with pytest.raises(RuntimeError):
+        rm.update_drawdown(None)
+    rm.dd_peak = 1000
+    rm.update_drawdown(900.0)
+    with pytest.raises(RuntimeError):
+        rm.update_drawdown(-1e9)
+
+
 class TestRobustFormatAndTypeGuard(unittest.TestCase):
     """[Patch AI Studio v4.9.40] Test robust safe_float_fmt, _isinstance_safe, TradeManager.update_last_trade_time"""
 
