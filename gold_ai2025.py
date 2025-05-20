@@ -39,7 +39,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.101_FULL_PASS"  # [Patch][QA v4.9.101] DataFrame fallback & audit update
+MINIMAL_SCRIPT_VERSION = "4.9.102_FULL_PASS"  # [Patch][QA v4.9.102] expanded unit tests
 
 
 
