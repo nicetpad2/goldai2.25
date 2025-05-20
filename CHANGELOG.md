@@ -228,3 +228,12 @@
 - เพิ่ม log [Patch] ใน fallback, forced entry QA
 - Version bumped to 4.9.81_FULL_PASS
 
+## [v4.9.82+] - 2025-06-XX
+- ปรับปรุง safe_load_csv_auto รองรับการอ่าน gzip และ fallback encoding พร้อม log `[Patch][QA]`
+- engineer_m1_features เพิ่ม fallback ATR เริ่มต้น 1.0 และ log `[Patch][QA]`
+- simulate_trades บันทึก forced entry ด้วย log `[Patch][QA]`
+- sma ตรวจสอบ period ไม่ให้ติดลบและ log `[Patch][QA]`
+- safe_import_gold_ai ป้องกัน RecursionError ในโมดูล mock
+- set_thai_font เพิ่ม log `[Patch][Font]` เมื่อไม่พบ matplotlib หรือเกิดข้อผิดพลาด
+- Version bumped to 4.9.82_FULL_PASS
+
