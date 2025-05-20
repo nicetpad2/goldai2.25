@@ -184,6 +184,12 @@
 - `test_rsi_manual_fallback_coverage` now skips when pandas is unavailable.
 - Bumped version constant to `4.9.76_FULL_PASS`.
 
+## [v4.9.77+] - 2025-06-13
+- Fixed forced entry detection using `"Trade_Reason" in row` and ensured `_forced_entry_flag` set without TradeManager.
+- Improved equity column fill with `infer_objects(copy=False)`.
+- Engineer M1 features now safely imports `atr` with fallback logging.
+- Bumped version constant to `4.9.77_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.

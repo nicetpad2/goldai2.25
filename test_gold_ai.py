@@ -1664,6 +1664,40 @@ class TestFeatureEngineeringCoverage:
         assert feats == []
 
 
+class TestATRFallback(unittest.TestCase):
+    """Unit test for ATR import fallback inside engineer_m1_features."""
+
+    def setUp(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("numpy")
+        import pandas as pd
+        import numpy as np
+
+        self.ga = safe_import_gold_ai()
+        self.ga.pd = pd
+        self.ga.np = np
+        self.config = self.ga.StrategyConfig({})
+        self.df = pd.DataFrame({
+            "Open": [1, 2],
+            "High": [2, 3],
+            "Low": [0, 1],
+            "Close": [1.5, 2.5],
+        })
+
+    def test_engineer_m1_features_atr_missing_fallback(self):
+        orig_atr = getattr(self.ga, "atr", None)
+        if hasattr(self.ga, "atr"):
+            delattr(self.ga, "atr")
+        try:
+            with self.assertLogs(f"{self.ga.__name__}.engineer_m1_features", level="ERROR") as cm:
+                res = self.ga.engineer_m1_features(self.df.copy(), self.config)
+            self.assertTrue(any("ATR import failed" in m for m in cm.output))
+            self.assertTrue("ATR_14" not in res.columns or res["ATR_14"].isna().all())
+        finally:
+            if orig_atr is not None:
+                setattr(self.ga, "atr", orig_atr)
+
+
 class TestBranchAndErrorPathCoverage:
     """Additional branch and error handling coverage."""
 
