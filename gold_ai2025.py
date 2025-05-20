@@ -36,7 +36,12 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.79_FULL_PASS"  # [Patch AI Studio v4.9.79+] Coverage patch
+
+
+
+MINIMAL_SCRIPT_VERSION = "4.9.79_FULL_PASS"  #  # [Patch AI Studio v4.9.79+] Coverage patch+[Patch AI Studio v4.9.79+] ATR fallback refinement + Patch AI Studio v4.9.79+] Forced entry exit_reason audit
+
+
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -2446,11 +2451,16 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
             from gold_ai2025 import atr as atr_func
         except Exception as e:
             eng_m1_logger.error(
-                f"[Patch AI Studio v4.9.77+] ATR import failed: {e}"
+                f"[Patch AI Studio v4.9.79+] ATR import failed: {e}"
+            )
+            atr_func = None
+        if not callable(atr_func):
+            eng_m1_logger.error(
+                "[Patch AI Studio v4.9.79+] ATR import failed"
             )
             def atr_func(dframe, _period):
                 eng_m1_logger.error(
-                    "[Patch AI Studio v4.9.77+] Using noop ATR fallback"
+                    "[Patch AI Studio v4.9.79+] Using noop ATR fallback"
                 )
                 return dframe
         df = atr_func(df, 14)
@@ -7272,7 +7282,9 @@ def simulate_trades(
         open_signal = row.get("Entry_Long", 0) or row.get("Entry_Short", 0)
         side = "BUY" if row.get("Entry_Long", 0) else ("SELL" if row.get("Entry_Short", 0) else None)
         is_forced_entry = False
-        if "Trade_Reason" in row and str(row.get("Trade_Reason", "")).upper().startswith("FORCED"):
+        trade_reason_flag = str(row.get("Trade_Reason", "")).upper()
+        reason_flag = str(row.get("Reason", "")).upper()
+        if "FORCED" in trade_reason_flag or "FORCED" in reason_flag:
             is_forced_entry = True
 
         trade_manager_obj = kwargs.get("trade_manager_obj")

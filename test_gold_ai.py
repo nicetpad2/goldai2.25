@@ -1704,6 +1704,7 @@ class TestATRFallback(unittest.TestCase):
             with self.assertLogs(f"{self.ga.__name__}.engineer_m1_features", level="ERROR") as cm:
                 res = self.ga.engineer_m1_features(self.df.copy(), self.config)
             self.assertTrue(any("ATR import failed" in m for m in cm.output))
+            self.assertTrue(any("ERROR" in m and "ATR import failed" in m for m in cm.output))
             self.assertTrue("ATR_14" not in res.columns or res["ATR_14"].isna().all())
         finally:
             if orig_atr is not None:
@@ -2349,6 +2350,85 @@ def test_forced_entry_reason_audit():
     cfg = ga.StrategyConfig({})
     trade_log, _, _ = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
     assert trade_log[0].get("exit_reason") == "FORCED_ENTRY"
+
+
+def test_forced_entry_buy_flag_and_reason():
+    pd = safe_import_gold_ai().pd
+    ga = safe_import_gold_ai()
+    df = pd.DataFrame(
+        {
+            "Open": [1000],
+            "High": [1005],
+            "Low": [995],
+            "Close": [1002],
+            "Entry_Long": [1],
+            "ATR_14_Shifted": [1.0],
+            "Signal_Score": [2.0],
+            "Trade_Reason": ["FORCED_BUY"],
+            "session": ["Asia"],
+            "Gain_Z": [0.3],
+            "MACD_hist_smooth": [0.1],
+            "RSI": [50],
+        },
+        index=pd.date_range("2023-01-01", periods=1, freq="min"),
+    )
+    cfg = ga.StrategyConfig({})
+    tl, _, _ = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+    assert tl[0].get("exit_reason") == "FORCED_ENTRY"
+    assert tl[0].get("_forced_entry_flag")
+
+
+def test_forced_entry_sell_flag_and_reason():
+    pd = safe_import_gold_ai().pd
+    ga = safe_import_gold_ai()
+    df = pd.DataFrame(
+        {
+            "Open": [1000],
+            "High": [1002],
+            "Low": [995],
+            "Close": [998],
+            "Entry_Short": [1],
+            "ATR_14_Shifted": [1.0],
+            "Signal_Score": [2.0],
+            "Trade_Reason": ["FORCED_SELL"],
+            "session": ["Asia"],
+            "Gain_Z": [0.3],
+            "MACD_hist_smooth": [0.1],
+            "RSI": [50],
+        },
+        index=pd.date_range("2023-01-01", periods=1, freq="min"),
+    )
+    cfg = ga.StrategyConfig({})
+    tl, _, _ = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+    assert tl[0].get("exit_reason") == "FORCED_ENTRY"
+    assert tl[0].get("_forced_entry_flag")
+
+
+def test_forced_entry_multi_order_flags():
+    pd = safe_import_gold_ai().pd
+    ga = safe_import_gold_ai()
+    df = pd.DataFrame(
+        {
+            "Open": [1000, 1005, 1010],
+            "High": [1005, 1010, 1015],
+            "Low": [995, 1000, 1005],
+            "Close": [1002, 1008, 1012],
+            "Entry_Long": [1, 0, 1],
+            "ATR_14_Shifted": [1.0, 1.0, 1.0],
+            "Signal_Score": [2.0, 0.0, 2.0],
+            "Trade_Reason": ["FORCED_BUY", "NORMAL", "FORCED_BUY2"],
+            "session": ["Asia", "Asia", "Asia"],
+            "Gain_Z": [0.3, 0.3, 0.3],
+            "MACD_hist_smooth": [0.1, 0.1, 0.1],
+            "RSI": [50, 50, 50],
+        },
+        index=pd.date_range("2023-01-01", periods=3, freq="min"),
+    )
+    cfg = ga.StrategyConfig({})
+    tl, _, _ = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+    forced = [t for t in tl if t.get("_forced_entry_flag")]
+    assert len(forced) >= 2
+    assert all(t.get("exit_reason") == "FORCED_ENTRY" for t in forced)
 
 
 # ---------------------------

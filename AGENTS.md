@@ -205,7 +205,7 @@ Review vs. this AGENTS.md
 
 No merge without Execution_Test_Unit pass and log review
 
-ล่าสุด: [Patch AI Studio v4.9.78+]
+ล่าสุด: [Patch AI Studio v4.9.79+]
 บันทึก forced entry ใน `simulate_trades` ผ่าน `exit_reason='FORCED_ENTRY'`
 และเพิ่มการตรวจสอบใน test suite ว่ามี forced entry ถูก log
 
