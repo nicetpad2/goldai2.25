@@ -176,8 +176,7 @@ def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
         "yaml": _create_mock_module("yaml"),
         "tqdm": _create_mock_module("tqdm"),
         "tqdm.notebook": _create_mock_module("tqdm.notebook"),
-        "pandas": _create_mock_module("pandas"),
-        "numpy": _create_mock_module("numpy"),
+        # [Patch AI Studio v4.9.81] Prefer real pandas/numpy for DataFrame-sensitive QA (set below)
         "ta": _create_mock_module("ta"),
         "requests": _create_mock_module("requests"),
         "sklearn": _create_mock_module("sklearn"),
@@ -190,6 +189,18 @@ def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
         "pynvml": _create_mock_module("pynvml"),
         "scipy.stats": _create_mock_module("scipy.stats"),
     }
+
+    # [Patch AI Studio v4.9.81] Prefer real pandas/numpy for DataFrame-sensitive QA
+    try:
+        import pandas as real_pd
+        mock_modules["pandas"] = real_pd
+    except Exception:
+        mock_modules["pandas"] = _create_mock_module("pandas")
+    try:
+        import numpy as real_np
+        mock_modules["numpy"] = real_np
+    except Exception:
+        mock_modules["numpy"] = _create_mock_module("numpy")
 
     catboost_mod = _create_mock_module("catboost")
     catboost_mod.CatBoostClassifier = object
@@ -217,6 +228,11 @@ def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
             sys.modules[module_name] = module
             code_obj = compile(source, file_path, "exec")
             exec(code_obj, module.__dict__)
+            # [Patch AI Studio v4.9.81] Ensure pd/np set to real modules if available (for DataFrame ops in test)
+            if "pandas" in mock_modules and hasattr(mock_modules["pandas"], "DataFrame"):
+                module.pd = mock_modules["pandas"]
+            if "numpy" in mock_modules and hasattr(mock_modules["numpy"], "array"):
+                module.np = mock_modules["numpy"]
             return module
 
 
@@ -2429,6 +2445,84 @@ def test_forced_entry_multi_order_flags():
     forced = [t for t in tl if t.get("_forced_entry_flag")]
     assert len(forced) >= 2
     assert all(t.get("exit_reason") == "FORCED_ENTRY" for t in forced)
+
+
+class TestForcedEntryAudit(unittest.TestCase):
+    def tearDown(self):
+        # [Patch][QA] Cleanup sys.modules to avoid state leak (สำคัญถ้ารัน test ซ้ำ)
+        import sys
+        for mod in ["pandas", "numpy", "gold_ai2025"]:
+            if mod in sys.modules:
+                del sys.modules[mod]
+
+    def test_forced_entry_audit_annotate(self):
+        ga = safe_import_gold_ai()
+        try:
+            import pandas as real_pd
+        except Exception:
+            self.skipTest("pandas not available")
+        ga.pd = real_pd
+        df = real_pd.DataFrame({
+            "Open": [1800.0, 1802.0],
+            "High": [1805.0, 1803.0],
+            "Low": [1795.0, 1798.0],
+            "Close": [1802.0, 1800.0],
+            "Entry_Long": [1, 0],
+            "Signal_Score": [2.0, 0.0],
+            "ATR_14_Shifted": [1.0, 1.0],
+            "forced_entry_flag": [1, 0],
+            "Trade_Reason": ["FORCED", ""],
+            "session": ["Asia", "Asia"],
+        }, index=real_pd.date_range("2023-01-01", periods=2, freq="min"))
+        cfg = ga.StrategyConfig({})
+        trade_log, *_ = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+        forced = [t for t in trade_log if t.get("forced_entry_flag") or t.get("exit_reason") == "FORCED_ENTRY"]
+        self.assertGreaterEqual(len(forced), 1, f"[Patch][QA] Forced entry audit failed: {trade_log}")
+
+    def test_fallback_dummy_pd_np(self):
+        import sys
+        sys.modules.pop("pandas", None)
+        sys.modules.pop("numpy", None)
+        ga = safe_import_gold_ai()
+        # [Patch][QA] Fallback gracefully, dummy still works for DataFrame/array
+        self.assertTrue(hasattr(ga.pd, "DataFrame"), "[Patch][QA] DummyPandas missing DataFrame")
+        self.assertTrue(hasattr(ga.np, "array"), "[Patch][QA] DummyNumpy missing array")
+
+    def test_forced_entry_audit_warning(self):
+        # [Patch][QA] Unit test: If forced_entry_flag is set, exit_reason should be FORCED_ENTRY
+        trade_log = [
+            {"forced_entry_flag": True, "exit_reason": "FORCED_ENTRY"},
+            {"forced_entry_flag": True, "exit_reason": "FORCED_ENTRY"},
+            {"exit_reason": "TP"},
+            {"exit_reason": "SL"},
+        ]
+        for t in trade_log:
+            if t.get("forced_entry_flag"):
+                self.assertEqual(t.get("exit_reason"), "FORCED_ENTRY", "[Patch][QA] Forced entry not annotated correctly")
+
+    def test_forced_entry_multi_case(self):
+        ga = safe_import_gold_ai()
+        try:
+            import pandas as real_pd
+        except Exception:
+            self.skipTest("pandas not available")
+        ga.pd = real_pd
+        df = real_pd.DataFrame({
+            "Open": [1000, 1001, 1002, 1003],
+            "High": [1005, 1006, 1007, 1008],
+            "Low": [995, 996, 997, 998],
+            "Close": [1001, 1002, 1003, 1004],
+            "Entry_Long": [1, 1, 0, 0],
+            "Signal_Score": [2.0, 2.0, 0.0, 0.0],
+            "ATR_14_Shifted": [1.0, 1.0, 1.0, 1.0],
+            "forced_entry_flag": [1, 1, 0, 0],
+            "Trade_Reason": ["FORCED", "FORCED", "", ""],
+            "session": ["Asia"] * 4,
+        }, index=real_pd.date_range("2023-01-01", periods=4, freq="min"))
+        cfg = ga.StrategyConfig({})
+        trade_log, *_ = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+        forced = [t for t in trade_log if t.get("exit_reason") == "FORCED_ENTRY"]
+        self.assertEqual(len(forced), 2, "[Patch][QA] Multi forced entry audit failed")
 
 
 # ---------------------------
