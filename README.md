@@ -12,9 +12,11 @@ This repository includes:
 
 ```bash
 pip install -r requirements.txt
-🧪 Running Tests
-# Run the full test suite with branch coverage reporting
+
+# 🧪 Running Tests
 pytest -v --cov=gold_ai2025 --cov-report=term-missing
+```
+
 📝 Project Notes
 Patch Protocol:
 All logic patches and critical changes must log their version (e.g., [Patch AI Studio v4.9.42+]) in code and test logs per AGENTS.md.
