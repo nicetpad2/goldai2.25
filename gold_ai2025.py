@@ -4,6 +4,9 @@ Gold AI Enterprise v4.9.x
 [Patch AI Studio v4.9.49] - [Import Flags Initialization]: initialize optional ML library flags to prevent UnboundLocalError across all modules.
 """
 
+## [Patch AI Studio v4.9.59+] เพิ่ม guard สำหรับ DataFrame export ทั่วทั้งระบบ
+## ป้องกัน export ว่าง, เพิ่ม log ครบ, ครอบคลุม production & test
+
 # ==============================================================================
 # === PART 1/15: Setup, Imports, Global Variable Loading, Basic Fixtures ===
 # ==============================================================================
@@ -33,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.58_FULL_PASS"  # [Patch AI Studio v4.9.58+] Ensure DataFrame export utility & logging
+MINIMAL_SCRIPT_VERSION = "4.9.59_FULL_PASS"  # [Patch AI Studio v4.9.59+] Export guard & logging improvements
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -209,19 +212,30 @@ def _ensure_datetimeindex(df: pd.DataFrame, logger: Optional[logging.Logger] = N
     return df
 
 
-# [Patch AI Studio v4.9.58+] Utility function: ensure_dataframe
-def ensure_dataframe(obj):
+# [Patch AI Studio v4.9.59+] Utility function: ensure_dataframe (patch: log & robust export)
+def ensure_dataframe(obj, logger: logging.Logger = None, context: str = ""):
     """
-    [Patch AI Studio v4.9.58+] Utility to ensure object is a pandas DataFrame for export.
-    Handles list-of-dict, dict, or DataFrame input.
+    [Patch AI Studio v4.9.59+] Utility to ensure object is a pandas DataFrame for export.
+    Handles list-of-dict, dict, or DataFrame input. Logs if export is empty.
     """
     import pandas as pd
     if isinstance(obj, pd.DataFrame):
+        if obj.empty:
+            if logger:
+                logger.warning(f"[Patch AI Studio v4.9.59+] [Patch] Export context '{context}': DataFrame is empty — exporting header only.")
         return obj
     if isinstance(obj, list):
-        return pd.DataFrame(obj)
+        df = pd.DataFrame(obj)
+        if df.empty and logger:
+            logger.warning(f"[Patch AI Studio v4.9.59+] [Patch] Export context '{context}': List to DataFrame is empty — exporting header only.")
+        return df
     if isinstance(obj, dict):
-        return pd.DataFrame([obj])
+        df = pd.DataFrame([obj])
+        if df.empty and logger:
+            logger.warning(f"[Patch AI Studio v4.9.59+] [Patch] Export context '{context}': Dict to DataFrame is empty — exporting header only.")
+        return df
+    if logger:
+        logger.warning(f"[Patch AI Studio v4.9.59+] [Patch] Export context '{context}': Unknown export object type ({type(obj)}), skipping export.")
     return obj
 
 
@@ -1037,8 +1051,8 @@ class RiskManager:
                 self.logger.critical(f"[Patch AI Studio v4.9.58+][RISK] Soft Kill DEACTIVATED: DD={drawdown:.4f} < {self.config.soft_kill_dd:.4f}")
             self.soft_kill_active = False
         if drawdown >= self.config.kill_switch_dd:
-            self.logger.critical(f"[Patch AI Studio v4.9.58+][RISK - KILL SWITCH] Max Drawdown Triggered! EQ={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f} >= {self.config.kill_switch_dd:.4f}")
-            raise RuntimeError(f"[Patch AI Studio v4.9.58+] [KILL SWITCH] Max Drawdown ({drawdown:.2%}) Triggered. System Stopped.")
+            self.logger.critical(f"[Patch AI Studio v4.9.59+][Patch] [RISK - KILL SWITCH] Max Drawdown Triggered! EQ={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f} >= {self.config.kill_switch_dd:.4f}")
+            raise RuntimeError(f"[Patch AI Studio v4.9.59+] [Patch] [KILL SWITCH] Max Drawdown ({drawdown:.2%}) Triggered. System Stopped.")
         return drawdown
 
     def check_consecutive_loss_kill(self, consecutive_losses: int) -> bool:
@@ -5075,20 +5089,30 @@ def _run_backtest_simulation_v34_full(
     )
 
 # --- Enterprise Export Functions (NEW) ---
-def export_trade_log_to_csv(trades: Union[List[Dict[str, Any]], pd.DataFrame], label: str, output_dir: str, config: 'StrategyConfig'): # type: ignore
-    export_logger_csv = logging.getLogger(f"{__name__}.export_trade_log_to_csv")
+def export_trade_log_to_csv(trades: Union[List[Dict[str, Any]], pd.DataFrame], label: str, output_dir: str, config: 'StrategyConfig', logger: logging.Logger | None = None): # type: ignore
+    export_logger_csv = logger or logging.getLogger(f"{__name__}.export_trade_log_to_csv")
     if not _isinstance_safe(output_dir, str) or not os.path.isdir(output_dir): # pragma: no cover
         export_logger_csv.error(f"[Export] Invalid output directory: {output_dir}. Cannot export trade log for '{label}'.")
         return None
     df_trades_export: Optional[pd.DataFrame] = None
     if _isinstance_safe(trades, list):
-        if not trades: export_logger_csv.warning(f"[Export] No trades in list for '{label}'"); return None
-        try: df_trades_export = pd.DataFrame(trades)
-        except Exception as e_df_create_export: export_logger_csv.error(f"[Export] Failed to create DataFrame for '{label}': {e_df_create_export}"); return None
+        if not trades:
+            export_logger_csv.warning(f"[Patch AI Studio v4.9.59+] [Patch] No trades in list for '{label}'")
+            return None
+        try:
+            df_trades_export = pd.DataFrame(trades)
+        except Exception as e_df_create_export:
+            export_logger_csv.error(f"[Patch AI Studio v4.9.59+] [Patch] Failed to create DataFrame for '{label}': {e_df_create_export}")
+            return None
     elif _isinstance_safe(trades, pd.DataFrame):
-        if trades.empty: export_logger_csv.warning(f"[Export] DataFrame empty for '{label}'"); return None
-        df_trades_export = trades
-    else: export_logger_csv.error(f"[Export] Invalid 'trades' type: {type(trades)} for '{label}'."); return None # pragma: no cover
+        if trades.empty:
+            export_logger_csv.warning(f"[Patch AI Studio v4.9.59+] [Patch] DataFrame empty for '{label}'")
+            df_trades_export = trades
+        else:
+            df_trades_export = trades
+    else:
+        export_logger_csv.error(f"[Patch AI Studio v4.9.59+] [Patch] Invalid 'trades' type: {type(trades)} for '{label}'.")
+        return None  # pragma: no cover
 
     timestamp_str_csv = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename_prefix_csv = getattr(config, 'trade_log_filename_prefix', "trade_log")
@@ -5098,15 +5122,22 @@ def export_trade_log_to_csv(trades: Union[List[Dict[str, Any]], pd.DataFrame], l
         # Convert datetime columns to string to avoid timezone issues in CSV if any
         for col_dt_export in df_trades_export.select_dtypes(include=['datetime64[ns, UTC]', 'datetime64[ns]']).columns:
             if col_dt_export in df_trades_export: df_trades_export[col_dt_export] = df_trades_export[col_dt_export].dt.strftime('%Y-%m-%d %H:%M:%S.%f')
-        df_trades_export.to_csv(export_path_csv, index=False, encoding='utf-8-sig') # utf-8-sig for Excel compatibility
-        export_logger_csv.info(f"[Export] Trade log for '{label}' exported to: {export_path_csv} ({len(df_trades_export)} rows)")
+        if hasattr(df_trades_export, "empty") and df_trades_export.empty:
+            export_logger_csv.warning(f"[Patch AI Studio v4.9.59+] [Patch] trade_log DataFrame is empty — exporting header only: {export_path_csv}")
+        df_trades_export.to_csv(export_path_csv, index=False, encoding='utf-8-sig')
+        export_logger_csv.info(f"[Patch AI Studio v4.9.59+] [Patch] trade_log exported successfully: {export_path_csv}")
         return export_path_csv
-    except Exception as e_export_csv: export_logger_csv.error(f"[Export] Failed to export trade log for '{label}' to {export_path_csv}: {e_export_csv}", exc_info=True); return None # pragma: no cover
+    except Exception as e_export_csv:
+        export_logger_csv.error(f"[Patch AI Studio v4.9.59+] [Patch] trade_log export failed: {e_export_csv}")
+        return None  # pragma: no cover
 
-def export_run_summary_to_json(run_summary_exp: Dict[str, Any], label: str, output_dir: str, config: 'StrategyConfig'): # type: ignore
-    export_logger_json = logging.getLogger(f"{__name__}.export_run_summary_to_json")
-    if not _isinstance_safe(output_dir, str) or not os.path.isdir(output_dir): export_logger_json.error(f"[Export] Invalid output dir for summary '{label}'."); return None # pragma: no cover
-    if not _isinstance_safe(run_summary_exp, dict) or not run_summary_exp: export_logger_json.warning(f"[Export] No summary data for '{label}'"); return None # pragma: no cover
+def export_run_summary_to_json(run_summary_exp: Dict[str, Any], label: str, output_dir: str, config: 'StrategyConfig', logger: logging.Logger | None = None): # type: ignore
+    export_logger_json = logger or logging.getLogger(f"{__name__}.export_run_summary_to_json")
+    if not _isinstance_safe(output_dir, str) or not os.path.isdir(output_dir):
+        export_logger_json.error(f"[Patch AI Studio v4.9.59+] [Patch] Invalid output dir for summary '{label}'.")
+        return None  # pragma: no cover
+    if not _isinstance_safe(run_summary_exp, dict) or not run_summary_exp:
+        export_logger_json.warning(f"[Patch AI Studio v4.9.59+] [Patch] run_summary dict is empty — exporting empty json with header only: {output_dir}")
 
     timestamp_str_json = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename_prefix_json = getattr(config, 'summary_filename_prefix', "run_summary")
@@ -5114,10 +5145,12 @@ def export_run_summary_to_json(run_summary_exp: Dict[str, Any], label: str, outp
     export_path_json = os.path.join(output_dir, export_filename_json)
     try:
         with open(export_path_json, "w", encoding='utf-8') as f_json:
-            json.dump(run_summary_exp, f_json, ensure_ascii=False, indent=2, default=simple_converter) # type: ignore
-        export_logger_json.info(f"[Export] Run summary for '{label}' exported to: {export_path_json}")
+            json.dump(run_summary_exp, f_json, default=simple_converter, indent=2)
+        export_logger_json.info(f"[Patch AI Studio v4.9.59+] [Patch] run_summary exported successfully: {export_path_json}")
         return export_path_json
-    except Exception as e_export_json: export_logger_json.error(f"[Export] Failed to export run summary for '{label}' to {export_path_json}: {e_export_json}", exc_info=True); return None # pragma: no cover
+    except Exception as e_export_json:
+        export_logger_json.error(f"[Patch AI Studio v4.9.59+] [Patch] run_summary export failed: {e_export_json}")
+        return None  # pragma: no cover
 
 logger.info("Part 9 (Original Part 8): Backtesting Engine (v4.9.23 - Added TSL/BE Helpers & _check_kill_switch) Loaded and Refactored.")
 # === END OF PART 9/15 ===
@@ -6555,13 +6588,27 @@ def main(run_mode: str = 'FULL_PIPELINE', config_file: str = "config.yaml", suff
 
             if df_m1_final_for_main_exec is not None: # This is the feature-engineered M1 data
                 m1_save_path_prep_final = os.path.join(OUTPUT_DIR, f"final_data_m1_v32_walkforward{current_run_suffix_for_main}.csv.gz")
-                df_m1_final_for_main_exec.to_csv(m1_save_path_prep_final, index=True, encoding="utf-8", compression="gzip")
-                main_exec_logger_func.info(f"   (PREP_DATA) Saved final M1 data (features only): {os.path.basename(m1_save_path_prep_final)}")
+                df_m1_final_for_main_exec = ensure_dataframe(df_m1_final_for_main_exec, logger=main_exec_logger_func, context="prep_m1_final")
+                if hasattr(df_m1_final_for_main_exec, "to_csv"):
+                    try:
+                        if df_m1_final_for_main_exec.empty:
+                            main_exec_logger_func.warning(f"[Patch AI Studio v4.9.59+] [Patch] Simulate_trades: trade_log DataFrame is empty — exporting header only: {m1_save_path_prep_final}")
+                        df_m1_final_for_main_exec.to_csv(m1_save_path_prep_final, index=True, encoding="utf-8", compression="gzip")
+                        main_exec_logger_func.info(f"[Patch AI Studio v4.9.59+] [Patch] prep_data trade_log exported successfully: {os.path.basename(m1_save_path_prep_final)}")
+                    except Exception as ex:
+                        main_exec_logger_func.error(f"[Patch AI Studio v4.9.59+] [Patch] prep_data trade_log export failed: {ex}")
 
             if not trade_log_overall_for_prep_data_save.empty: # This is the log from WFV run in prep mode
                 log_save_path_prep_final = os.path.join(OUTPUT_DIR, f"trade_log_v32_walkforward{current_run_suffix_for_main}.csv.gz")
-                trade_log_overall_for_prep_data_save.to_csv(log_save_path_prep_final, index=False, encoding="utf-8", compression="gzip")
-                main_exec_logger_func.info(f"   (PREP_DATA) Saved generated trade log from WFV: {os.path.basename(log_save_path_prep_final)}")
+                trade_log_overall_for_prep_data_save = ensure_dataframe(trade_log_overall_for_prep_data_save, logger=main_exec_logger_func, context="prep_trade_log")
+                if hasattr(trade_log_overall_for_prep_data_save, "to_csv"):
+                    try:
+                        if trade_log_overall_for_prep_data_save.empty:
+                            main_exec_logger_func.warning(f"[Patch AI Studio v4.9.59+] [Patch] Simulate_trades: trade_log DataFrame is empty — exporting header only: {log_save_path_prep_final}")
+                        trade_log_overall_for_prep_data_save.to_csv(log_save_path_prep_final, index=False, encoding="utf-8", compression="gzip")
+                        main_exec_logger_func.info(f"[Patch AI Studio v4.9.59+] [Patch] trade_log exported successfully: {os.path.basename(log_save_path_prep_final)}")
+                    except Exception as ex:
+                        main_exec_logger_func.error(f"[Patch AI Studio v4.9.59+] [Patch] trade_log export failed: {ex}")
             else: # pragma: no cover
                 main_exec_logger_func.warning("   (PREP_DATA) No trade log generated/returned from WFV to save for PREPARE_TRAIN_DATA mode.")
             return current_run_suffix_for_main # Exit after PREPARE_TRAIN_DATA
