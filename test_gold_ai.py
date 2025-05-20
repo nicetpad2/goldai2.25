@@ -74,9 +74,13 @@ def _create_mock_module(name: str) -> types.ModuleType:
     module.__version__ = "0.0"
 
     def _getattr(attr: str):
-        # [Patch][QA] ป้องกัน RecursionError ใน numpy.random และ ML mock
+        # [Patch][QA] ป้องกัน RecursionError ใน numpy.random, ML mock
         if attr in ["random", "rand", "randn"]:
             return lambda *a, **kw: 0.5
+        # [Patch][QA] ถ้าเป็น "backend_agg" ให้คืน mock module
+        if name == "matplotlib.backends" and attr == "backend_agg":
+            backend_agg = types.ModuleType("matplotlib.backends.backend_agg")
+            return backend_agg
         return MagicMock(name=f"{name}.{attr}")
 
     module.__getattr__ = _getattr  # type: ignore
@@ -136,6 +140,11 @@ def _create_mock_module(name: str) -> types.ModuleType:
         sys.modules.setdefault("ta.trend", trend)
         sys.modules.setdefault("ta.momentum", momentum)
         sys.modules.setdefault("ta.volatility", volatility)
+    # [Patch][QA] เพิ่ม mock matplotlib.backends และ backend_agg
+    if name == "matplotlib.backends":
+        backend_agg = types.ModuleType("matplotlib.backends.backend_agg")
+        module.backend_agg = backend_agg
+        sys.modules.setdefault("matplotlib.backends.backend_agg", backend_agg)
     return module
 
 
@@ -170,6 +179,8 @@ def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
         "matplotlib": _create_mock_module("matplotlib"),
         "matplotlib.pyplot": _create_mock_module("matplotlib.pyplot"),
         "matplotlib.font_manager": _create_mock_module("matplotlib.font_manager"),
+        "matplotlib.backends": _create_mock_module("matplotlib.backends"),
+        "matplotlib.backends.backend_agg": _create_mock_module("matplotlib.backends.backend_agg"),
         "scipy": _create_mock_module("scipy"),
         "optuna": _create_mock_module("optuna"),
         "optuna.logging": _create_mock_module("optuna.logging"),

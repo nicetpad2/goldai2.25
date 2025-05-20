@@ -243,3 +243,10 @@
 - _create_mock_module ป้องกัน RecursionError ใน numpy.random
 - Version bumped to 4.9.83_FULL_PASS
 
+## [v4.9.84+] - 2025-06-XX
+- เพิ่ม forced entry audit post-process ให้ตั้งค่า exit_reason='FORCED_ENTRY'
+- safe_load_csv_auto log และ fallback ครบทุก branch
+- set_thai_font รองรับ fallback/mock success ใน tests
+- _create_mock_module รองรับ matplotlib.backends และ backend_agg
+- Version bumped to 4.9.84_FULL_PASS
+
