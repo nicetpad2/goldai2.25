@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.69_FULL_PASS"  # [Patch AI Studio v4.9.69+] RSI/indicator fallback fix
+MINIMAL_SCRIPT_VERSION = "4.9.70_FULL_PASS"  # [Patch AI Studio v4.9.70+] bug fixes for ATR variable
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -7209,14 +7209,15 @@ def simulate_trades(
         current_time = idx
 
         # [Patch AI Studio v4.9.69+] Robust indicator fallback for test robustness
-        if 'atr' not in locals() or atr is None:
-            sim_logger.debug("[Patch AI Studio v4.9.69+] ATR undefined, using NaN fallback.")
+        # [Patch AI Studio v4.9.70+] Use locals().get to avoid UnboundLocalError
+        if locals().get('atr') is None:
+            sim_logger.debug("[Patch AI Studio v4.9.70+] ATR undefined, using NaN fallback.")
             atr = np.nan
-        if 'macd' not in locals() or macd is None:
-            sim_logger.debug("[Patch AI Studio v4.9.69+] MACD undefined, using NaN fallback.")
+        if locals().get('macd') is None:
+            sim_logger.debug("[Patch AI Studio v4.9.70+] MACD undefined, using NaN fallback.")
             macd = np.nan
-        if 'rsi' not in locals() or rsi is None:
-            sim_logger.debug("[Patch AI Studio v4.9.69+] RSI undefined, using default 50.")
+        if locals().get('rsi') is None:
+            sim_logger.debug("[Patch AI Studio v4.9.70+] RSI undefined, using default 50.")
             rsi = 50
         # [Patch AI Studio v4.9.69+] End robust indicator fallback
 
