@@ -1692,6 +1692,7 @@ class TestATRFallback(unittest.TestCase):
             with self.assertLogs(f"{self.ga.__name__}.engineer_m1_features", level="ERROR") as cm:
                 res = self.ga.engineer_m1_features(self.df.copy(), self.config)
             self.assertTrue(any("ATR import failed" in m for m in cm.output))
+            self.assertTrue(any("ERROR" in m and "ATR import failed" in m for m in cm.output))
             self.assertTrue("ATR_14" not in res.columns or res["ATR_14"].isna().all())
         finally:
             if orig_atr is not None:
