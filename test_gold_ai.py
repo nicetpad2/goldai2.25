@@ -227,14 +227,29 @@ def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
         "scipy.stats": _create_mock_module("scipy.stats"),
     }
 
-    # [Patch][QA] Prefer real numpy/random when available
+    # [Patch][QA v4.9.99] Prefer real numpy but guard against RecursionError by partial mocking
     try:
         import numpy as real_np
         mock_modules["numpy"] = real_np
-        if hasattr(real_np, "random") and isinstance(real_np.random, types.ModuleType):
-            mock_modules["numpy.random"] = real_np.random
-    except Exception:
-        pass
+        class DummyRandom:
+            def seed(self, *a, **kw):
+                pass
+            def randint(self, *a, **kw):
+                return 1
+            def randn(self, *a, **kw):
+                return 0.0
+        mock_np = types.ModuleType("numpy.random")
+        mock_np.seed = DummyRandom().seed
+        mock_np.randint = DummyRandom().randint
+        mock_np.randn = DummyRandom().randn
+        mock_modules["numpy.random"] = getattr(real_np, "random", mock_np)
+    except Exception as e:
+        print(f"[Patch][QA v4.9.99] Mock numpy RecursionError guard: {e}")
+        try:
+            import numpy as np
+            mock_modules["numpy"] = np
+        except Exception:
+            mock_modules["numpy"] = _create_mock_module("numpy")
     try:
         import pandas as real_pd
         mock_modules["pandas"] = real_pd

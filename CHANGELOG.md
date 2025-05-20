@@ -295,3 +295,10 @@
 - [Patch][QA] safe_import_gold_ai uses real matplotlib if available and avoids numpy.random recursion
 - [Patch][QA] safe_load_csv_auto auto-creates missing CSV
 - Version bump to `4.9.92_FULL_PASS`
+
+## [v4.9.99+] - 2025-06-xx
+- [Patch][QA v4.9.99] safe_load_csv_auto returns DataFrame after auto-create and logs fallback
+- [Patch][QA v4.9.99] plot_equity_curve skips plotting when matplotlib is MagicMock
+- [Patch][QA v4.9.99] forced entry audit logs indices of modified trades
+- [Patch][QA v4.9.99] safe_import_gold_ai guards numpy.random RecursionError with partial mock
+- Version bump to `4.9.99_FULL_PASS`
