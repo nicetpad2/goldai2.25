@@ -80,7 +80,11 @@ def _create_mock_module(name: str) -> types.ModuleType:
         # [Patch][QA] ถ้าเป็น "backend_agg" ให้คืน mock module
         if name == "matplotlib.backends" and attr == "backend_agg":
             backend_agg = types.ModuleType("matplotlib.backends.backend_agg")
+            # [Patch][QA v4.9.85] Add FigureCanvasAgg attribute
+            backend_agg.FigureCanvasAgg = MagicMock(name="FigureCanvasAgg")
             return backend_agg
+        if name == "matplotlib.backends.backend_agg" and attr == "FigureCanvasAgg":
+            return MagicMock(name="FigureCanvasAgg")
         return MagicMock(name=f"{name}.{attr}")
 
     module.__getattr__ = _getattr  # type: ignore
@@ -143,8 +147,11 @@ def _create_mock_module(name: str) -> types.ModuleType:
     # [Patch][QA] เพิ่ม mock matplotlib.backends และ backend_agg
     if name == "matplotlib.backends":
         backend_agg = types.ModuleType("matplotlib.backends.backend_agg")
+        backend_agg.FigureCanvasAgg = MagicMock(name="FigureCanvasAgg")
         module.backend_agg = backend_agg
         sys.modules.setdefault("matplotlib.backends.backend_agg", backend_agg)
+    if name == "matplotlib.backends.backend_agg":
+        module.FigureCanvasAgg = MagicMock(name="FigureCanvasAgg")
     return module
 
 

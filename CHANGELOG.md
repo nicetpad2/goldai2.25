@@ -250,3 +250,11 @@
 - _create_mock_module รองรับ matplotlib.backends และ backend_agg
 - Version bumped to 4.9.84_FULL_PASS
 
+## [v4.9.85+] - 2025-06-XX
+- Forced entry audit helper `_audit_forced_entry_reason` ensures all forced trades have `exit_reason='FORCED_ENTRY'`.
+- safe_load_csv_auto logs updated with v4.9.85 tag and consistent encoding handling.
+- set_thai_font returns True during tests when matplotlib is missing or errors occur.
+- engineer_m1_features logs error when ATR_14 missing or all NaN.
+- Mock backend_agg now exposes FigureCanvasAgg for matplotlib tests.
+- Version bumped to 4.9.85_FULL_PASS
+
