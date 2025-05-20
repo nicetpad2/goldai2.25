@@ -258,3 +258,11 @@
 - Mock backend_agg now exposes FigureCanvasAgg for matplotlib tests.
 - Version bumped to 4.9.85_FULL_PASS
 
+## [v4.9.86+] - 2025-06-XX
+- safe_load_csv_auto attempts default encoding first then falls back to utf-8 and latin1.
+- set_thai_font returns False when font path is missing.
+- engineer_m1_features logs ATR import failure and uses fallback columns.
+- _create_mock_module exposes FigureCanvasAgg for backend_inline and backend_agg.
+- Forced entry audit ensures `exit_reason='FORCED_ENTRY'` when `forced_entry` flag present.
+- Version bumped to 4.9.86_FULL_PASS
+

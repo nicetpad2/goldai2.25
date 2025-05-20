@@ -39,7 +39,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.85_FULL_PASS"  # [Patch][QA v4.9.85] all fail fixed
+MINIMAL_SCRIPT_VERSION = "4.9.86_FULL_PASS"  # [Patch][QA v4.9.86] all fail fixed
 
 
 
@@ -1310,14 +1310,10 @@ def set_thai_font(font_name: str = "Loma") -> bool:
     try:
         import matplotlib  # noqa: F401
     except ImportError:
-        logging.warning("[Patch][Font][QA v4.9.85] matplotlib not available for font setting.")
-        if "pytest" in sys.modules or "unittest" in sys.modules:
-            return True
+        logging.warning("[Patch][Font][QA v4.9.86] matplotlib not available for font setting.")
         return False
     except Exception as e:
-        logging.warning("[Patch][Font][QA v4.9.85] Could not set font: %r", e)
-        if "pytest" in sys.modules or "unittest" in sys.modules:
-            return True
+        logging.warning("[Patch][Font][QA v4.9.86] Could not set font: %r", e)
         return False
 
     target_font_path = None
@@ -1329,13 +1325,15 @@ def set_thai_font(font_name: str = "Loma") -> bool:
 
     for pref_font in preferred_fonts:
         try:
-            found_path = fm.findfont(pref_font, fallback_to_default=False) # type: ignore
-            if found_path and os.path.exists(found_path):
-                target_font_path = found_path
-                prop = fm.FontProperties(fname=target_font_path) # type: ignore
-                actual_font_name = prop.get_name()
-                font_logger.info(f"      -> Found font: '{actual_font_name}' (requested: '{pref_font}') at path: {target_font_path}")
-                break
+            found_path = fm.findfont(pref_font, fallback_to_default=False)  # type: ignore
+            if not found_path or not os.path.exists(found_path):
+                font_logger.warning(f"[Patch][Font][QA v4.9.86] Font path not found for '{pref_font}': {found_path}")
+                return False
+            target_font_path = found_path
+            prop = fm.FontProperties(fname=target_font_path)  # type: ignore
+            actual_font_name = prop.get_name()
+            font_logger.info(f"      -> Found font: '{actual_font_name}' (requested: '{pref_font}') at path: {target_font_path}")
+            break
         except ValueError:
             font_logger.debug(f"[Patch][QA] Font '{pref_font}' not found by findfont.")
         except Exception as e_find:
@@ -1362,9 +1360,7 @@ def set_thai_font(font_name: str = "Loma") -> bool:
                 return True
             return False
     else:
-        font_logger.warning(f"[Patch][QA v4.9.85] Could not find any suitable Thai fonts ({preferred_fonts}) using findfont.")
-        if "pytest" in sys.modules or "unittest" in sys.modules:
-            return True
+        font_logger.warning(f"[Patch][QA v4.9.86] Could not find any suitable Thai fonts ({preferred_fonts}) using findfont.")
         return False
 
 def setup_fonts(output_dir: str | None = None): # output_dir is not used currently
@@ -1456,14 +1452,19 @@ def safe_load_csv_auto(file_path: str) -> pd.DataFrame | None:
         else:
             load_logger.debug("[Patch][QA v4.9.85] No .gz extension, using standard pd.read_csv.")
             try:
-                df = pd.read_csv(file_path, encoding="utf-8", **read_csv_kwargs)
-                load_logger.info("[Patch][QA v4.9.85] Loaded csv with utf-8 encoding.")
+                df = pd.read_csv(file_path, **read_csv_kwargs)
+                load_logger.info("[Patch][QA v4.9.85] Loaded csv with default encoding.")
                 return df
-            except UnicodeDecodeError as ude:
-                load_logger.warning("[Patch][QA v4.9.85] UTF-8 decode failed, trying latin1 for file %r (%r)", file_path, ude)
-                df = pd.read_csv(file_path, encoding="latin1", **read_csv_kwargs)
-                load_logger.info("[Patch][QA v4.9.85] Loaded csv with latin1 encoding as fallback.")
-                return df
+            except UnicodeDecodeError:
+                try:
+                    df = pd.read_csv(file_path, encoding="utf-8", **read_csv_kwargs)
+                    load_logger.info("[Patch][QA v4.9.85] Loaded csv with utf-8 encoding.")
+                    return df
+                except UnicodeDecodeError as ude:
+                    load_logger.warning("[Patch][QA v4.9.85] UTF-8 decode failed, trying latin1 for file %r (%r)", file_path, ude)
+                    df = pd.read_csv(file_path, encoding="latin1", **read_csv_kwargs)
+                    load_logger.info("[Patch][QA v4.9.85] Loaded csv with latin1 encoding as fallback.")
+                    return df
     except pd.errors.EmptyDataError:
         load_logger.warning("[Patch][QA v4.9.85] (Warning) File is empty: %s", file_path)
         return pd.DataFrame()
@@ -2505,13 +2506,14 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
         import sys
         atr_module = sys.modules.get(__name__)
         atr_func = getattr(atr_module, "atr", None) if atr_module else None
-        if not atr_func:
-            logger.warning("[Patch][QA] ATR fallback: getattr(sys.modules.get(__name__), 'atr', None) returned None.")
-        if atr_func is None or not callable(atr_func):
-            logging.warning("[Patch][QA] No ATR function available, fallback to default 1.0")
+        if atr_func is None:
+            eng_m1_logger.error("[Patch][QA v4.9.86] ATR import failed")
             df["ATR_14"] = 1.0
             df["ATR_14_Shifted"] = 1.0
-            logging.info("[Patch][QA] Fallback ATR columns set to 1.0 for test compatibility.")
+        elif not callable(atr_func):
+            eng_m1_logger.error("[Patch][QA v4.9.86] atr function not callable")
+            df["ATR_14"] = 1.0
+            df["ATR_14_Shifted"] = 1.0
         else:
             df = atr_func(df, 14)
         if "ATR_14" in df.columns and df["ATR_14"].notna().any():
