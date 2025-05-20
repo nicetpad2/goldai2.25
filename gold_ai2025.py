@@ -39,7 +39,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.100_FULL_PASS"  # [Patch][QA v4.9.100] safe_load_csv_auto & audit improvements
+MINIMAL_SCRIPT_VERSION = "4.9.101_FULL_PASS"  # [Patch][QA v4.9.101] DataFrame fallback & audit update
 
 
 
@@ -1487,24 +1487,41 @@ def safe_load_csv_auto(file_path: str) -> pd.DataFrame | None:
         load_logger.warning("[Patch][QA v4.9.85] (Warning) File is empty: %s", file_path)
         return pd.DataFrame()
     except (OSError, PermissionError, UnicodeDecodeError) as e:
-        load_logger.error("[Patch][QA v4.9.85] (Error) Failed to load file '%s': %r", file_path, e)
-        return None
+        load_logger.error(
+            "[Patch][QA v4.9.85] (Error) Failed to load file '%s': %r",
+            file_path,
+            e,
+        )
+        # [Patch AI Studio v4.9.100+] Always return a DataFrame, never None
+        return pd.DataFrame(columns=["Date", "Open", "High", "Low", "Close"])
 
 # === [Patch][QA v4.9.100] Robust forced entry audit: always post-process every trade_log entry (dict or DataFrame) ===
 def _audit_forced_entry_reason(trade_log):
     """Ensure all forced entry trades are marked with exit_reason."""
     forced_count = 0
     modified_indices: list[int] = []
-    for i, trade in enumerate(trade_log):
-        is_forced = (
-            trade.get("forced_entry")
-            or trade.get("_forced_entry_flag")
-            or trade.get("forced_entry_flag")
-        )
-        if is_forced and trade.get("exit_reason") != "FORCED_ENTRY":
-            trade["exit_reason"] = "FORCED_ENTRY"
-            forced_count += 1
-            modified_indices.append(i)
+    if _isinstance_safe(trade_log, pd.DataFrame):
+        for idx, row in trade_log.iterrows():
+            is_forced = (
+                row.get("forced_entry")
+                or row.get("_forced_entry_flag")
+                or row.get("forced_entry_flag")
+            )
+            if is_forced and row.get("exit_reason") != "FORCED_ENTRY":
+                trade_log.at[idx, "exit_reason"] = "FORCED_ENTRY"
+                forced_count += 1
+                modified_indices.append(int(idx) if hasattr(idx, "__int__") else idx)
+    else:
+        for i, trade in enumerate(trade_log):
+            is_forced = (
+                trade.get("forced_entry")
+                or trade.get("_forced_entry_flag")
+                or trade.get("forced_entry_flag")
+            )
+            if is_forced and trade.get("exit_reason") != "FORCED_ENTRY":
+                trade["exit_reason"] = "FORCED_ENTRY"
+                forced_count += 1
+                modified_indices.append(i)
     logger.info(
         f"[Patch][QA v4.9.100] Forced entry audit: {forced_count} modified | indices: {modified_indices}"
     )

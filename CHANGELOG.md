@@ -309,3 +309,8 @@
 - [Patch][QA v4.9.100] forced entry audit post-processes all logs consistently
 - [Patch][QA v4.9.100] safe_import_gold_ai avoids RecursionError with MagicMock
 - Version bump to `4.9.100_FULL_PASS`
+## [v4.9.101+] - 2025-06-xx
+- [Patch][QA v4.9.101] safe_load_csv_auto returns empty DataFrame on errors instead of None
+- [Patch][QA v4.9.101] _audit_forced_entry_reason handles DataFrame inputs
+- Version bump to `4.9.101_FULL_PASS`
+

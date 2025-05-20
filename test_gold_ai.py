@@ -849,7 +849,7 @@ class TestEdgeCases(unittest.TestCase):
         with patch("os.path.exists", return_value=True), \
              patch("gzip.open", side_effect=OSError("gzip error")):
             df = self.ga.safe_load_csv_auto("corrupt.csv.gz")
-            self.assertIsNone(df)
+            self.assertIsInstance(df, self.ga.pd.DataFrame)
 
     def test_strategy_config_custom_values(self):
         config = self.ga.StrategyConfig(
@@ -1708,7 +1708,7 @@ class TestWarningEdgeCases(unittest.TestCase):
              patch("builtins.open", mock_open(read_data="\xff\xfe\xfd")), \
              patch.object(self.ga.pd, "read_csv", side_effect=UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")):
             result = self.ga.safe_load_csv_auto("bad_encoding.csv")
-            self.assertIsNone(result)
+            self.assertIsInstance(result, self.ga.pd.DataFrame)
 
     def test_safe_load_csv_auto_permission_denied(self):
         with patch("os.makedirs"), \
@@ -1728,19 +1728,19 @@ class TestWarningEdgeCases(unittest.TestCase):
         with patch("os.path.exists", return_value=True), \
              patch.object(self.ga.gzip, "open", side_effect=OSError("corrupt gzip")):
             result = self.ga.safe_load_csv_auto("bad_file.csv.gz")
-            self.assertIsNone(result)
+            self.assertIsInstance(result, self.ga.pd.DataFrame)
 
     def test_safe_load_csv_auto_permission_error_read(self):
         with patch("os.path.exists", return_value=True), \
              patch.object(self.ga.pd, "read_csv", side_effect=PermissionError("denied")):
             result = self.ga.safe_load_csv_auto("denied.csv")
-            self.assertIsNone(result)
+            self.assertIsInstance(result, self.ga.pd.DataFrame)
 
     def test_safe_load_csv_auto_generic_failure(self):
         with patch("os.path.exists", return_value=True), \
              patch.object(self.ga.pd, "read_csv", side_effect=OSError("broken")):
             result = self.ga.safe_load_csv_auto("broken.csv")
-            self.assertIsNone(result)
+            self.assertIsInstance(result, self.ga.pd.DataFrame)
 
     def test_safe_load_csv_auto_utf8_bom_file(self):
         csv_data = '\ufeffDate,Open,High,Low,Close\n20240101,1000,1005,995,1001\n'
