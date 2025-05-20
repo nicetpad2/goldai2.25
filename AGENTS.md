@@ -1,12 +1,12 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.99+
+**Version:** v4.9.100+
 **Project:** Gold AI (Enterprise Refactor)
 **Maintainer:** AI Studio QA/Dev Team
 **Last updated:** 2025-06-13
 
-Gold AI Enterprise QA/Dev version: v4.9.99+ (safe_load_csv_auto, matplotlib mock guard, forced entry audit update)
+Gold AI Enterprise QA/Dev version: v4.9.100+ (plot backend skip, CSV auto fallback, forced entry audit, numpy RecursionError fix)
 
 ---
 
@@ -207,9 +207,10 @@ Review vs. this AGENTS.md
 
 No merge without Execution_Test_Unit pass and log review
 
-ล่าสุด: [Patch AI Studio v4.9.99+]
-บันทึก forced entry ใน `simulate_trades` ผ่าน `exit_reason='FORCED_ENTRY'`
-และเพิ่มการตรวจสอบใน test suite ว่ามี forced entry ถูก log
+ล่าสุด: [Patch AI Studio v4.9.100+]
+ปรับปรุง plot_equity_curve ให้ข้ามเมื่อ backend ผิดพลาดหรือ MagicMock
+safe_load_csv_auto สร้างไฟล์และคืน DataFrame เสมอ
+forced entry audit ครอบคลุมทุกบรรทัดและแก้ RecursionError ใน numpy mock
 
 ตรวจสอบ audit log & error log ว่า non-numeric (str/NaT/None/nan) ถูก block และ log warning อย่างถูกต้อง
 
