@@ -96,6 +96,12 @@
 - Strengthened unit tests with verbose assertion messages for spike guard and re-entry checks.
 - Updated version constant to `4.9.59_FULL_PASS`.
 
+## [v4.9.60+] - 2025-05-28
+- Improved unit tests for spike guard and reentry logic with context-safe assertions.
+- Allowed empty exports in E2E backtest tests by catching `EmptyDataError`.
+- Added debug logging for forced entry spike validation.
+- Updated version constant to `4.9.60_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
