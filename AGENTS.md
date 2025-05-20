@@ -238,6 +238,7 @@ Release Tagging:
 Release ทุกชุดต้องระบุ version ตรงกับ AGENTS.md/CHANGELOG.md (ตัวอย่าง: v4.9.43-enterprise, v4.9.43-rc1)
 
 ตรวจสอบ version bump ในทุกไฟล์สำคัญ: AGENTS.md, CHANGELOG.md, gold_ai2025.py, test_gold_ai.py
+ต้องอัพเดตไฟล์ AGENTS.md ให้ตรงกับเวอร์ชันล่าสุดทุกครั้งก่อนส่ง PR
 
 ติด tag/label ใน CI เช่น qa-passed, qa-blocked, release-candidate
 
