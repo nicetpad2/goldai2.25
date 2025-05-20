@@ -142,6 +142,12 @@
 - Updated integration test to assert forced entry logging.
 - Bumped version constant to `4.9.68_FULL_PASS`.
 
+## [v4.9.69+] - 2025-06-06
+- Fixed UnboundLocalError: robust guard for indicator variables (ATR, MACD, RSI).
+- RSI manual fallback now always returns default 50 on short or NaN input.
+- Patch log added to all fallback/guard critical paths.
+- Bumped version constant to `4.9.69_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
