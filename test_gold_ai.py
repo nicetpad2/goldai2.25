@@ -558,7 +558,7 @@ class TestGoldAI2025(unittest.TestCase):
             )
         self.assertTrue(
             blocked,
-            "[Patch AI Studio v4.9.58+] spike_guard_blocked should be True (London session, score, pattern)",
+            f"[Patch AI Studio v4.9.59+] [Patch] spike_guard_blocked expected True (session: London, input: {row}, cfg: {cfg.__dict__})"
         )
         asia_block = self.gold_ai.spike_guard_blocked(row, "Asia", cfg)
         logging.getLogger("GoldAI_UnitTest").info(
@@ -567,7 +567,7 @@ class TestGoldAI2025(unittest.TestCase):
         )
         self.assertFalse(
             asia_block,
-            "[Patch AI Studio v4.9.58+] spike_guard_blocked should be False for Asia",
+            f"[Patch AI Studio v4.9.59+] [Patch] spike_guard_blocked expected False for Asia (input: {row}, cfg: {cfg.__dict__})"
         )
         cfg.use_reentry = True
         cfg.reentry_cooldown_bars = 3
@@ -576,15 +576,18 @@ class TestGoldAI2025(unittest.TestCase):
         row_ns = types.SimpleNamespace(name=datetime.datetime(2021, 1, 1, 0, 10))
         active_orders = []
         self.assertFalse(self.gold_ai.is_reentry_allowed(cfg, row_ns, "BUY", active_orders, 1, None, 0.6))
-        self.assertTrue(self.gold_ai.is_reentry_allowed(
-            cfg,
-            types.SimpleNamespace(name=datetime.datetime(2021, 1, 1, 0, 15)),
-            "BUY",
-            [],
-            5,
-            datetime.datetime(2021, 1, 1, 0, 0),
-            0.6,
-        ))
+        self.assertTrue(
+            self.gold_ai.is_reentry_allowed(
+                cfg,
+                types.SimpleNamespace(name=datetime.datetime(2021, 1, 1, 0, 15)),
+                "BUY",
+                [],
+                5,
+                datetime.datetime(2021, 1, 1, 0, 0),
+                0.6,
+            ),
+            f"[Patch AI Studio v4.9.59+] [Patch] is_reentry_allowed should be True (row: {df.iloc[1].to_dict()}, cfg: {cfg.__dict__})"
+        )
 
     def test_all_module_functions_present(self):
         funcs = [n for n, o in vars(self.gold_ai).items() if callable(o) and getattr(o, "__module__", None) == self.gold_ai.__name__]

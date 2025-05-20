@@ -89,6 +89,13 @@
 - Tests updated for logging assertions and empty export handling.
 - Bumped `MINIMAL_SCRIPT_VERSION` to `4.9.58_FULL_PASS`.
 
+## [v4.9.59+] - 2025-05-28
+- Added global export guard via `ensure_dataframe` with logging context.
+- `export_trade_log_to_csv` and `export_run_summary_to_json` now warn on empty exports and log success/failure.
+- Updated PREPARE_TRAIN_DATA exports to use the new guard.
+- Strengthened unit tests with verbose assertion messages for spike guard and re-entry checks.
+- Updated version constant to `4.9.59_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
