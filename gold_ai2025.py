@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.73_FULL_PASS"  # [Patch AI Studio v4.9.73+] RSI manual fallback audit
+MINIMAL_SCRIPT_VERSION = "4.9.74_FULL_PASS"  # [Patch AI Studio v4.9.74+] Forced entry config update
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -858,6 +858,7 @@ class StrategyConfig:
         self.forced_entry_allowed_regimes: List[str] = config_dict.get("forced_entry_allowed_regimes", ["Normal", "Breakout", "StrongTrend"])
         self.fe_ml_filter_threshold: float = config_dict.get("fe_ml_filter_threshold", 0.40)
         self.forced_entry_max_consecutive_losses: int = config_dict.get("forced_entry_max_consecutive_losses", 2)
+        self.force_entry_on_signal: bool = config_dict.get("force_entry_on_signal", True)
 
         # --- Partial Take Profit ---
         self.enable_partial_tp: bool = config_dict.get("enable_partial_tp", True)

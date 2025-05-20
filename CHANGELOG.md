@@ -169,6 +169,11 @@
 - Added internal test helper `_test_rsi_manual_fallback_coverage`.
 - Bumped version constant to `4.9.73_FULL_PASS`.
 
+## [v4.9.74+] - 2025-06-10
+- Added `force_entry_on_signal` to `StrategyConfig` for consistent forced entry behavior.
+- Updated documentation and version constants.
+- Bumped version constant to `4.9.74_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
