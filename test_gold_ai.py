@@ -901,7 +901,7 @@ class TestEdgeCases(unittest.TestCase):
             "High": [1805.0] * 10,
             "Low": [1795.0] * 10,
             "Close": [1802.0] * 10,
-            "Entry_Long": [0] * 10,
+            "Entry_Long": [1] + [0] * 9,
             "ATR_14_Shifted": [1.0] * 10,
             "Signal_Score": [2.0] * 10,
             "Trade_Reason": ["test"] * 10,
@@ -925,7 +925,7 @@ class TestEdgeCases(unittest.TestCase):
     def test_run_backtest_simulation_v34_return_tuple(self):
         if not self.pandas_available:
             self.skipTest("pandas not available")
-        df = self.ga.pd.DataFrame({"Open": [1], "High": [1], "Low": [1], "Close": [1], "Entry_Long": [0], "ATR_14_Shifted": [1.0], "Signal_Score": [1.0], "Trade_Reason": ["T"], "session": ["Asia"], "Gain_Z": [0.1], "MACD_hist_smooth": [0.1], "RSI": [50]})
+        df = self.ga.pd.DataFrame({"Open": [1], "High": [1], "Low": [1], "Close": [1], "Entry_Long": [1], "ATR_14_Shifted": [1.0], "Signal_Score": [1.0], "Trade_Reason": ["T"], "session": ["Asia"], "Gain_Z": [0.1], "MACD_hist_smooth": [0.1], "RSI": [50]})
         df.index = self.ga.pd.date_range("2023-01-01", periods=1, freq="min")
         cfg = self.ga.StrategyConfig({})
         result = self.ga.run_backtest_simulation_v34(
@@ -1722,6 +1722,14 @@ def test_run_backtest_simulation_minimal():
             "High": [1, 2, 3, 4, 5],
             "Low": [1, 2, 3, 4, 5],
             "Close": [1, 2, 3, 4, 5],
+            "Entry_Long": [1, 0, 0, 0, 0],
+            "ATR_14_Shifted": [1.0] * 5,
+            "Signal_Score": [2.0] * 5,
+            "Trade_Reason": ["T"] * 5,
+            "session": ["Asia"] * 5,
+            "Gain_Z": [0.3] * 5,
+            "MACD_hist_smooth": [0.1] * 5,
+            "RSI": [50] * 5,
         },
         index=pd.date_range("2023-01-01", periods=5, freq="min"),
     )
