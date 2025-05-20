@@ -237,3 +237,9 @@
 - set_thai_font เพิ่ม log `[Patch][Font]` เมื่อไม่พบ matplotlib หรือเกิดข้อผิดพลาด
 - Version bumped to 4.9.82_FULL_PASS
 
+## [v4.9.83+] - 2025-06-XX
+- เพิ่ม test `test_forced_entry_audit_in_trade_log` สำหรับ forced entry audit
+- safe_load_csv_auto ปรับ log `[Patch][QA]` ใน warning/debug
+- _create_mock_module ป้องกัน RecursionError ใน numpy.random
+- Version bumped to 4.9.83_FULL_PASS
+
