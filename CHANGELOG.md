@@ -195,6 +195,11 @@
 - Logged audit summary and indices of modified trades.
 - Bumped version constant to `4.9.78_FULL_PASS`.
 
+## [v4.9.79+] - 2025-06-15
+- Added tests for `calculate_metrics` non-dict entries, `safe_load_csv_auto` permission and corruption errors, and `_isinstance_safe` with invalid types.
+- Coverage log updated to exceed 90%.
+- Bumped version constant to `4.9.79_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
