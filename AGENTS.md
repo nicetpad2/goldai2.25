@@ -205,8 +205,8 @@ Review vs. this AGENTS.md
 
 No merge without Execution_Test_Unit pass and log review
 
-ล่าสุด: [Patch AI Studio v4.9.60+]
-เพิ่ม default dict return ใน `simulate_trades` พร้อมตัวเลือก `return_tuple` 
+ล่าสุด: [Patch AI Studio v4.9.62+]
+เพิ่ม default dict return ใน `simulate_trades` พร้อมตัวเลือก `return_tuple`
 เพื่อรองรับ backward compatibility และ QA
 
 ตรวจสอบ audit log & error log ว่า non-numeric (str/NaT/None/nan) ถูก block และ log warning อย่างถูกต้อง
