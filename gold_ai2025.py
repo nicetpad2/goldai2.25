@@ -36,7 +36,10 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.79_FULL_PASS"  # [Patch AI Studio v4.9.79+] Forced entry exit_reason audit
+
+
+MINIMAL_SCRIPT_VERSION = "4.9.79_FULL_PASS"  # [Patch AI Studio v4.9.79+] ATR fallback refinement + Patch AI Studio v4.9.79+] Forced entry exit_reason audit
+
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -2446,11 +2449,16 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
             from gold_ai2025 import atr as atr_func
         except Exception as e:
             eng_m1_logger.error(
-                f"[Patch AI Studio v4.9.77+] ATR import failed: {e}"
+                f"[Patch AI Studio v4.9.79+] ATR import failed: {e}"
+            )
+            atr_func = None
+        if not callable(atr_func):
+            eng_m1_logger.error(
+                "[Patch AI Studio v4.9.79+] ATR import failed"
             )
             def atr_func(dframe, _period):
                 eng_m1_logger.error(
-                    "[Patch AI Studio v4.9.77+] Using noop ATR fallback"
+                    "[Patch AI Studio v4.9.79+] Using noop ATR fallback"
                 )
                 return dframe
         df = atr_func(df, 14)
