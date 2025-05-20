@@ -2102,7 +2102,7 @@ def test_risk_trade_manager_forced_entry_spike(monkeypatch):
         log.shape if hasattr(log, "shape") else "N/A",
     )
     assert isinstance(log, pd.DataFrame)
-    assert (log["exit_reason"] == "FORCED_ENTRY").any() or log.shape[0] > 0
+    assert (log["exit_reason"] == "FORCED_ENTRY").any()
     # [Patch AI Studio v4.9.60+] Validate spike guard logic used in forced entry
     row = {"spike_score": 0.6, "Pattern_Label": "Breakout"}
     blocked = spike_guard_blocked(row, "London", config)

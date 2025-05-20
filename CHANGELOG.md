@@ -137,6 +137,11 @@
 - Added manual fallbacks for RSI, MACD, and ADX when TA functions are missing.
 - Bumped version constant to `4.9.67_FULL_PASS`.
 
+## [v4.9.68+] - 2025-06-04
+- Logged forced entry events via `simulate_trades` with `exit_reason='FORCED_ENTRY'`.
+- Updated integration test to assert forced entry logging.
+- Bumped version constant to `4.9.68_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.

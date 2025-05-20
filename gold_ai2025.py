@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.67_FULL_PASS"  # [Patch AI Studio v4.9.67+] manual TA fallback
+MINIMAL_SCRIPT_VERSION = "4.9.68_FULL_PASS"  # [Patch AI Studio v4.9.68+] forced entry logging
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -7208,6 +7208,33 @@ def simulate_trades(
 
         open_signal = row.get("Entry_Long", 0) or row.get("Entry_Short", 0)
         side = "BUY" if row.get("Entry_Long", 0) else ("SELL" if row.get("Entry_Short", 0) else None)
+
+        trade_manager_obj = kwargs.get("trade_manager_obj")
+        if (
+            getattr(config, "force_entry_on_signal", False)
+            and trade_manager_obj is not None
+            and trade_manager_obj.should_force_entry(
+                current_time=current_time,
+                signal_score=row.get("Signal_Score"),
+                current_atr=row.get("ATR_14"),
+                avg_atr=row.get("ATR_14_Rolling_Avg"),
+                gain_z=row.get("Gain_Z"),
+                pattern_label=str(row.get("Pattern_Label")),
+            )
+        ):
+            trade_log.append(
+                {
+                    "entry_idx": bar_i,
+                    "entry_time": current_time,
+                    "exit_time": current_time,
+                    "entry_price": pd.to_numeric(row.get("Open"), errors="coerce"),
+                    "exit_price": pd.to_numeric(row.get("Open"), errors="coerce"),
+                    "pnl_usd_net": 0.0,
+                    "exit_reason": "FORCED_ENTRY",
+                }
+            )
+            trade_manager_obj.update_last_trade_time(current_time)
+            continue
 
         if open_signal and (not active_orders or getattr(config, "use_reentry", False)):
             open_price = pd.to_numeric(row.get("Open"), errors="coerce")
