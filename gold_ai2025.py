@@ -7222,19 +7222,22 @@ def simulate_trades(
                 pattern_label=str(row.get("Pattern_Label")),
             )
         ):
-            trade_log.append(
-                {
-                    "entry_idx": bar_i,
-                    "entry_time": current_time,
-                    "exit_time": current_time,
-                    "entry_price": pd.to_numeric(row.get("Open"), errors="coerce"),
-                    "exit_price": pd.to_numeric(row.get("Open"), errors="coerce"),
-                    "pnl_usd_net": 0.0,
-                    "exit_reason": "FORCED_ENTRY",
-                }
-            )
-            trade_manager_obj.update_last_trade_time(current_time)
-            continue
+                trade_log.append(
+                    {
+                        "entry_idx": bar_i,
+                        "entry_time": current_time,
+                        "exit_time": current_time,
+                        "entry_price": pd.to_numeric(row.get("Open"), errors="coerce"),
+                        "exit_price": pd.to_numeric(row.get("Open"), errors="coerce"),
+                        "pnl_usd_net": 0.0,
+                        "exit_reason": "FORCED_ENTRY",
+                    }
+                )
+                logger.info(
+                    "[Patch AI Studio v4.9.68+] [FORCED ENTRY] Trade logged with exit_reason=FORCED_ENTRY."
+                )
+                trade_manager_obj.update_last_trade_time(current_time)
+                continue
 
         if open_signal and (not active_orders or getattr(config, "use_reentry", False)):
             open_price = pd.to_numeric(row.get("Open"), errors="coerce")

@@ -1,7 +1,7 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.66+
+**Version:** v4.9.68+
 **Project:** Gold AI (Enterprise Refactor)
 **Maintainer:** AI Studio QA/Dev Team
 **Last updated:** 2025-05-29
@@ -70,7 +70,7 @@
 
 ## 🧩 Agent Test Runner – QA Key Features
 
-**Version:** 4.9.66+
+**Version:** 4.9.68+
 **Purpose:** Validates Gold AI: robust import handling, dynamic mocking, complete unit test execution.
 
 **Capabilities:**
@@ -205,9 +205,9 @@ Review vs. this AGENTS.md
 
 No merge without Execution_Test_Unit pass and log review
 
-ล่าสุด: [Patch AI Studio v4.9.66+]
-เพิ่ม default dict return ใน `simulate_trades` พร้อมตัวเลือก `return_tuple`
-เพื่อรองรับ backward compatibility และ QA
+ล่าสุด: [Patch AI Studio v4.9.68+]
+บันทึก forced entry ใน `simulate_trades` ผ่าน `exit_reason='FORCED_ENTRY'`
+และเพิ่มการตรวจสอบใน test suite ว่ามี forced entry ถูก log
 
 ตรวจสอบ audit log & error log ว่า non-numeric (str/NaT/None/nan) ถูก block และ log warning อย่างถูกต้อง
 

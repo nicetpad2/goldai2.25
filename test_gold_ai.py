@@ -1,6 +1,6 @@
 """Gold AI Test Suite
 
-[Patch AI Studio v4.9.66] - Validate global pandas availability and import flag handling.
+[Patch AI Studio v4.9.68] - Validate global pandas availability and import flag handling.
 """
 
 import importlib
@@ -2102,7 +2102,11 @@ def test_risk_trade_manager_forced_entry_spike(monkeypatch):
         log.shape if hasattr(log, "shape") else "N/A",
     )
     assert isinstance(log, pd.DataFrame)
-    assert (log["exit_reason"] == "FORCED_ENTRY").any()
+    assert any(
+        trade.get("exit_reason") == "FORCED_ENTRY" for trade in log.to_dict("records")
+    ), (
+        "Trade log must contain exit_reason='FORCED_ENTRY' if forced entry was triggered"
+    )
     # [Patch AI Studio v4.9.60+] Validate spike guard logic used in forced entry
     row = {"spike_score": 0.6, "Pattern_Label": "Breakout"}
     blocked = spike_guard_blocked(row, "London", config)
