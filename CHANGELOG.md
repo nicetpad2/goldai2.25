@@ -195,6 +195,11 @@
 - Logged audit summary and indices of modified trades.
 - Bumped version constant to `4.9.78_FULL_PASS`.
 
+## [v4.9.79+] - 2025-06-15
+- Added callable check for ATR import in `engineer_m1_features` with fallback logging.
+- Updated TestATRFallback to assert error log presence.
+- Bumped version constant to `4.9.79_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
