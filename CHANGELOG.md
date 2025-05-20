@@ -152,6 +152,12 @@
 - Fixed `simulate_trades` local variable check that caused `UnboundLocalError` for `atr` when assigning NaN fallback.
 - Bumped version constant to `4.9.70_FULL_PASS`.
 
+## [v4.9.71+] - 2025-06-07
+- RSI manual fallback returns a full Series of 50 for short or NaN input.
+- `engineer_m1_features` guards `atr` call to restore if UnboundLocalError occurs.
+- Unit tests restore TA indicators after `delattr` and validate fallback values.
+- Bumped version constant to `4.9.71_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
