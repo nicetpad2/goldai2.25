@@ -128,6 +128,11 @@
 - Fixed import flag logic in `import_core_libraries` to correctly reflect successful library imports.
 - Bumped version constant to `4.9.65_FULL_PASS`.
 
+## [v4.9.66+] - 2025-06-02
+- `calculate_metrics` now converts string entries to dictionaries when possible and
+  skips non-dict items.
+- Bumped version constant to `4.9.66_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
