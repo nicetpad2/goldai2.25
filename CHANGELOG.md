@@ -115,6 +115,11 @@
 - `run_all_folds_with_threshold` handles list-based histories for backward compatibility.
 - Bumped version constant to `4.9.62_FULL_PASS`.
 
+## [v4.9.63+] - 2025-05-30
+- Fixed legacy tuple output of `simulate_trades` to return list-based trade log for
+  backward compatibility with unit tests.
+- Updated `MINIMAL_SCRIPT_VERSION` to `4.9.63_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
