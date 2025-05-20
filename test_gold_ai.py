@@ -948,7 +948,7 @@ class TestEdgeCases(unittest.TestCase):
         try:
             with self.assertLogs(f"{self.ga.__name__}.rsi", level="WARNING"):
                 result = self.ga.rsi(series, 3)
-            # [Patch AI Studio v4.9.71+] Robust: series notna should be True, all value should be 50
+            # [Patch AI Studio v4.9.72+] Robust: series notna should be True, all value should be 50
             self.assertTrue(result.notna().any())
             self.assertTrue((result == 50).all())
         finally:
@@ -974,7 +974,7 @@ class TestEdgeCases(unittest.TestCase):
         try:
             with self.assertLogs(f"{self.ga.__name__}.macd", level="WARNING"):
                 macd_line, macd_signal, macd_diff = self.ga.macd(series, 5, 3, 2)
-            # [Patch AI Studio v4.9.71+] Ensure manual fallback returns valid series
+            # [Patch AI Studio v4.9.72+] Ensure manual fallback returns valid series
             self.assertTrue(macd_line.notna().any())
             self.assertTrue(macd_signal.notna().any())
             self.assertTrue(macd_diff.notna().any())

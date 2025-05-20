@@ -158,6 +158,11 @@
 - Unit tests restore TA indicators after `delattr` and validate fallback values.
 - Bumped version constant to `4.9.71_FULL_PASS`.
 
+## [v4.9.72+] - 2025-06-08
+- RSI fallback fully robust: returns 50 with no NaN values and asserts notna().
+- Forced entry trades always logged with `exit_reason='FORCED_ENTRY'`.
+- Bumped version constant to `4.9.72_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.

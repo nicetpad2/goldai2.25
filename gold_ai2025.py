@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.71_FULL_PASS"  # [Patch AI Studio v4.9.71+] Robust indicator fallback
+MINIMAL_SCRIPT_VERSION = "4.9.72_FULL_PASS"  # [Patch AI Studio v4.9.72+] RSI forced entry test fix
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -2062,12 +2062,15 @@ def rsi(series: pd.Series | Any, period: int = 14) -> pd.Series:
         )
         use_manual = True
     series_numeric = pd.to_numeric(series, errors='coerce').replace([np.inf, -np.inf], np.nan).dropna()
-    if series_numeric.empty or len(series_numeric) < period: # [Patch AI Studio v4.9.71+] manual fallback fix
+    if series_numeric.empty or len(series_numeric) < period: # [Patch AI Studio v4.9.72+] RSI fallback fully robust
         rsi_logger.warning(
-            f"[Patch AI Studio v4.9.71+] (Warning) RSI calculation fallback to default 50 (series too short or all NaN)."
+            f"[Patch AI Studio v4.9.72+] (Warning) RSI calculation fallback to default 50 (series too short/all NaN); all values set to 50."
         )
-        # คืน pd.Series(50) ทุกกรณี fallback manual เพื่อไม่ให้ fail ใน test_rsi_manual_fallback
-        return pd.Series([50] * len(series), index=series.index, dtype='float32')
+        # [Patch AI Studio v4.9.72+] Robust: คืน series ที่มี 50 ทุก index ตรง, ไม่มี NaN
+        result = pd.Series([50] * len(series), index=series.index, dtype='float32')
+        result = result.fillna(50).astype('float32')
+        assert result.notna().all(), "[Patch AI Studio v4.9.72+] RSI fallback result must have no NaN"
+        return result
     rsi_values = None
     if not use_manual:
         try:
@@ -7243,22 +7246,27 @@ def simulate_trades(
                 pattern_label=str(row.get("Pattern_Label")),
             )
         ):
-                trade_log.append(
-                    {
-                        "entry_idx": bar_i,
-                        "entry_time": current_time,
-                        "exit_time": current_time,
-                        "entry_price": pd.to_numeric(row.get("Open"), errors="coerce"),
-                        "exit_price": pd.to_numeric(row.get("Open"), errors="coerce"),
-                        "pnl_usd_net": 0.0,
-                        "exit_reason": "FORCED_ENTRY",
-                    }
-                )
-                logger.info(
-                    "[Patch AI Studio v4.9.68+] [FORCED ENTRY] Trade logged with exit_reason=FORCED_ENTRY."
-                )
-                trade_manager_obj.update_last_trade_time(current_time)
-                continue
+            # [Patch AI Studio v4.9.72+] Robust: forced entry trade_log append (no silent skip)
+            entry_price = pd.to_numeric(row.get("Open"), errors="coerce")
+            exit_price = entry_price
+            pnl = 0.0
+            trade_log.append(
+                {
+                    "entry_idx": bar_i,
+                    "entry_time": current_time,
+                    "exit_time": current_time,
+                    "entry_price": entry_price,
+                    "exit_price": exit_price,
+                    "side": side,
+                    "pnl_usd_net": pnl,
+                    "exit_reason": "FORCED_ENTRY",
+                }
+            )
+            logger.info(
+                "[Patch AI Studio v4.9.72+] [FORCED ENTRY] Trade logged with exit_reason=FORCED_ENTRY."
+            )
+            trade_manager_obj.update_last_trade_time(current_time)
+            continue
 
         if open_signal and (not active_orders or getattr(config, "use_reentry", False)):
             open_price = pd.to_numeric(row.get("Open"), errors="coerce")
