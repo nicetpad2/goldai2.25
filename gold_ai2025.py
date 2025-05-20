@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.76_FULL_PASS"  # [Patch AI Studio v4.9.76+] Forced entry SELL audit
+MINIMAL_SCRIPT_VERSION = "4.9.77_FULL_PASS"  # [Patch AI Studio v4.9.77+] ATR import fallback and forced entry fix
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -2443,11 +2443,17 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
             df["MACD_hist_smooth"] = np.nan
             eng_m1_logger.warning("      (Warning) ไม่สามารถคำนวณ MACD_hist_smooth.")
         try:
-            df = atr(df, 14) # ATR_14 and ATR_14_Shifted are added here
-        except UnboundLocalError as e:
-            eng_m1_logger.error(f"[Patch AI Studio v4.9.71+] [ERROR] ATR function missing or not associated with a value: {e}")
             from gold_ai2025 import atr as atr_func
-            df = atr_func(df, 14)
+        except Exception as e:
+            eng_m1_logger.error(
+                f"[Patch AI Studio v4.9.77+] ATR import failed: {e}"
+            )
+            def atr_func(dframe, _period):
+                eng_m1_logger.error(
+                    "[Patch AI Studio v4.9.77+] Using noop ATR fallback"
+                )
+                return dframe
+        df = atr_func(df, 14)
         if "ATR_14" in df.columns and df["ATR_14"].notna().any():
             df["ATR_14_Rolling_Avg"] = sma(df["ATR_14"], atr_rolling_avg_period)
         else: # pragma: no cover
@@ -5173,7 +5179,12 @@ def _run_backtest_simulation_v34_full(
     sim_logger.info(f"Created trade log DataFrame for {label} with {len(trade_log_df_final_output_full_val)} entries.")
     equity_col_final_df_sim_val = f"Equity_Realistic{label_suffix_df}"
     if equity_col_final_df_sim_val in df_sim.columns:
-        df_sim[equity_col_final_df_sim_val] = df_sim[equity_col_final_df_sim_val].ffill().fillna(initial_capital_segment)
+        df_sim[equity_col_final_df_sim_val] = (
+            df_sim[equity_col_final_df_sim_val]
+            .ffill()
+            .fillna(initial_capital_segment)
+            .infer_objects(copy=False)
+        )
         if not df_sim.empty:
             last_idx_sim_final_df_val = df_sim.index[-1]
             df_sim.loc[last_idx_sim_final_df_val, equity_col_final_df_sim_val] = equity_tracker['current_equity']
@@ -7261,7 +7272,7 @@ def simulate_trades(
         open_signal = row.get("Entry_Long", 0) or row.get("Entry_Short", 0)
         side = "BUY" if row.get("Entry_Long", 0) else ("SELL" if row.get("Entry_Short", 0) else None)
         is_forced_entry = False
-        if hasattr(row, "Trade_Reason") and str(row.get("Trade_Reason", "")).upper().startswith("FORCED"):
+        if "Trade_Reason" in row and str(row.get("Trade_Reason", "")).upper().startswith("FORCED"):
             is_forced_entry = True
 
         trade_manager_obj = kwargs.get("trade_manager_obj")
