@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.59_FULL_PASS"  # [Patch AI Studio v4.9.59+] Export guard & logging improvements
+MINIMAL_SCRIPT_VERSION = "4.9.60_FULL_PASS"  # [Patch AI Studio v4.9.60+] Test enhancements and export handling
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
