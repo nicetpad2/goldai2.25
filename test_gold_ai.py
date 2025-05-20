@@ -1537,6 +1537,18 @@ class TestWarningEdgeCases(unittest.TestCase):
             result = self.ga.safe_load_csv_auto("bad_file.csv.gz")
             self.assertIsNone(result)
 
+    def test_safe_load_csv_auto_permission_error_read(self):
+        with patch("os.path.exists", return_value=True), \
+             patch.object(self.ga.pd, "read_csv", side_effect=PermissionError("denied")):
+            result = self.ga.safe_load_csv_auto("denied.csv")
+            self.assertIsNone(result)
+
+    def test_safe_load_csv_auto_generic_failure(self):
+        with patch("os.path.exists", return_value=True), \
+             patch.object(self.ga.pd, "read_csv", side_effect=OSError("broken")):
+            result = self.ga.safe_load_csv_auto("broken.csv")
+            self.assertIsNone(result)
+
     def test_safe_load_csv_auto_utf8_bom_file(self):
         csv_data = '\ufeffDate,Open,High,Low,Close\n20240101,1000,1005,995,1001\n'
         with patch("os.path.exists", return_value=True), \
@@ -1894,6 +1906,14 @@ def test_calculate_metrics_with_string_entries():
     assert result["net_profit"] == 10
 
 
+def test_calculate_metrics_with_invalid_items():
+    ga = safe_import_gold_ai()
+    trade_log = [123, {"exit_reason": "TP", "pnl_usd_net": 5}, object()]
+    result = ga.calculate_metrics(trade_log, fold_tag="invalid")
+    assert result["num_trades"] == 1
+    assert result["net_profit"] == 5
+
+
 def test_safe_load_csv_auto_nonexistent(caplog):
     ga = safe_import_gold_ai()
     path = "file_that_does_not_exist.csv"
@@ -1943,6 +1963,20 @@ class TestRobustFormatAndTypeGuard(unittest.TestCase):
 
         dt = DummyType()
         self.assertFalse(check(a, dt))
+
+    def test_isinstance_safe_additional_types(self):
+        ga = safe_import_gold_ai()
+        check = ga._isinstance_safe
+
+        self.assertFalse(check(5, [int, str]))
+        self.assertFalse(check(5, 3.14))
+
+        class DFLike:
+            columns = []
+            index = []
+            dtypes = []
+
+        self.assertFalse(check(DFLike(), "DataFrame"))
 
     def test_trade_manager_update_last_trade_time(self):
         ga = safe_import_gold_ai()

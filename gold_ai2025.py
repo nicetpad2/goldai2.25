@@ -38,7 +38,9 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 # --- Script Version and Basic Setup ---
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.79_FULL_PASS"  # [Patch AI Studio v4.9.79+] ATR fallback refinement + Patch AI Studio v4.9.79+] Forced entry exit_reason audit
+
+MINIMAL_SCRIPT_VERSION = "4.9.79_FULL_PASS"  #  # [Patch AI Studio v4.9.79+] Coverage patch+[Patch AI Studio v4.9.79+] ATR fallback refinement + Patch AI Studio v4.9.79+] Forced entry exit_reason audit
+
 
 
 # --- Global Variables for Library Availability ---
