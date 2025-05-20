@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.60_FULL_PASS"  # [Patch AI Studio v4.9.60+] Test enhancements and export handling
+MINIMAL_SCRIPT_VERSION = "4.9.61_FULL_PASS"  # [Patch AI Studio v4.9.61+] Spike guard & equity tracker fixes
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -4310,13 +4310,16 @@ def is_entry_allowed(
         entry_allow_logger.debug(f"Entry blocked: Soft Kill Active by RiskManager.")
         return False, "SOFT_KILL_ACTIVE", "Normal", np.nan, None, np.nan
 
-    if config.enable_spike_guard and spike_guard_blocked(row_data, session_tag, config):
-        entry_allow_logger.info(f"Entry blocked by Spike Guard (London) at {row_data.name}")
-        return False, "SPIKE_GUARD_LONDON", "Normal", np.nan, None, np.nan
-
     signal_score_allow = row_data.get('Signal_Score', 0.0)
     entry_long_signal = row_data.get('Entry_Long', 0)
     entry_short_signal = row_data.get('Entry_Short', 0)
+
+    if config.enable_spike_guard and (entry_long_signal == 1 or entry_short_signal == 1):
+        row_dict_for_spike = row_data.to_dict() if hasattr(row_data, "to_dict") else row_data
+        if spike_guard_blocked(row_dict_for_spike, session_tag, config):
+            entry_allow_logger.info(
+                f"Entry blocked by Spike Guard (London) at {row_data.name}")
+            return False, "SPIKE_GUARD_LONDON", "Normal", np.nan, None, np.nan
 
     if side == "BUY" and entry_long_signal == 0:
         return False, "NO_VALID_SIGNAL", "Normal", np.nan, None, np.nan
@@ -4571,13 +4574,14 @@ def close_trade(
     # Update equity
     equity_tracker_dict_ct['current_equity'] += net_pnl_usd_ct_val
     equity_tracker_dict_ct['peak_equity'] = max(equity_tracker_dict_ct['peak_equity'], equity_tracker_dict_ct['current_equity'])
-    if 'history' in equity_tracker_dict_ct and _isinstance_safe(equity_tracker_dict_ct['history'], dict):
-        eq_val_hist = _safe_numeric(
-            equity_tracker_dict_ct['current_equity'],
-            default=np.nan,
-            log_ctx="close_trade.history"
-        )
-        equity_tracker_dict_ct['history'][exit_time] = eq_val_hist
+    eq_val_hist = _safe_numeric(
+        equity_tracker_dict_ct['current_equity'],
+        default=np.nan,
+        log_ctx="close_trade.history"
+    )
+    if not isinstance(equity_tracker_dict_ct.get('history'), list):
+        equity_tracker_dict_ct['history'] = []
+    equity_tracker_dict_ct['history'].append(eq_val_hist)
 
     # Update run summary
     if run_summary_dict_ct and _isinstance_safe(run_summary_dict_ct, dict): # pragma: no cover
@@ -4677,8 +4681,9 @@ def _run_backtest_simulation_v34_full(
     equity_tracker: Dict[str, Any] = {
         'current_equity': init_capital_safe,
         'peak_equity': risk_manager_obj.dd_peak if risk_manager_obj.dd_peak is not None and risk_manager_obj.dd_peak >= init_capital_safe else init_capital_safe,
-        'history': {df_m1_segment_pd.index[0] if not df_m1_segment_pd.empty else pd.Timestamp.now(tz='UTC'): init_capital_safe}
+        'history': [init_capital_safe]
     }
+    sim_logger.info("[Patch AI Studio v4.9.61+] Equity tracker history initialized as list")
     if risk_manager_obj.dd_peak is None or risk_manager_obj.dd_peak < initial_capital_segment: # Ensure peak is at least initial capital
         risk_manager_obj.dd_peak = initial_capital_segment
 
@@ -5001,7 +5006,9 @@ def _run_backtest_simulation_v34_full(
                 default=np.nan,
                 log_ctx="sim_loop.history"
             )
-            equity_tracker['history'][now_bar] = eq_val_hist_loop
+            if not isinstance(equity_tracker.get('history'), list):
+                equity_tracker['history'] = []
+            equity_tracker['history'].append(eq_val_hist_loop)
 
             prev_risk_mode_loop = current_risk_mode
             if consecutive_losses_runtime >= config_obj.recovery_mode_consecutive_losses:
@@ -5078,6 +5085,12 @@ def _run_backtest_simulation_v34_full(
     # [Patch AI Studio v4.9.41+] Guarded float format for final equity log
     sim_logger.info(
         f"  (Finished) {label} ({side}) simulation complete. Final Equity: ${_float_fmt(equity_tracker['current_equity'], 2)}"
+    )
+    sim_logger.info(
+        "[Patch AI Studio v4.9.61+] Fold summary: final equity=%.2f, len(history)=%d, trade_log=%d",
+        equity_tracker['current_equity'],
+        len(equity_tracker.get('history', [])),
+        len(trade_log_df_final_output_full_val),
     )
     gc.collect()
 
@@ -5451,6 +5464,8 @@ def _calculate_metrics_full(
     equity_series: Optional[pd.Series] = None
     if _isinstance_safe(equity_history_segment, pd.Series):
         equity_series = equity_history_segment.copy()
+    elif isinstance(equity_history_segment, list) and equity_history_segment:
+        equity_series = pd.Series(equity_history_segment)
     elif _isinstance_safe(equity_history_segment, dict) and equity_history_segment:
         try:
             equity_series = pd.Series({

@@ -102,6 +102,13 @@
 - Added debug logging for forced entry spike validation.
 - Updated version constant to `4.9.60_FULL_PASS`.
 
+## [v4.9.61+] - 2025-05-29
+- Guarded spike guard check to only evaluate on entry bars.
+- Initialized `equity_tracker['history']` as list with type checks.
+- Adjusted internal history updates and metrics conversion for list support.
+- Updated tests to use datasets with valid entry signals.
+- Version bumped to `4.9.61_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
