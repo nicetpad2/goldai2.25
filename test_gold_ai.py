@@ -227,24 +227,23 @@ def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
         "scipy.stats": _create_mock_module("scipy.stats"),
     }
 
-    # [Patch][QA v4.9.99] Prefer real numpy but guard against RecursionError by partial mocking
+    # [Patch][QA v4.9.100] Fix RecursionError in test context when mock numpy/random
+    # Use type checking instead of hasattr for MagicMock
+    if isinstance(mock_modules.get("numpy", None), MagicMock):
+        class DummyRandom:
+            def seed(self, *a, **k):
+                pass
+            def randint(self, *a, **k):
+                return 0
+            def randn(self, *a, **k):
+                return 0.0
+        mock_modules["numpy"].random = DummyRandom()
+    # Do NOT import numpy.random directly if already mocked
     try:
         import numpy as real_np
-        mock_modules["numpy"] = real_np
-        class DummyRandom:
-            def seed(self, *a, **kw):
-                pass
-            def randint(self, *a, **kw):
-                return 1
-            def randn(self, *a, **kw):
-                return 0.0
-        mock_np = types.ModuleType("numpy.random")
-        mock_np.seed = DummyRandom().seed
-        mock_np.randint = DummyRandom().randint
-        mock_np.randn = DummyRandom().randn
-        mock_modules["numpy.random"] = getattr(real_np, "random", mock_np)
+        mock_modules["numpy"] = mock_modules.get("numpy", real_np)
     except Exception as e:
-        print(f"[Patch][QA v4.9.99] Mock numpy RecursionError guard: {e}")
+        print(f"[Patch][QA v4.9.100] Mock numpy RecursionError guard: {e}")
         try:
             import numpy as np
             mock_modules["numpy"] = np

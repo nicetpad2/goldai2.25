@@ -302,3 +302,10 @@
 - [Patch][QA v4.9.99] forced entry audit logs indices of modified trades
 - [Patch][QA v4.9.99] safe_import_gold_ai guards numpy.random RecursionError with partial mock
 - Version bump to `4.9.99_FULL_PASS`
+
+## [v4.9.100+] - 2025-06-xx
+- [Patch][QA v4.9.100] plot_equity_curve skips on backend errors and MagicMock
+- [Patch][QA v4.9.100] safe_load_csv_auto always returns DataFrame and handles directory creation
+- [Patch][QA v4.9.100] forced entry audit post-processes all logs consistently
+- [Patch][QA v4.9.100] safe_import_gold_ai avoids RecursionError with MagicMock
+- Version bump to `4.9.100_FULL_PASS`
