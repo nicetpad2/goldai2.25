@@ -195,6 +195,14 @@
 - Logged audit summary and indices of modified trades.
 - Bumped version constant to `4.9.78_FULL_PASS`.
 
+## [v4.9.79+] - 2025-06-15
+- Enhanced forced entry detection to scan `Trade_Reason` and `Reason` fields for
+  the substring `FORCED` and set `_forced_entry_flag` accordingly.
+- All forced trades now guarantee `exit_reason='FORCED_ENTRY'` through unified
+  audit logic.
+- Added unit tests for forced BUY, forced SELL, and multi-order scenarios.
+- Bumped version constant to `4.9.79_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
