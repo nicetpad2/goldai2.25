@@ -272,3 +272,11 @@
 - Additional logging `[Patch][QA v4.9.87]` for path usage.
 - Version bumped to 4.9.87_FULL_PASS
 
+## [v4.9.90+] - 2025-06-XX
+- Robust font detection with fallback logging in `set_thai_font`.
+- `engineer_m1_features` fills missing `ATR_14` with NaN series and logs fallback.
+- `plot_equity_curve` forces `'Agg'` backend in headless environments.
+- `simulate_trades` ensures all forced entries have `exit_reason='FORCED_ENTRY'`.
+- Unit tests expanded for font fallback, ATR NaN fallback, risk manager edges, and headless plotting.
+- Version bumped to 4.9.90_FULL_PASS
+

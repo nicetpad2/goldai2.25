@@ -39,7 +39,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.87_FULL_PASS"  # [Patch][QA v4.9.87] updated default paths
+MINIMAL_SCRIPT_VERSION = "4.9.90_FULL_PASS"  # [Patch][QA v4.9.90] updated default paths
 
 
 
@@ -1320,51 +1320,41 @@ def set_thai_font(font_name: str = "Loma") -> bool:
         logging.warning("[Patch][Font][QA v4.9.86] Could not set font: %r", e)
         return False
 
-    target_font_path = None
-    actual_font_name = None
-    preferred_fonts = [font_name] + ["TH Sarabun New", "THSarabunNew", "Garuda", "Norasi", "Kinnari", "Waree", "Laksaman", "Loma"]
-    preferred_fonts = list(dict.fromkeys(preferred_fonts)) # Remove duplicates, keep order
+    # [Patch][QA v4.9.90] Font robust detection, fallback, and log all candidates
     font_logger = logging.getLogger(f"{__name__}.set_thai_font")
-    font_logger.info(f"   [Font Check][QA] Searching for preferred fonts: {preferred_fonts}")
-
+    preferred_fonts = [font_name] + ["TH Sarabun New", "THSarabunNew", "Garuda", "Norasi", "Kinnari", "Waree", "Laksaman", "Loma"]
+    preferred_fonts = list(dict.fromkeys(preferred_fonts))  # Remove duplicates
+    found_fonts = []
     for pref_font in preferred_fonts:
         try:
-            found_path = fm.findfont(pref_font, fallback_to_default=False)  # type: ignore
-            if not found_path or not os.path.exists(found_path):
-                font_logger.warning(f"[Patch][Font][QA v4.9.86] Font path not found for '{pref_font}': {found_path}")
-                return False
-            target_font_path = found_path
-            prop = fm.FontProperties(fname=target_font_path)  # type: ignore
-            actual_font_name = prop.get_name()
-            font_logger.info(f"      -> Found font: '{actual_font_name}' (requested: '{pref_font}') at path: {target_font_path}")
-            break
-        except ValueError:
-            font_logger.debug(f"[Patch][QA] Font '{pref_font}' not found by findfont.")
+            found_path = fm.findfont(pref_font, fallback_to_default=False)
+            if found_path and os.path.exists(found_path):
+                prop = fm.FontProperties(fname=found_path)
+                actual_font_name = prop.get_name()
+                found_fonts.append((actual_font_name, found_path))
+                font_logger.info(f"[Patch][QA v4.9.90] Found font: '{actual_font_name}' (requested: '{pref_font}') at {found_path}")
         except Exception as e_find:
-            font_logger.warning(f"[Patch][QA] Error finding font '{pref_font}': {e_find}")
-
-    if target_font_path and actual_font_name:
+            font_logger.debug(f"[Patch][QA v4.9.90] Font '{pref_font}' not found: {e_find}")
+    if found_fonts:
+        # Use the first found font
+        actual_font_name, target_font_path = found_fonts[0]
         try:
-            plt.rcParams['font.family'] = actual_font_name  # type: ignore
+            plt.rcParams['font.family'] = actual_font_name
             plt.rcParams['axes.unicode_minus'] = False
-            font_logger.info(f"[Patch][QA] Attempting to set default font to '{actual_font_name}'.")
+            font_logger.info(f"[Patch][QA v4.9.90] Set default font to '{actual_font_name}'.")
             fig_test, ax_test = plt.subplots(figsize=(0.5, 0.5))
             ax_test.set_title(f"ทดสอบ ({actual_font_name})", fontname=actual_font_name)
             plt.close(fig_test)
-            font_logger.info(f"[Patch][QA] Font '{actual_font_name}' set and tested successfully.")
+            font_logger.info(f"[Patch][QA v4.9.90] Font '{actual_font_name}' set and tested successfully.")
             return True
         except Exception as e_set:
-            font_logger.warning(f"[Patch][QA] Font '{actual_font_name}' set, but test failed: {e_set}")
-            try:
-                plt.rcParams['font.family'] = 'DejaVu Sans'  # type: ignore
-                font_logger.info("[Patch][QA] Reverted to 'DejaVu Sans' due to test failure.")
-            except Exception as e_revert:
-                font_logger.warning(f"[Patch][QA] Failed to revert font to DejaVu Sans: {e_revert}")
-            if "pytest" in sys.modules or "unittest" in sys.modules:
-                return True
+            font_logger.warning(f"[Patch][QA v4.9.90] Font '{actual_font_name}' set, but test failed: {e_set}")
+            plt.rcParams['font.family'] = 'DejaVu Sans'
+            font_logger.info("[Patch][QA v4.9.90] Fallback: set font.family to 'DejaVu Sans'")
             return False
     else:
-        font_logger.warning(f"[Patch][QA v4.9.86] Could not find any suitable Thai fonts ({preferred_fonts}) using findfont.")
+        font_logger.warning(f"[Patch][QA v4.9.90] No Thai fonts found in: {preferred_fonts}. Fallback to DejaVu Sans.")
+        plt.rcParams['font.family'] = 'DejaVu Sans'
         return False
 
 def setup_fonts(output_dir: str | None = None): # output_dir is not used currently
@@ -2472,8 +2462,12 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
     timeframe_minutes_m1 = config.timeframe_minutes_m1
 
     df = df_m1.copy()
-    if "ATR_14" not in df.columns or df["ATR_14"].isnull().all():
-        eng_m1_logger.error("[Patch][QA v4.9.85] (Error) ATR_14 missing or all NaN in engineer_m1_features.")
+    # [Patch][QA v4.9.90] Fallback for missing ATR_14
+    if 'ATR_14' not in df.columns or df['ATR_14'].isna().all():
+        logging.error("[Patch][QA v4.9.90] engineer_m1_features: ATR_14 missing or all NaN, fallback to pd.Series([np.nan]*len(df)).")
+        df['ATR_14'] = pd.Series([np.nan]*len(df), index=df.index)
+        # [Patch][QA v4.9.90] Log fallback applied
+        logging.info("[Patch][QA v4.9.90] engineer_m1_features: Fallback applied, ATR_14 is all NaN as expected for missing.")
     price_cols = ["Open", "High", "Low", "Close"]
     if any(col not in df.columns for col in price_cols): # pragma: no cover
         eng_m1_logger.warning("   (Warning) ขาดคอลัมน์ราคาใน M1 Data. Filling with NaN.")
@@ -5743,6 +5737,15 @@ def plot_equity_curve(
     plot_logger = logging.getLogger(f"{__name__}.plot_equity_curve.{filename_suffix_plot}")
     plot_logger.info(f"\n--- (Plotting) Plotting Equity Curve: {title} ---")
     initial_capital_plot = config.initial_capital
+    # [Patch][QA v4.9.90] Ensure plotting works in headless by forcing backend
+    import matplotlib
+    backend = matplotlib.get_backend()
+    if backend.lower() not in ("agg", "module://matplotlib_inline.backend_inline"):
+        try:
+            matplotlib.use("Agg")
+            logging.info("[Patch][QA v4.9.90] plot_equity_curve: Forced matplotlib backend to 'Agg' due to headless/non-GUI environment.")
+        except Exception as e:
+            logging.warning(f"[Patch][QA v4.9.90] Could not set matplotlib backend to 'Agg': {e}")
     equity_series_for_plot: Optional[pd.Series] = None
 
     # Convert input data to a sorted pandas Series with DatetimeIndex
@@ -7636,11 +7639,11 @@ def simulate_trades(
     forced_reason_indices = [i for i, t in enumerate(trade_log) if t.get("exit_reason", "").upper() == "FORCED_ENTRY"]
     logger.info(f"[Patch] Forced Entry Reason Audit: {len(forced_reason_indices)} with exit_reason='FORCED_ENTRY' at indices: {forced_reason_indices}")
 
+    # [Patch][QA v4.9.90] Forced Entry: set exit_reason='FORCED_ENTRY' for every forced_entry
     for trade in trade_log:
-        if trade.get('forced_entry', False):
-            if trade.get('exit_reason') != "FORCED_ENTRY":
-                trade['exit_reason'] = "FORCED_ENTRY"
-                logger.info("[Patch][QA] Forced entry audit: exit_reason set to FORCED_ENTRY (post-process).")
+        if trade.get("forced_entry", False):
+            trade["exit_reason"] = "FORCED_ENTRY"
+    logger.info("[Patch][QA v4.9.90] simulate_trades: All forced_entry trades patched with exit_reason='FORCED_ENTRY'.")
 
     trade_log = _audit_forced_entry_reason(trade_log)
     trade_log_df = pd.DataFrame(trade_log)
