@@ -174,6 +174,11 @@
 - Updated documentation and version constants.
 - Bumped version constant to `4.9.74_FULL_PASS`.
 
+## [v4.9.75+] - 2025-06-11
+- Enhanced forced entry audit logic using `Trade_Reason` prefix detection and exit override.
+- Added multi-order forced entry unit tests.
+- Bumped version constant to `4.9.75_FULL_PASS`.
+
 
 ## [v4.9.41+] - 2025-05-20
 - Added robust equity_tracker history update with numeric guards.
