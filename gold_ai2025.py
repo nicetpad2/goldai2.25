@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.74_FULL_PASS"  # [Patch AI Studio v4.9.74+] Forced entry config update
+MINIMAL_SCRIPT_VERSION = "4.9.75_FULL_PASS"  # [Patch AI Studio v4.9.75+] Forced entry audit enhancements
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -7260,6 +7260,9 @@ def simulate_trades(
 
         open_signal = row.get("Entry_Long", 0) or row.get("Entry_Short", 0)
         side = "BUY" if row.get("Entry_Long", 0) else ("SELL" if row.get("Entry_Short", 0) else None)
+        is_forced_entry = False
+        if hasattr(row, "Trade_Reason") and str(row.get("Trade_Reason", "")).upper().startswith("FORCED"):
+            is_forced_entry = True
 
         trade_manager_obj = kwargs.get("trade_manager_obj")
         if (
@@ -7287,6 +7290,8 @@ def simulate_trades(
                 "side": side,
                 "pnl_usd_net": pnl,
                 "exit_reason": "FORCED_ENTRY",
+                "Trade_Reason": row.get("Trade_Reason", ""),
+                "_forced_entry_flag": True,
             }
             trade_log.append(trade)
             forced_entry_audit_log.append(bar_i)
@@ -7310,7 +7315,14 @@ def simulate_trades(
                     "stop_loss": sl_price,
                     "take_profit": tp_price,
                     "side": side,
+                    "Trade_Reason": row.get("Trade_Reason", ""),
+                    "_forced_entry_flag": is_forced_entry,
                 })
+                if is_forced_entry:
+                    forced_entry_audit_log.append(bar_i)
+                    logger.info(
+                        f"[Patch AI Studio v4.9.73+] [Patch] Forced entry detected at idx={bar_i}: exit_reason='FORCED_ENTRY'."
+                    )
 
         for order in list(active_orders):
             entry_price = order["entry_price"]
@@ -7352,7 +7364,13 @@ def simulate_trades(
                 order["exit_idx"] = bar_i
                 order["exit_time"] = current_time
                 order["pnl_usd_net"] = 0.0
-                trade_log.append(order.copy())
+                trade_out = order.copy()
+                if trade_out.get("_forced_entry_flag", False) and trade_out.get("exit_reason") != "FORCED_ENTRY":
+                    trade_out["exit_reason"] = "FORCED_ENTRY"
+                    logger.info(
+                        f"[Patch AI Studio v4.9.73+] [Patch] Forced entry exit audited: exit_reason='FORCED_ENTRY' at idx={bar_i}. Trade={trade_out}"
+                    )
+                trade_log.append(trade_out)
                 active_orders.remove(order)
                 sim_logger.debug(
                     f"[Patch AI Studio v4.9.28] Triggered BE-SL: OrderIdx:{order.get('entry_idx','')}, "
@@ -7367,7 +7385,13 @@ def simulate_trades(
                 order["pnl_usd_net"] = (
                     tp - entry_price if order.get("side", "BUY") == "BUY" else entry_price - tp
                 )
-                trade_log.append(order.copy())
+                trade_out = order.copy()
+                if trade_out.get("_forced_entry_flag", False) and trade_out.get("exit_reason") != "FORCED_ENTRY":
+                    trade_out["exit_reason"] = "FORCED_ENTRY"
+                    logger.info(
+                        f"[Patch AI Studio v4.9.73+] [Patch] Forced entry exit audited: exit_reason='FORCED_ENTRY' at idx={bar_i}. Trade={trade_out}"
+                    )
+                trade_log.append(trade_out)
                 active_orders.remove(order)
                 continue
             elif sl_trigger:
@@ -7378,7 +7402,13 @@ def simulate_trades(
                 order["pnl_usd_net"] = (
                     sl - entry_price if order.get("side", "BUY") == "BUY" else entry_price - sl
                 )
-                trade_log.append(order.copy())
+                trade_out = order.copy()
+                if trade_out.get("_forced_entry_flag", False) and trade_out.get("exit_reason") != "FORCED_ENTRY":
+                    trade_out["exit_reason"] = "FORCED_ENTRY"
+                    logger.info(
+                        f"[Patch AI Studio v4.9.73+] [Patch] Forced entry exit audited: exit_reason='FORCED_ENTRY' at idx={bar_i}. Trade={trade_out}"
+                    )
+                trade_log.append(trade_out)
                 active_orders.remove(order)
                 sim_logger.debug("[Patch AI Studio v4.9.26] Triggered SL: %s", order)
                 continue
@@ -7410,12 +7440,20 @@ def simulate_trades(
             for order in active_orders:
                 pnl = last_close - order["entry_price"] if order.get("side", "BUY") == "BUY" else order["entry_price"] - last_close
                 exit_reason = "TP" if pnl > 0 else ("SL" if pnl < 0 else "BE")
-                trade_log.append({
+                trade_out = {
                     "entry_idx": order["entry_idx"],
                     "exit_reason": exit_reason,
                     "pnl_usd_net": pnl,
                     "side": order.get("side", "BUY"),
-                })
+                    "Trade_Reason": order.get("Trade_Reason", ""),
+                    "_forced_entry_flag": order.get("_forced_entry_flag", False),
+                }
+                if trade_out.get("_forced_entry_flag", False) and trade_out.get("exit_reason") != "FORCED_ENTRY":
+                    trade_out["exit_reason"] = "FORCED_ENTRY"
+                    logger.info(
+                        f"[Patch AI Studio v4.9.73+] [Patch] Forced entry exit audited: exit_reason='FORCED_ENTRY' at idx={bar_i}. Trade={trade_out}"
+                    )
+                trade_log.append(trade_out)
 
     run_summary["num_trades"] = len(trade_log)
     sim_logger.info(

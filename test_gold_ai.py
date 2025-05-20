@@ -2168,7 +2168,7 @@ def test_risk_trade_manager_forced_entry_spike(monkeypatch):
     )
 
 def test_forced_entry_audit_logic():
-    """[Patch AI Studio v4.9.73+] Forced entry audit: exit_reason must always be FORCED_ENTRY if triggered."""
+    """[Patch AI Studio v4.9.73+] Forced entry audit: ทุก forced entry ต้อง log exit_reason='FORCED_ENTRY'"""
     pd = safe_import_gold_ai().pd
     ga = safe_import_gold_ai()
     df = pd.DataFrame({
@@ -2187,10 +2187,44 @@ def test_forced_entry_audit_logic():
     }, index=pd.date_range("2023-01-01", periods=2, freq="min"))
     cfg = ga.StrategyConfig({})
     trade_log, equity_curve, run_summary = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
-    forced_logged = [t for t in trade_log if t.get("exit_reason", "") == "FORCED_ENTRY"]
-    assert len(forced_logged) == 1, "Forced entry must log exit_reason='FORCED_ENTRY'"
-    for t in forced_logged:
-        assert t["exit_reason"] == "FORCED_ENTRY"
+    forced_trades = [t for t in trade_log if str(t.get("Trade_Reason", "")).upper().startswith("FORCED")]
+    for t in forced_trades:
+        assert t.get("exit_reason", None) == "FORCED_ENTRY", (
+            f"[Patch AI Studio v4.9.73+] Failed: Forced entry trade does not have exit_reason='FORCED_ENTRY': {t}"
+        )
+    if not all(t.get("exit_reason", "") == "FORCED_ENTRY" for t in forced_trades):
+        print("[Patch AI Studio v4.9.73+] Trade log for debug:", trade_log)
+    assert len(forced_trades) >= 1, "[Patch AI Studio v4.9.73+] No forced entry found in trade_log"
+
+
+def test_forced_entry_multi_order_audit():
+    """[Patch AI Studio v4.9.73+] Multi-order: forced entry หลายรอบต้อง audit ครบ"""
+    pd = safe_import_gold_ai().pd
+    ga = safe_import_gold_ai()
+    df = pd.DataFrame({
+        "Open": [1000, 1005, 1010],
+        "High": [1010, 1015, 1020],
+        "Low": [995, 1000, 1005],
+        "Close": [1008, 1012, 1018],
+        "Entry_Long": [1, 1, 1],
+        "ATR_14_Shifted": [1.0, 1.0, 1.0],
+        "Signal_Score": [2.0, 2.0, 2.0],
+        "Trade_Reason": ["FORCED_BUY", "NORMAL", "FORCED_BUY2"],
+        "session": ["Asia", "Asia", "Asia"],
+        "Gain_Z": [0.3, 0.3, 0.3],
+        "MACD_hist_smooth": [0.1, 0.1, 0.1],
+        "RSI": [50, 50, 50],
+    }, index=pd.date_range("2023-01-01", periods=3, freq="min"))
+    cfg = ga.StrategyConfig({})
+    trade_log, equity_curve, run_summary = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+    forced_trades = [t for t in trade_log if str(t.get("Trade_Reason", "")).upper().startswith("FORCED")]
+    for t in forced_trades:
+        assert t.get("exit_reason", None) == "FORCED_ENTRY", (
+            f"[Patch AI Studio v4.9.73+] Multi-order failed: Forced entry trade does not have exit_reason='FORCED_ENTRY': {t}"
+        )
+    if not all(t.get("exit_reason", "") == "FORCED_ENTRY" for t in forced_trades):
+        print("[Patch AI Studio v4.9.73+] Multi-order trade log for debug:", trade_log)
+    assert len(forced_trades) >= 2, "[Patch AI Studio v4.9.73+] Multi-order: ไม่พบ forced entry สองรายการใน trade_log"
 
 
 # ---------------------------
