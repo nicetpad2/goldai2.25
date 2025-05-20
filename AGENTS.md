@@ -4,7 +4,7 @@
 **Version:** v4.9.91+
 **Project:** Gold AI (Enterprise Refactor)
 **Maintainer:** AI Studio QA/Dev Team
-**Last updated:** 2025-06-12
+**Last updated:** 2025-06-13
 
 Gold AI Enterprise QA/Dev version: v4.9.91+ (robust font fallback, ATR NaN fallback, headless plotting)
 
