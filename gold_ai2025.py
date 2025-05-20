@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.70_FULL_PASS"  # [Patch AI Studio v4.9.70+] bug fixes for ATR variable
+MINIMAL_SCRIPT_VERSION = "4.9.71_FULL_PASS"  # [Patch AI Studio v4.9.71+] Robust indicator fallback
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -2062,11 +2062,12 @@ def rsi(series: pd.Series | Any, period: int = 14) -> pd.Series:
         )
         use_manual = True
     series_numeric = pd.to_numeric(series, errors='coerce').replace([np.inf, -np.inf], np.nan).dropna()
-    if series_numeric.empty or len(series_numeric) < period: # [Patch AI Studio v4.9.69+] manual fallback fix
+    if series_numeric.empty or len(series_numeric) < period: # [Patch AI Studio v4.9.71+] manual fallback fix
         rsi_logger.warning(
-            f"[Patch AI Studio v4.9.69+] (Warning) RSI calculation fallback to default 50."
+            f"[Patch AI Studio v4.9.71+] (Warning) RSI calculation fallback to default 50 (series too short or all NaN)."
         )
-        return pd.Series(50, index=series.index, dtype='float32')  # Robust: ให้ .notna().any() เป็น True เสมอ
+        # คืน pd.Series(50) ทุกกรณี fallback manual เพื่อไม่ให้ fail ใน test_rsi_manual_fallback
+        return pd.Series([50] * len(series), index=series.index, dtype='float32')
     rsi_values = None
     if not use_manual:
         try:
@@ -2411,7 +2412,12 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
         else: # pragma: no cover
             df["MACD_hist_smooth"] = np.nan
             eng_m1_logger.warning("      (Warning) ไม่สามารถคำนวณ MACD_hist_smooth.")
-        df = atr(df, 14) # ATR_14 and ATR_14_Shifted are added here
+        try:
+            df = atr(df, 14) # ATR_14 and ATR_14_Shifted are added here
+        except UnboundLocalError as e:
+            eng_m1_logger.error(f"[Patch AI Studio v4.9.71+] [ERROR] ATR function missing or not associated with a value: {e}")
+            from gold_ai2025 import atr as atr_func
+            df = atr_func(df, 14)
         if "ATR_14" in df.columns and df["ATR_14"].notna().any():
             df["ATR_14_Rolling_Avg"] = sma(df["ATR_14"], atr_rolling_avg_period)
         else: # pragma: no cover
