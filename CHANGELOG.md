@@ -280,3 +280,11 @@
 - Unit tests expanded for font fallback, ATR NaN fallback, risk manager edges, and headless plotting.
 - Version bumped to 4.9.90_FULL_PASS
 
+## [v4.9.91+] - 2025-06-xx
+- Robust font fallback: `set_thai_font` and `setup_fonts` now log and default to DejaVu Sans if all Thai fonts unavailable
+- Improved DummyPandas.DataFrame: now a minimal stub class with `to_csv` method
+- Explicit SHAP mock in test suite: `TreeExplainer` and no-op `summary_plot`
+- Test cases updated for new plot_equity_curve signature and robust StrategyConfig passing
+- Version bump to `4.9.91_FULL_PASS`
+- AGENTS.md references, versioning, and all log/patch tags updated to [Patch AI Studio v4.9.91+]
+
