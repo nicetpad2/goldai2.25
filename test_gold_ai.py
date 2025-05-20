@@ -11,7 +11,6 @@ import os
 import json
 import datetime
 import logging
-import tempfile
 try:
     import numpy as np
 except Exception:  # pragma: no cover - numpy not installed
@@ -313,13 +312,16 @@ class TestGoldAI2025(unittest.TestCase):
         self.assertEqual(cfg.max_lot, 2.0)
 
     def test_setup_output_directory(self):
+        # [Patch][QA v4.9.87] Use fixed path /content/drive/MyDrive/new only
+        base_dir = "/content/drive/MyDrive/new"
+        out_dir = "outdir"
         with patch("os.makedirs") as makedirs, \
              patch("os.path.isdir", return_value=True), \
              patch("builtins.open", mock_open()), \
              patch("os.remove"):
-            path = self.gold_ai.setup_output_directory("/tmp", "outdir")
-        makedirs.assert_called_with("/tmp/outdir", exist_ok=True)
-        self.assertEqual(path, "/tmp/outdir")
+            path = self.gold_ai.setup_output_directory(base_dir, out_dir)
+        makedirs.assert_called_with(os.path.join(base_dir, out_dir), exist_ok=True)
+        self.assertEqual(path, os.path.join(base_dir, out_dir))
 
     def test_should_exit_due_to_holding(self):
         func = self.gold_ai.should_exit_due_to_holding
@@ -402,11 +404,11 @@ class TestGoldAI2025(unittest.TestCase):
         self.assertIn("executed successfully", out)
 
     def test_load_app_config_success(self):
-        script_dir = os.getcwd()
-        cfg_path = os.path.join(script_dir, "cfg.json")
+        # [Patch][QA v4.9.87] Always use /content/drive/MyDrive/new/cfg.json
+        cfg_path = "/content/drive/MyDrive/new/cfg.json"
         with patch("os.path.exists", side_effect=lambda p: p == cfg_path):
             with patch("builtins.open", mock_open(read_data="{\"a\":1}")):
-                data = self.gold_ai.load_app_config("cfg.json")
+                data = self.gold_ai.load_app_config(cfg_path)
         self.assertEqual(data, {"a": 1})
 
     def test_load_app_config_not_found(self):
@@ -644,7 +646,7 @@ class TestGoldAI2025(unittest.TestCase):
             close=lambda fig=None: None,
         )
         mod.fm = types.SimpleNamespace(
-            findfont=lambda *args, **kwargs: "/tmp/font.ttf",
+            findfont=lambda *args, **kwargs: "/content/drive/MyDrive/new/font.ttf",
             FontProperties=lambda fname=None: types.SimpleNamespace(get_name=lambda: "Loma"),
             _load_fontmanager=lambda try_read_cache=False: None,
         )
@@ -689,7 +691,7 @@ class TestEdgeCases(unittest.TestCase):
     def test_setup_output_directory_permission_error(self):
         with patch("os.makedirs", side_effect=PermissionError("Read-only file system")):
             with self.assertRaises(SystemExit):
-                self.ga.setup_output_directory("/root", "unwritable")
+                self.ga.setup_output_directory("/content/drive/MyDrive/new", "unwritable")
 
     def test_log_library_version_none_and_missing(self):
         self.ga.log_library_version("DUMMY_NONE", None)
@@ -750,11 +752,15 @@ class TestEdgeCases(unittest.TestCase):
         if not self.pandas_available:
             self.skipTest("pandas not available")
         df_mock = self.ga.pd.DataFrame({"Date": ["20240101"], "Open": [1], "High": [1]})
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = os.path.join(tmpdir, "invalid.csv")
-            df_mock.to_csv(path, index=False)
+        # [Patch][QA v4.9.87] Use fixed test file in /content/drive/MyDrive/new
+        path = "/content/drive/MyDrive/new/invalid.csv"
+        df_mock.to_csv(path, index=False)
+        try:
             with self.assertRaises(Exception):
                 self.ga.load_data(path)
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
 
     def test_load_data_valid(self):
         if not self.pandas_available:
@@ -769,20 +775,24 @@ class TestEdgeCases(unittest.TestCase):
                 "Close": [1.3, 1.2, 1.5],
             }
         )
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = os.path.join(tmpdir, "valid.csv")
-            df_mock.to_csv(path, index=False)
+        # [Patch][QA v4.9.87] Use fixed path
+        path = "/content/drive/MyDrive/new/valid.csv"
+        df_mock.to_csv(path, index=False)
+        try:
             df_loaded = self.ga.load_data(path)
             self.assertIsInstance(df_loaded, self.ga.pd.DataFrame)
             self.assertFalse(df_loaded.empty)
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
 
     def test_load_data_missing_file(self):
         if not self.pandas_available:
             self.skipTest("pandas not available")
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = os.path.join(tmpdir, "no_such_file.csv")
-            with self.assertRaises(self.ga.DataLoadError):
-                self.ga.load_data(path)
+        # [Patch][QA v4.9.87] Use /content/drive/MyDrive/new
+        path = "/content/drive/MyDrive/new/no_such_file.csv"
+        with self.assertRaises(self.ga.DataLoadError):
+            self.ga.load_data(path)
 
     def test_simulate_trades_minimal(self):
         if not self.pandas_available or not self.numpy_available:
@@ -1201,7 +1211,7 @@ class TestWFVandLotSizing(unittest.TestCase):
              patch.object(self.ga, "export_run_summary_to_json"), \
              patch.object(self.ga, "export_trade_log_to_csv"), \
              patch.object(self.ga, "plot_equity_curve"):
-            result = self.ga.run_all_folds_with_threshold(cfg, rm, tm, df, "/tmp")
+            result = self.ga.run_all_folds_with_threshold(cfg, rm, tm, df, "/content/drive/MyDrive/new")
 
         self.assertIsInstance(result[0], dict)
         self.assertIsInstance(result[2], self.ga.pd.DataFrame)
@@ -1562,7 +1572,7 @@ class TestWarningEdgeCases(unittest.TestCase):
              patch("os.path.exists", return_value=True), \
              patch("builtins.open", side_effect=PermissionError("Permission denied")):
             with self.assertRaises(SystemExit):
-                self.ga.setup_output_directory("/root", "denied")
+                self.ga.setup_output_directory("/content/drive/MyDrive/new", "denied")
 
     def test_set_thai_font_without_matplotlib(self):
         with patch.object(self.ga.fm, "findfont", side_effect=ImportError("matplotlib not available")):
@@ -2140,7 +2150,8 @@ def test_full_e2e_backtest_and_export(tmp_path, monkeypatch):
     )
 
     df = gen_random_m1_df(50, trend="up", volatility=0.7)
-    data_csv = tmp_path / "random_gold.csv"
+    base_dir = "/content/drive/MyDrive/new"
+    data_csv = os.path.join(base_dir, "random_gold.csv")
     df.to_csv(data_csv, index=False)
     df_loaded = load_data(str(data_csv))
 
@@ -2151,7 +2162,7 @@ def test_full_e2e_backtest_and_export(tmp_path, monkeypatch):
     res = simulate_trades(df_dt, config, side="BUY")
     trade_log = res["trade_log"]
     metrics = calculate_metrics(trade_log, side="BUY", fold_tag="e2e")
-    trade_csv = tmp_path / "trade_log.csv"
+    trade_csv = os.path.join(base_dir, "trade_log.csv")
     # [Patch AI Studio v4.9.58+] Guard: ensure DataFrame and check before export
     trade_log = ensure_dataframe(trade_log)
     import logging
@@ -2183,14 +2194,19 @@ def test_full_e2e_backtest_and_export(tmp_path, monkeypatch):
     assert isinstance(reloaded_trade, pd.DataFrame)
     assert reloaded_trade.shape[1] >= 8 if not reloaded_trade.empty else True
 
-    summary_json = tmp_path / "summary.json"
+    summary_json = os.path.join(base_dir, "summary.json")
     import json
 
-    with open(summary_json, "w") as f:
-        json.dump(metrics, f)
-    with open(summary_json) as f:
-        loaded_metrics = json.load(f)
-    assert "net_profit" in loaded_metrics
+    try:
+        with open(summary_json, "w") as f:
+            json.dump(metrics, f)
+        with open(summary_json) as f:
+            loaded_metrics = json.load(f)
+        assert "net_profit" in loaded_metrics
+    finally:
+        for p in [data_csv, trade_csv, summary_json]:
+            if os.path.exists(p):
+                os.remove(p)
 
 
 # ---------------------------

@@ -266,3 +266,9 @@
 - Forced entry audit ensures `exit_reason='FORCED_ENTRY'` when `forced_entry` flag present.
 - Version bumped to 4.9.86_FULL_PASS
 
+## [v4.9.87+] - 2025-06-XX
+- Default path/location updated to `/content/drive/MyDrive/new` for all IO operations.
+- Tests adjusted to use the fixed path and removed temp directories.
+- Additional logging `[Patch][QA v4.9.87]` for path usage.
+- Version bumped to 4.9.87_FULL_PASS
+

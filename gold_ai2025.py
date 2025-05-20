@@ -39,7 +39,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.86_FULL_PASS"  # [Patch][QA v4.9.86] all fail fixed
+MINIMAL_SCRIPT_VERSION = "4.9.87_FULL_PASS"  # [Patch][QA v4.9.87] updated default paths
 
 
 
@@ -911,11 +911,15 @@ class StrategyConfig:
 
         # --- Paths & File Names ---
         self.n_walk_forward_splits: int = config_dict.get("n_walk_forward_splits", 5)
-        self.output_base_dir: str = config_dict.get("output_base_dir", "/content/drive/MyDrive/new_enterprise_output")
+        # [Patch][QA v4.9.87] Default path/location updated to use /content/drive/MyDrive/new only.
+        self.output_base_dir: str = config_dict.get("output_base_dir", "/content/drive/MyDrive/new")
+        logging.getLogger("GoldAI_Enterprise_v4.9").info(
+            "[Patch][QA v4.9.87] Using /content/drive/MyDrive/new as the only valid test path."
+        )
         self.output_dir_name: str = config_dict.get("output_dir_name", "gold_ai_run")
         self.data_file_path_m15: str = config_dict.get("data_file_path_m15", "/content/drive/MyDrive/new/XAUUSD_M15.csv")
         self.data_file_path_m1: str = config_dict.get("data_file_path_m1", "/content/drive/MyDrive/new/XAUUSD_M1.csv")
-        self.config_file_path: str = config_dict.get("config_file_path", "config.yaml")
+        self.config_file_path: str = config_dict.get("config_file_path", "/content/drive/MyDrive/new/config.yaml")
         self.meta_classifier_filename: str = config_dict.get("meta_classifier_filename", "meta_classifier.pkl")
         self.spike_model_filename: str = config_dict.get("spike_model_filename", "meta_classifier_spike.pkl")
         self.cluster_model_filename: str = config_dict.get("cluster_model_filename", "meta_classifier_cluster.pkl")
@@ -6013,8 +6017,9 @@ def run_all_folds_with_threshold(
         wfv_logger.warning("df_m1_final_for_wfv not provided; using empty DataFrame.")
         df_m1_final_for_wfv = pd.DataFrame()
     if output_dir_for_wfv is None:
-        wfv_logger.warning("output_dir_for_wfv not provided; using '/tmp'.")
-        output_dir_for_wfv = "/tmp"
+        wfv_logger.warning("output_dir_for_wfv not provided; using '/content/drive/MyDrive/new'.")
+        wfv_logger.info("[Patch][QA v4.9.87] Using /content/drive/MyDrive/new as the only valid test path.")
+        output_dir_for_wfv = "/content/drive/MyDrive/new"
 
     # PATCH [v4.9.52+] Ensure DataFrame has DatetimeIndex for all folds
     df_m1_final_for_wfv = _ensure_datetimeindex(df_m1_final_for_wfv, logger=wfv_logger)
