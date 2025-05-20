@@ -77,10 +77,11 @@ def _create_mock_module(name: str) -> types.ModuleType:
         # [Patch][QA] ป้องกัน RecursionError ใน numpy.random, ML mock
         if attr in ["random", "rand", "randn"]:
             return lambda *a, **kw: 0.5
+        if attr == "FigureCanvasAgg":
+            return MagicMock(name="FigureCanvasAgg")
         # [Patch][QA] ถ้าเป็น "backend_agg" ให้คืน mock module
         if name == "matplotlib.backends" and attr == "backend_agg":
             backend_agg = types.ModuleType("matplotlib.backends.backend_agg")
-            # [Patch][QA v4.9.85] Add FigureCanvasAgg attribute
             backend_agg.FigureCanvasAgg = MagicMock(name="FigureCanvasAgg")
             return backend_agg
         if name == "matplotlib.backends.backend_agg" and attr == "FigureCanvasAgg":
@@ -150,8 +151,9 @@ def _create_mock_module(name: str) -> types.ModuleType:
         backend_agg.FigureCanvasAgg = MagicMock(name="FigureCanvasAgg")
         module.backend_agg = backend_agg
         sys.modules.setdefault("matplotlib.backends.backend_agg", backend_agg)
-    if name == "matplotlib.backends.backend_agg":
+    if name in ("matplotlib.backends.backend_agg", "matplotlib_inline.backend_inline"):
         module.FigureCanvasAgg = MagicMock(name="FigureCanvasAgg")
+        sys.modules[name] = module
     return module
 
 
@@ -188,6 +190,7 @@ def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
         "matplotlib.font_manager": _create_mock_module("matplotlib.font_manager"),
         "matplotlib.backends": _create_mock_module("matplotlib.backends"),
         "matplotlib.backends.backend_agg": _create_mock_module("matplotlib.backends.backend_agg"),
+        "matplotlib_inline.backend_inline": _create_mock_module("matplotlib_inline.backend_inline"),
         "scipy": _create_mock_module("scipy"),
         "optuna": _create_mock_module("optuna"),
         "optuna.logging": _create_mock_module("optuna.logging"),
