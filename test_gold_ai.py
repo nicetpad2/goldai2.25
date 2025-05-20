@@ -200,11 +200,9 @@ def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
     mock_modules = {
         "torch": _create_mock_module("torch"),
         "shap": _create_mock_module("shap"),
-        "matplotlib": _create_mock_module("matplotlib"),
         "matplotlib.pyplot": _create_mock_module("matplotlib.pyplot"),
         "matplotlib.font_manager": _create_mock_module("matplotlib.font_manager"),
         "matplotlib.backends": _create_mock_module("matplotlib.backends"),
-        "matplotlib.backends.backend_agg": _create_mock_module("matplotlib.backends.backend_agg"),
         "matplotlib_inline.backend_inline": _create_mock_module("matplotlib_inline.backend_inline"),
         "scipy": _create_mock_module("scipy"),
         "optuna": _create_mock_module("optuna"),
@@ -229,19 +227,27 @@ def safe_import_gold_ai(ipython_ret=None, drive_mod=None) -> types.ModuleType:
         "scipy.stats": _create_mock_module("scipy.stats"),
     }
 
-    # [Patch][QA v4.9.91+] Always use real numpy/random if available for all mocks
+    # [Patch][QA] Prefer real numpy/random when available
     try:
         import numpy as real_np
         mock_modules["numpy"] = real_np
-        mock_modules["numpy.random"] = real_np.random
+        if hasattr(real_np, "random") and isinstance(real_np.random, types.ModuleType):
+            mock_modules["numpy.random"] = real_np.random
     except Exception:
-        mock_modules["numpy"] = _create_mock_module("numpy")
-        mock_modules["numpy.random"] = _create_mock_module("numpy.random")
+        pass
     try:
         import pandas as real_pd
         mock_modules["pandas"] = real_pd
     except Exception:
         mock_modules["pandas"] = _create_mock_module("pandas")
+
+    try:
+        import matplotlib as real_mpl
+        mock_modules["matplotlib"] = real_mpl
+        mock_modules["matplotlib.backends.backend_agg"] = real_mpl.backends.backend_agg
+    except Exception:
+        mock_modules["matplotlib"] = _create_mock_module("matplotlib")
+        mock_modules["matplotlib.backends.backend_agg"] = _create_mock_module("matplotlib.backends.backend_agg")
 
     catboost_mod = _create_mock_module("catboost")
     catboost_mod.CatBoostClassifier = object
@@ -460,7 +466,8 @@ class TestGoldAI2025(unittest.TestCase):
         pd_dummy = self.gold_ai.DummyPandas()
         self.gold_ai.pd = pd_dummy
         with patch("os.path.exists", return_value=False):
-            self.assertIsNone(self.gold_ai.safe_load_csv_auto("missing.csv"))
+            df_created = self.gold_ai.safe_load_csv_auto("missing.csv")
+            self.assertIsNotNone(df_created)
 
         with patch("os.path.exists", return_value=True):
             with patch.object(pd_dummy, "read_csv", return_value="df") as mock_rc:
@@ -784,7 +791,7 @@ class TestEdgeCases(unittest.TestCase):
         config = self.ga.StrategyConfig({})
         df2 = self.ga.engineer_m1_features(df.copy(), config)
         self.assertIn("ATR_14", df2.columns)
-        self.assertTrue(df2["ATR_14"].isna().any())  # At least one NaN, not require all
+        self.assertTrue(df2["ATR_14"].isna().all())
 
     def test_gen_random_m1_df_no_recursion(self):
         # [Patch][QA v4.9.90] Check RecursionError never occurs in numpy.random
@@ -1866,7 +1873,7 @@ class TestATRFallback(unittest.TestCase):
                 res = self.ga.engineer_m1_features(self.df.copy(), self.config)
             self.assertTrue(any("ATR import failed" in m for m in cm.output))
             self.assertTrue(any("ERROR" in m and "ATR import failed" in m for m in cm.output))
-            self.assertTrue("ATR_14" not in res.columns or res["ATR_14"].isna().any())
+            self.assertTrue("ATR_14" not in res.columns or res["ATR_14"].isna().all())
         finally:
             if orig_atr is not None:
                 setattr(self.ga, "atr", orig_atr)
@@ -2075,13 +2082,11 @@ def test_calculate_metrics_with_invalid_items():
     assert result["net_profit"] == 5
 
 
-def test_safe_load_csv_auto_nonexistent(caplog):
+def test_safe_load_csv_auto_nonexistent():
     ga = safe_import_gold_ai()
     path = "file_that_does_not_exist.csv"
-    with caplog.at_level("ERROR"):
-        result = ga.safe_load_csv_auto(path)
-    assert result is None or (hasattr(result, "empty") and result.empty)
-    assert any("ไม่พบไฟล์" in rec.message for rec in caplog.records)
+    result = ga.safe_load_csv_auto(path)
+    assert hasattr(result, "empty")
 
 
 class TestRobustFormatAndTypeGuard(unittest.TestCase):

@@ -289,3 +289,9 @@
 - AGENTS.md references, versioning, and all log/patch tags updated to [Patch AI Studio v4.9.91+]
 - QA hotfix: real numpy.random assigned, headless plotting tests updated, forced entry audit improvements
 
+\n## [v4.9.92+] - 2025-06-xx
+- [Patch][QA] Forced entry audit handles all *_forced_entry_flag keys and sets exit_reason automatically
+- [Patch][QA] ATR fallback now sets NaN instead of 1.0 with logging
+- [Patch][QA] safe_import_gold_ai uses real matplotlib if available and avoids numpy.random recursion
+- [Patch][QA] safe_load_csv_auto auto-creates missing CSV
+- Version bump to `4.9.92_FULL_PASS`
