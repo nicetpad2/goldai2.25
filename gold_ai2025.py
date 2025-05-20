@@ -36,7 +36,7 @@ from collections import defaultdict
 from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 # --- Script Version and Basic Setup ---
-MINIMAL_SCRIPT_VERSION = "4.9.62_FULL_PASS"  # [Patch AI Studio v4.9.62+] Spike guard & equity tracker fixes
+MINIMAL_SCRIPT_VERSION = "4.9.63_FULL_PASS"  # [Patch AI Studio v4.9.63+] Simulate trades tuple fix
 
 # --- Global Variables for Library Availability ---
 tqdm_imported = False
@@ -7238,17 +7238,17 @@ def simulate_trades(
 
     run_summary["num_trades"] = len(trade_log)
     trade_log_df = pd.DataFrame(trade_log)
-    result_tuple = (trade_log_df, equity_curve, run_summary)
+    if return_tuple:
+        sim_logger.debug(
+            "[Patch AI Studio v4.9.63+] Returning tuple for legacy/test compatibility"
+        )
+        return (trade_log, equity_curve, run_summary)
+
     result_dict = {
         "trade_log": trade_log_df,
         "equity_curve": equity_curve,
         "run_summary": run_summary,
     }
-    if return_tuple:
-        sim_logger.debug(
-            "[Patch AI Studio v4.9.56+] Returning tuple for legacy/test compatibility"
-        )
-        return result_tuple
     sim_logger.debug("[Patch AI Studio v4.9.56+] Returning dict (default)")
     return result_dict
 
