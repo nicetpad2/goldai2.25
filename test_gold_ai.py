@@ -74,6 +74,8 @@ def _create_mock_module(name: str) -> types.ModuleType:
     module.__version__ = "0.0"
 
     def _getattr(attr: str):
+        if attr in ["random", "randn", "rand", "choice"]:
+            return lambda *a, **kw: 0.5
         return MagicMock(name=f"{name}.{attr}")
 
     module.__getattr__ = _getattr  # type: ignore
