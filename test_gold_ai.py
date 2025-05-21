@@ -1500,6 +1500,20 @@ class TestTP2AndBESL(unittest.TestCase):
             run_summary.get("hard_kill_triggered") or run_summary.get("kill_switch_active")
         )
 
+    def test_load_trade_log_success_and_missing(self):
+        ga = self.ga
+        pd = ga.pd
+        tmp_dir = "/tmp"
+        file_path = os.path.join(tmp_dir, "tl.csv")
+        df_dummy = pd.DataFrame({"a": [1, 2]})
+        df_dummy.to_csv(file_path, index=False)
+        loaded = ga.load_trade_log(file_path)
+        self.assertIsNotNone(loaded)
+        self.assertEqual(len(loaded), 2)
+        os.remove(file_path)
+        missing = ga.load_trade_log(file_path)
+        self.assertIsNone(missing)
+
 
 class TestWFVandLotSizingFix(unittest.TestCase):
     """Ensure reentry logic handles 0 cooldown correctly."""
@@ -3081,6 +3095,15 @@ class TestUtilityCoverageQA(unittest.TestCase):
 
         self.assertIsInstance(self.ga.simple_converter(DummyObj()), str)
 
+    def test_ensure_datetimeindex_conversion(self):
+        pd = self.pd
+        df = pd.DataFrame({"a": [1, 2]}, index=["2024-01-01", "2024-01-02"])
+        out = self.ga._ensure_datetimeindex(df)
+        self.assertTrue(isinstance(out.index, pd.DatetimeIndex))
+        df_bad = pd.DataFrame({"a": [1]}, index=["bad"])
+        out2 = self.ga._ensure_datetimeindex(df_bad)
+        self.assertTrue(isinstance(out2.index, pd.DatetimeIndex))
+
 
 class TestCoverageBooster(unittest.TestCase):
     """[Patch][QA v4.9.120] ชุดทดสอบ coverage เพิ่มเติม"""
@@ -3213,6 +3236,16 @@ class TestCoverageBooster(unittest.TestCase):
         tm.update_forced_entry_result(False)
         tm.last_trade_time = None
         self.assertFalse(tm.should_force_entry(None, None, None, None, None, None))
+
+    def test_run_log_analysis_pipeline(self):
+        ga = self.ga
+        cfg = self.cfg
+        pd = self.pd
+        log_file = os.path.join("/tmp", "tl.csv")
+        pd.DataFrame({"pnl_usd_net": [1.0]}).to_csv(log_file, index=False)
+        res = ga.run_log_analysis_pipeline(log_file, "/tmp", cfg, "x")
+        self.assertEqual(res["status"], "placeholder_executed")
+        os.remove(log_file)
 
 
 class TestCoverageEnterprise(unittest.TestCase):
@@ -3373,6 +3406,25 @@ class TestCoverageEnterprise(unittest.TestCase):
         }, index=pd.date_range("2023-01-01", periods=2, freq="min"))
         tl, eq, summ = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         self.assertEqual(tl, [])
+
+    def test_calculate_metrics_full_simple(self):
+        ga, cfg = self.ga, self.cfg
+        pd = self.pd
+        metrics = ga._calculate_metrics_full(cfg, None, 100.0, None, label="T")
+        self.assertIsInstance(metrics, dict)
+
+    def test_calculate_metrics_full_with_data(self):
+        ga, cfg = self.ga, self.cfg
+        pd = self.pd
+        df = pd.DataFrame({
+            "pnl_usd_net": [1.0, -0.5, 2.0],
+            "exit_reason": ["TP", "SL", "BE-SL"],
+            "is_partial_tp_event": [False, False, False],
+            "entry_idx": [0, 1, 2],
+        })
+        equity_hist = [100.0, 101.0, 100.5, 102.5]
+        metrics = ga._calculate_metrics_full(cfg, df, 102.5, equity_hist, label="D")
+        self.assertEqual(metrics["D Total Trades (Full)"], 3)
 
 
 if __name__ == "__main__":
