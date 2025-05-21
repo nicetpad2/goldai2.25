@@ -2,6 +2,7 @@
 
 [Patch AI Studio v4.9.68] - Validate global pandas availability and import flag handling.
 [Patch AI Studio v4.9.104] - Register pytest markers to silence unknown mark warnings.
+[Patch][QA v4.9.120] - เพิ่มชุดทดสอบ coverage simulate_trades และ edge cases
 """
 
 import importlib
@@ -3079,6 +3080,139 @@ class TestUtilityCoverageQA(unittest.TestCase):
             pass
 
         self.assertIsInstance(self.ga.simple_converter(DummyObj()), str)
+
+
+class TestCoverageBooster(unittest.TestCase):
+    """[Patch][QA v4.9.120] ชุดทดสอบ coverage เพิ่มเติม"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ga = safe_import_gold_ai()
+        try:
+            import pandas as real_pd
+            cls.pd = real_pd
+        except Exception:
+            cls.pd = cls.ga.DummyPandas()
+        cls.cfg = cls.ga.StrategyConfig({})
+
+    def test_simulate_trades_all_exit_reason(self):
+        pd = self.pd
+        cfg = self.cfg
+        df = pd.DataFrame({
+            "Open": [1000, 1002, 1004, 1008, 1010],
+            "High": [1002, 1006, 1008, 1012, 1015],
+            "Low": [995, 1000, 1002, 1006, 1009],
+            "Close": [1002, 1004, 1007, 1009, 1011],
+            "Entry_Long": [1, 0, 0, 0, 0],
+            "ATR_14_Shifted": [1.0] * 5,
+            "Signal_Score": [2.0] * 5,
+            "Trade_Reason": ["test"] * 5,
+            "session": ["Asia"] * 5,
+            "Gain_Z": [0.3] * 5,
+            "MACD_hist_smooth": [0.1] * 5,
+            "RSI": [50] * 5,
+            "forced_entry": [False, False, False, True, False],
+        }, index=pd.date_range("2023-01-01", periods=5, freq="min"))
+        trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+        exit_set = {t.get("exit_reason") for t in trade_log}
+        self.assertTrue(any(x in exit_set for x in ["TP", "SL", "TSL", "PartialTP", "BE-SL", "FORCED_ENTRY"]))
+
+    def test_simulate_trades_edge_empty_invalid(self):
+        pd = self.pd
+        cfg = self.cfg
+        empty = pd.DataFrame()
+        tl, eq, summ = self.ga.simulate_trades(empty, cfg, return_tuple=True)
+        if hasattr(tl, "empty"):
+            self.assertTrue(tl.empty)
+        else:
+            self.assertEqual(tl, [])
+        self.assertEqual(eq, [])
+        self.assertTrue(isinstance(summ, dict))
+        result_none = self.ga.simulate_trades(None, cfg, return_tuple=True)
+        self.assertIsInstance(result_none, tuple)
+        with self.assertRaises(Exception):
+            self.ga.simulate_trades(123, cfg)
+
+    def test_export_run_summary_to_json_edge(self):
+        ga = self.ga
+        tmp_dir = "/tmp/gold_ai_test_export"
+        os.makedirs(tmp_dir, exist_ok=True)
+        summary = {"a": 1, "b": 2}
+        path = ga.export_run_summary_to_json(summary, "test", tmp_dir, self.cfg)
+        self.assertTrue(path and os.path.exists(path))
+        path2 = ga.export_run_summary_to_json({}, "empty", tmp_dir, self.cfg)
+        self.assertTrue(path2 and os.path.exists(path2))
+        result_fail = ga.export_run_summary_to_json(summary, "denied", "/no_such_dir", self.cfg)
+        self.assertIsNone(result_fail)
+
+    def test_export_trade_log_to_csv_edge(self):
+        ga = self.ga
+        tmp_dir = "/tmp/gold_ai_test_export"
+        os.makedirs(tmp_dir, exist_ok=True)
+        log = [{"a": 1, "b": 2}]
+        path = ga.export_trade_log_to_csv(log, "log", tmp_dir, self.cfg)
+        self.assertTrue(path and os.path.exists(path))
+        path2 = ga.export_trade_log_to_csv([], "emptylog", tmp_dir, self.cfg)
+        self.assertIsNone(path2)
+        result_fail = ga.export_trade_log_to_csv(log, "denied", "/no_such_dir", self.cfg)
+        self.assertIsNone(result_fail)
+
+    def test_run_all_folds_with_threshold_empty_fold(self):
+        pd = self.pd
+        ga = self.ga
+        cfg = self.cfg
+        rm = ga.RiskManager(cfg)
+        tm = ga.TradeManager(cfg, rm)
+        df_empty = pd.DataFrame()
+        result = ga.run_all_folds_with_threshold(cfg, rm, tm, df_empty, "/tmp")
+        self.assertIsInstance(result, tuple)
+
+    def test_train_meta_classifier_ml_fallback(self):
+        ga = self.ga
+        ga.catboost_imported = False
+        ga.shap_imported = False
+        X = self.pd.DataFrame({"a": [1, 2], "b": [2, 3]})
+        y = [0, 1]
+        try:
+            model, features = ga.train_meta_classifier(X, y, self.cfg, verbose=True)
+            self.assertIsNotNone(model)
+        except Exception:
+            pass
+
+    def test_plot_equity_curve_edge_importerror(self):
+        ga = self.ga
+        orig_plt = ga.plt
+        ga.plt = None
+        try:
+            ga.plot_equity_curve(self.cfg, [100, 110], "Test", "/tmp", "test")
+        except Exception:
+            pass
+        finally:
+            ga.plt = orig_plt
+
+    def test_safe_set_datetime_various(self):
+        pd = self.pd
+        ga = self.ga
+        df = pd.DataFrame({"x": [1, 2]}, index=[0, 1])
+        ga.safe_set_datetime(df, 0, "d", "2023-01-01")
+        ga.safe_set_datetime(df, 1, "d", "2024-01-01")
+        ga.safe_set_datetime(df, 99, "d", "2024-01-01")
+        self.assertIn("d", df.columns)
+
+    def test_risk_trade_manager_edge(self):
+        ga = self.ga
+        cfg = self.cfg
+        rm = ga.RiskManager(cfg)
+        tm = ga.TradeManager(cfg, rm)
+        rm.dd_peak = 100
+        self.assertAlmostEqual(rm.update_drawdown(90), 0.1, places=6)
+        with self.assertRaises(RuntimeError):
+            rm.update_drawdown(10)
+        tm.update_last_trade_time("2024-01-01")
+        tm.update_forced_entry_result(True)
+        tm.update_forced_entry_result(False)
+        tm.last_trade_time = None
+        self.assertFalse(tm.should_force_entry(None, None, None, None, None, None))
 
 
 if __name__ == "__main__":

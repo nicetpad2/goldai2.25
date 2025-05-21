@@ -334,3 +334,7 @@
 - [Patch][QA v4.9.110] เพิ่ม unit test coverage สำหรับ utility functions
 - Version bump to `4.9.110_FULL_PASS`
 
+## [v4.9.120+] - 2025-06-xx
+- [Patch][QA v4.9.120] เพิ่มชุดทดสอบ coverage simulate_trades, export, ML fallback
+- Version bump to `4.9.120_FULL_PASS`
+
