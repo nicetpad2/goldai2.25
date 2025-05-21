@@ -370,3 +370,8 @@
 - [Patch][QA v4.9.137] เพิ่ม coverage booster tests for safe_load_csv_auto และ fallback paths
 - Version bump to `4.9.137_FULL_PASS`
 
+## [v4.9.138+] - 2025-06-xx
+- [Patch][QA v4.9.138] Coverage booster tests for additional branches in safe_isinstance,
+  ensure_dataframe, and safe_set_datetime
+- Version bump to `4.9.138_FULL_PASS`
+

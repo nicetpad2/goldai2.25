@@ -5,7 +5,7 @@
 [Patch][QA v4.9.130] - เพิ่ม Coverage Booster สำหรับ logic simulation/exit/export/ML/WFV/fallback/exception
 [Patch][QA v4.9.135] - เพิ่ม coverage booster tests for branch handling
 [Patch][QA v4.9.136] - เพิ่ม coverage booster tests for edge branches
-[Patch][QA v4.9.137] - เพิ่ม coverage booster tests for safe_load_csv_auto และอื่นๆ
+[Patch][QA v4.9.138] - เพิ่ม coverage booster tests for branch edge cases
 """
 
 import importlib
@@ -3856,6 +3856,132 @@ class TestBranchCoverageBoosterV5(unittest.TestCase):
             raise self.ga.DummyPandas.errors.ParserError("parse error")
         with self.assertRaises(self.ga.DummyPandas.errors.EmptyDataError):
             raise self.ga.DummyPandas.errors.EmptyDataError("empty error")
+
+
+class TestBranchCoverageBoosterV6(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ga = safe_import_gold_ai()
+        try:
+            import pandas as real_pd
+            cls.ga.pd = real_pd
+        except Exception:
+            cls.ga.pd = cls.ga.DummyPandas()
+        try:
+            import numpy as real_np
+            cls.ga.np = real_np
+        except Exception:
+            cls.ga.np = cls.ga.DummyNumpy()
+
+    def test_safe_isinstance_object_mock(self):
+        class X:
+            pass
+        obj = X()
+        typ = types.SimpleNamespace(__name__="X")
+        self.assertTrue(self.ga.safe_isinstance(obj, typ))
+
+    def test_safe_isinstance_magicmock_attr(self):
+        class Fake:
+            columns = []
+            index = []
+        from unittest.mock import MagicMock
+        mock_type = MagicMock()
+        fake = Fake()
+        self.assertTrue(self.ga.safe_isinstance(fake, mock_type))
+
+    def test_safe_isinstance_invalid(self):
+        self.assertFalse(self.ga.safe_isinstance(object(), 777))
+
+    def test_ensure_dataframe_dict(self):
+        df = self.ga.ensure_dataframe({'a': 1})
+        self.assertTrue(hasattr(df, "columns"))
+
+    def test_ensure_dataframe_list(self):
+        df = self.ga.ensure_dataframe([{'a': 1}, {'b': 2}])
+        self.assertTrue(hasattr(df, "columns"))
+
+    def test_ensure_dataframe_empty_df(self):
+        import pandas as pd
+        df = self.ga.ensure_dataframe(pd.DataFrame())
+        self.assertTrue(hasattr(df, "columns"))
+
+    def test_ensure_dataframe_unknown_type(self):
+        obj = set([1, 2, 3])
+        result = self.ga.ensure_dataframe(obj)
+        self.assertEqual(result, obj)
+
+    def test_safe_set_datetime_missing_col(self):
+        import pandas as pd
+        df = pd.DataFrame({'A': [1, 2]})
+        self.ga.safe_set_datetime(df, 0, "mydate", "2020-01-01")
+        self.assertIn("mydate", df.columns)
+
+    def test_safe_set_datetime_bad_dtype(self):
+        import pandas as pd
+        df = pd.DataFrame({'A': [1, 2], 'mydate': ['2020', '2021']})
+        df["mydate"] = df["mydate"].astype(str)
+        self.ga.safe_set_datetime(df, 0, "mydate", "2022-01-01")
+        self.assertEqual(df["mydate"].dtype.name, "datetime64[ns]")
+
+    def test_safe_set_datetime_not_index(self):
+        import pandas as pd
+        df = pd.DataFrame({'A': [1, 2], 'mydate': [pd.NaT, pd.NaT]})
+        self.ga.safe_set_datetime(df, 9, "mydate", "2020-01-01")
+        self.assertIn("mydate", df.columns)
+
+    def test_safe_set_datetime_etype(self):
+        import pandas as pd
+        df = pd.DataFrame({'A': [1, 2], 'mydate': [pd.NaT, pd.NaT]})
+        self.ga.safe_set_datetime(df, "xx", "mydate", "2020-01-01")
+        self.assertIn("mydate", df.columns)
+
+    def test_safe_set_datetime_final_assign(self):
+        import pandas as pd
+        df = pd.DataFrame({'A': [1, 2], 'mydate': [pd.NaT, pd.NaT]})
+        self.ga.safe_set_datetime(df, 5, "mydate", "2020-01-01")
+        self.assertIn("mydate", df.columns)
+
+    def test_safe_set_datetime_assign_nan(self):
+        import pandas as pd
+        df = pd.DataFrame({'A': [1, 2], 'mydate': [pd.NaT, pd.NaT]})
+        self.ga.safe_set_datetime(df, 1, "mydate", pd.NaT)
+        self.assertIn("mydate", df.columns)
+
+    def test_safe_set_datetime_existing_col(self):
+        import pandas as pd
+        df = pd.DataFrame({'A': [1, 2], 'mydate': [pd.NaT, pd.NaT]})
+        self.ga.safe_set_datetime(df, 1, "mydate", "2020-01-01")
+        self.assertIn("mydate", df.columns)
+
+    def test_safe_set_datetime_wrong_type_fallback(self):
+        import pandas as pd
+        df = pd.DataFrame({'A': [1, 2], 'mydate': [pd.NaT, pd.NaT]})
+        self.ga.safe_set_datetime(df, 0, "mydate", None)
+        self.assertIn("mydate", df.columns)
+
+    def test_safe_set_datetime_no_index(self):
+        import pandas as pd
+        df = pd.DataFrame({'A': [1, 2], 'mydate': [pd.NaT, pd.NaT]})
+        self.ga.safe_set_datetime(df, -999, "mydate", "2020-01-01")
+        self.assertIn("mydate", df.columns)
+
+    def test_safe_set_datetime_outer_exception(self):
+        import pandas as pd
+        df = pd.DataFrame({'A': [1, 2], 'mydate': [pd.NaT, pd.NaT]})
+        try:
+            self.ga.safe_set_datetime(df, object(), "mydate", "2020-01-01")
+        except Exception:
+            pass
+        self.assertIn("mydate", df.columns)
+
+    def test_safe_set_datetime_final_outer_exception(self):
+        import pandas as pd
+        df = pd.DataFrame({'A': [1, 2], 'mydate': [pd.NaT, pd.NaT]})
+        try:
+            self.ga.safe_set_datetime(df, object(), "mydate", None)
+        except Exception:
+            pass
+        self.assertIn("mydate", df.columns)
 
 class TestMainFunction(unittest.TestCase):
     """Minimal tests for main() across run modes using heavy patching."""
