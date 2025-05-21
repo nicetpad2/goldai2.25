@@ -1,12 +1,12 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.102+
+**Version:** v4.9.103+
 **Project:** Gold AI (Enterprise Refactor)
 **Maintainer:** AI Studio QA/Dev Team
 **Last updated:** 2025-06-13
 
-Gold AI Enterprise QA/Dev version: v4.9.102+ (expanded unit tests for error/permission/fallback paths)
+Gold AI Enterprise QA/Dev version: v4.9.103+ (register pytest markers and expand QA coverage)
 
 ---
 
@@ -207,12 +207,10 @@ Review vs. this AGENTS.md
 
 No merge without Execution_Test_Unit pass and log review
 
-ล่าสุด: [Patch AI Studio v4.9.102+]
-เพิ่ม unit tests ครอบคลุม error, permission, fallback, forced entry และ ImportError
-ปรับปรุง plot_equity_curve ให้ข้ามเมื่อ backend ผิดพลาดหรือ MagicMock
-safe_load_csv_auto สร้างไฟล์และคืน DataFrame เสมอ
-forced entry audit ครอบคลุมทุกบรรทัดและแก้ RecursionError ใน numpy mock
-_audit_forced_entry_reason รองรับ DataFrame เต็มรูปแบบ
+ล่าสุด: [Patch AI Studio v4.9.103+]
+เพิ่มไฟล์ `pytest.ini` ลงทะเบียน markers `unit` และ `integration`
+ลด PytestUnknownMarkWarning ในรายงานเทส
+ปรับปรุง log และ coverage สม่ำเสมอ
 
 ตรวจสอบ audit log & error log ว่า non-numeric (str/NaT/None/nan) ถูก block และ log warning อย่างถูกต้อง
 
