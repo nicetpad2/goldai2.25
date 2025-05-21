@@ -375,3 +375,7 @@
   ensure_dataframe, and safe_set_datetime
 - Version bump to `4.9.138_FULL_PASS`
 
+## [v4.9.139+] - 2025-06-xx
+- [Patch][QA v4.9.139] Coverage booster tests for safe_set_datetime and DummyPandas numeric checks
+- Version bump to `4.9.139_FULL_PASS`
+
