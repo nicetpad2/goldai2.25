@@ -383,3 +383,7 @@
 - [Patch][QA v4.9.140] ใช้ `try_import_with_install` นำเข้า requests และจับ OSError เพื่อแก้ปัญหาใน Colab
 - Version bump to `4.9.140_FULL_PASS`
 
+## [v4.9.141+] - 2025-06-xx
+- [Patch][QA v4.9.141] แก้ปัญหา AttributeError จากการอ้างอิง `datetime.datetime` โดยกำหนด alias `dt`
+- Version bump to `4.9.141_FULL_PASS`
+
