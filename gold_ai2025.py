@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.142_FULL_PASS"  # [Patch][QA v4.9.142] spike_score & category fix
+MINIMAL_SCRIPT_VERSION = "4.9.143_FULL_PASS"  # [Patch][QA v4.9.143] engineer_m1_features logging update
 
 
 
@@ -2507,10 +2507,14 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
     df = df_m1.copy()
     # [Patch][QA v4.9.90] Fallback for missing ATR_14
     if 'ATR_14' not in df.columns or df['ATR_14'].isna().all():
-        logging.error("[Patch][QA v4.9.90] engineer_m1_features: ATR_14 missing or all NaN, fallback to pd.Series([np.nan]*len(df)).")
-        df['ATR_14'] = pd.Series([np.nan]*len(df), index=df.index)
+        eng_m1_logger.error(
+            "[Patch][QA v4.9.90] engineer_m1_features: ATR_14 missing or all NaN, fallback to pd.Series([np.nan]*len(df))."
+        )
+        df['ATR_14'] = pd.Series([np.nan] * len(df), index=df.index)
         # [Patch][QA v4.9.90] Log fallback applied
-        logging.info("[Patch][QA v4.9.90] engineer_m1_features: Fallback applied, ATR_14 is all NaN as expected for missing.")
+        eng_m1_logger.info(
+            "[Patch][QA v4.9.90] engineer_m1_features: Fallback applied, ATR_14 is all NaN as expected for missing."
+        )
     price_cols = ["Open", "High", "Low", "Close"]
     if any(col not in df.columns for col in price_cols): # pragma: no cover
         eng_m1_logger.warning("   (Warning) ขาดคอลัมน์ราคาใน M1 Data. Filling with NaN.")

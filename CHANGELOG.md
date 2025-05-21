@@ -391,3 +391,7 @@
 - [Patch][QA v4.9.142] แก้ spike_score ใช้ Series fallback และเพิ่มการจัดการหมวดหมู่ Unknown ใน clean_m1_data
 - Version bump to `4.9.142_FULL_PASS`
 
+## [v4.9.143+] - 2025-06-xx
+- [Patch][QA v4.9.143] Updated engineer_m1_features logging to use module logger
+- Version bump to `4.9.143_FULL_PASS`
+
