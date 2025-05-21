@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.141_FULL_PASS"  # [Patch][QA v4.9.141] datetime alias fix
+MINIMAL_SCRIPT_VERSION = "4.9.142_FULL_PASS"  # [Patch][QA v4.9.142] spike_score & category fix
 
 
 
@@ -2661,9 +2661,12 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
     # Spike Score (Simple heuristic)
     if 'spike_score' not in df.columns: # pragma: no cover
         try:
-            gain_z_abs_spike = abs(pd.to_numeric(df.get('Gain_Z', 0.0), errors='coerce').fillna(0.0))
-            wick_ratio_val_spike = abs(pd.to_numeric(df.get('Wick_Ratio', 0.0), errors='coerce').fillna(0.0))
-            atr_val_for_spike = pd.to_numeric(df.get('ATR_14', 1.0), errors='coerce').fillna(1.0).replace([np.inf, -np.inf], 1.0) # Ensure ATR is positive
+            gain_z_series_spike = df['Gain_Z'] if 'Gain_Z' in df else pd.Series(0.0, index=df.index)
+            gain_z_abs_spike = abs(pd.to_numeric(gain_z_series_spike, errors='coerce').fillna(0.0))
+            wick_ratio_series_spike = df['Wick_Ratio'] if 'Wick_Ratio' in df else pd.Series(0.0, index=df.index)
+            wick_ratio_val_spike = abs(pd.to_numeric(wick_ratio_series_spike, errors='coerce').fillna(0.0))
+            atr_series_spike = df['ATR_14'] if 'ATR_14' in df else pd.Series(1.0, index=df.index)
+            atr_val_for_spike = pd.to_numeric(atr_series_spike, errors='coerce').fillna(1.0).replace([np.inf, -np.inf], 1.0) # Ensure ATR is positive
             score_spike = (wick_ratio_val_spike * 0.5 + gain_z_abs_spike * 0.3 + atr_val_for_spike * 0.2)
             # Boost score if ATR is high and wick ratio is high (indicative of strong spike)
             score_spike = np.where((atr_val_for_spike > 1.5) & (wick_ratio_val_spike > 0.6), score_spike * 1.2, score_spike)
@@ -2774,12 +2777,14 @@ def clean_m1_data(df_m1: pd.DataFrame, config: 'StrategyConfig') -> tuple[pd.Dat
     categorical_cols_clean = ['Pattern_Label', 'session'] # Add other known categoricals if any
     for col_cat_clean in categorical_cols_clean:
         if col_cat_clean in df_cleaned.columns:
-            if df_cleaned[col_cat_clean].isnull().any(): # pragma: no cover
-                df_cleaned[col_cat_clean] = df_cleaned[col_cat_clean].fillna("Unknown") # Fill NaNs before astype
-            if not _isinstance_safe(df_cleaned[col_cat_clean].dtype, pd.CategoricalDtype): # Avoid re-casting if already category
+            if df_cleaned[col_cat_clean].isnull().any():  # pragma: no cover
+                if isinstance(df_cleaned[col_cat_clean].dtype, pd.CategoricalDtype):
+                    df_cleaned[col_cat_clean] = df_cleaned[col_cat_clean].cat.add_categories(["Unknown"])
+                df_cleaned[col_cat_clean] = df_cleaned[col_cat_clean].fillna("Unknown")
+            if not _isinstance_safe(df_cleaned[col_cat_clean].dtype, pd.CategoricalDtype):  # Avoid re-casting if already category
                 try:
                     df_cleaned[col_cat_clean] = df_cleaned[col_cat_clean].astype('category')
-                except Exception as e_cat_clean: # pragma: no cover
+                except Exception as e_cat_clean:  # pragma: no cover
                     clean_logger.warning(f"   (Warning) เกิดข้อผิดพลาดขณะแปลงคอลัมน์ '{col_cat_clean}' เป็น category: {e_cat_clean}")
 
     clean_logger.info("(Success) กำหนด Features M1 และแปลงประเภท (using StrategyConfig) เสร็จสิ้น.")
