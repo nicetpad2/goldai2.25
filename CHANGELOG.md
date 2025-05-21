@@ -395,3 +395,7 @@
 - [Patch][QA v4.9.143] Updated engineer_m1_features logging to use module logger
 - Version bump to `4.9.143_FULL_PASS`
 
+## [v4.9.144+] - 2025-06-xx
+- [Patch][QA v4.9.144] setup_fonts no longer logs repeated warnings when Thai fonts are missing
+- Version bump to `4.9.144_FULL_PASS`
+

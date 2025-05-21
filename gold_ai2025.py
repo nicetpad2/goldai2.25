@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.143_FULL_PASS"  # [Patch][QA v4.9.143] engineer_m1_features logging update
+MINIMAL_SCRIPT_VERSION = "4.9.144_FULL_PASS"  # [Patch][QA v4.9.144] reduce duplicate Thai font warnings
 
 
 
@@ -1302,8 +1302,8 @@ def setup_output_directory(base_dir: str, dir_name: str) -> str:
         sys.exit(f"   ออก: ข้อผิดพลาดร้ายแรงในการตั้งค่า Output Directory ({output_path}).")
 
 # --- Font Setup Helpers ---
-def set_thai_font(font_name: str = "Loma") -> bool:
-    """[Patch][QA v4.9.91+] Robust fallback for Thai font: logs only once and uses DejaVu Sans if none found."""
+def set_thai_font(font_name: str = "Loma", warn_on_failure: bool = True) -> bool:
+    """[Patch][QA v4.9.91+] Robust fallback for Thai font. Added warn_on_failure to avoid duplicate warnings."""
     try:
         import matplotlib  # noqa: F401
     except ImportError:
@@ -1346,7 +1346,10 @@ def set_thai_font(font_name: str = "Loma") -> bool:
             font_logger.warning("[Patch][QA v4.9.91+] Fallback: set font.family to 'DejaVu Sans'")
             return False
     else:
-        font_logger.warning(f"[Patch][QA v4.9.91+] No Thai fonts found in: {preferred_fonts}. Fallback to DejaVu Sans.")
+        if warn_on_failure:
+            font_logger.warning(
+                f"[Patch][QA v4.9.91+] No Thai fonts found in: {preferred_fonts}. Fallback to DejaVu Sans."
+            )
         plt.rcParams['font.family'] = 'DejaVu Sans'
         return False
 
@@ -1382,7 +1385,8 @@ def setup_fonts(output_dir: str | None = None): # output_dir is not used current
                         fm._load_fontmanager(try_read_cache=False) # type: ignore
                         font_setup_logger.info("      Font cache rebuilt. Attempting to set font again...")
                         font_set_successfully = set_thai_font(preferred_font_name)
-                        if not font_set_successfully: font_set_successfully = set_thai_font("Loma")
+                        if not font_set_successfully:
+                            font_set_successfully = set_thai_font("Loma", warn_on_failure=False)
                         if font_set_successfully: font_setup_logger.info("      (Success) Thai font set after installation and cache rebuild.")
                         else:
                             font_setup_logger.warning("      (Warning) Thai font still not set after installation. A manual Colab Runtime Restart might be needed.")
@@ -1404,7 +1408,7 @@ def setup_fonts(output_dir: str | None = None): # output_dir is not used current
             fallback_fonts = ["Loma", "Garuda", "Norasi", "Kinnari", "Waree", "THSarabunNew"]
             font_setup_logger.info(f"\n   Trying fallbacks ({', '.join(fallback_fonts)})...")
             for fb_font in fallback_fonts:
-                if set_thai_font(fb_font):
+                if set_thai_font(fb_font, warn_on_failure=False):
                     font_set_successfully = True
                     break
         if not font_set_successfully:
