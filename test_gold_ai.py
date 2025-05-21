@@ -2998,6 +2998,89 @@ def test__isinstance_safe_magicmock():
     assert mod._isinstance_safe(mock_df, fake_type) is True
 
 
+class TestUtilityCoverageQA(unittest.TestCase):
+    """[Patch][QA v4.9.110] เพิ่ม coverage ให้ utility helpers"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ga = safe_import_gold_ai()
+        cls.pd = cls.ga.pd
+        cls.ga.datetime = datetime
+
+    def test_safe_float_fmt_variants(self):
+        self.assertEqual(self.ga.safe_float_fmt(123), "123.000")
+        self.assertEqual(self.ga.safe_float_fmt(123.456, 2), "123.46")
+        self.assertEqual(self.ga.safe_float_fmt("789.1", 1), "789.1")
+        import numpy as np
+        self.assertEqual(self.ga.safe_float_fmt(np.nan), "nan")
+        self.assertEqual(self.ga.safe_float_fmt(np.inf), "inf")
+        self.assertEqual(self.ga.safe_float_fmt([-123]), "-123.000")
+
+        class WeirdObj:
+            def __float__(self):
+                return 77.7
+
+        self.assertEqual(self.ga.safe_float_fmt(WeirdObj(), 1), "77.7")
+
+        class NoFloat:
+            pass
+
+        self.assertEqual(self.ga.safe_float_fmt(NoFloat()), str(NoFloat()))
+        self.assertEqual(self.ga._float_fmt(1.2345, 2), "1.23")
+
+    def test_ensure_dataframe_all_cases(self):
+        import pandas as pd
+        df = pd.DataFrame({"a": [1, 2]})
+        result = self.ga.ensure_dataframe(df)
+        self.assertTrue(isinstance(result, pd.DataFrame))
+        empty_df = pd.DataFrame()
+        result2 = self.ga.ensure_dataframe(empty_df)
+        self.assertTrue(isinstance(result2, pd.DataFrame))
+        result3 = self.ga.ensure_dataframe([{"b": 1}, {"b": 2}])
+        self.assertTrue(isinstance(result3, pd.DataFrame))
+        result4 = self.ga.ensure_dataframe([])
+        self.assertTrue(isinstance(result4, pd.DataFrame) and result4.empty)
+        result5 = self.ga.ensure_dataframe({"c": 3})
+        self.assertTrue(isinstance(result5, pd.DataFrame))
+        result6 = self.ga.ensure_dataframe({})
+        self.assertTrue(isinstance(result6, pd.DataFrame))
+        result7 = self.ga.ensure_dataframe(12345)
+        self.assertEqual(result7, 12345)
+        result8 = self.ga.ensure_dataframe("test")
+        self.assertEqual(result8, "test")
+
+    def test_simple_converter_all_paths(self):
+        import numpy as np
+        import pandas as pd
+        self.assertEqual(self.ga.simple_converter(np.int32(10)), 10)
+        self.assertEqual(self.ga.simple_converter(np.float64(1.1)), 1.1)
+        self.assertIsNone(self.ga.simple_converter(np.nan))
+        self.assertEqual(self.ga.simple_converter(np.inf), "Infinity")
+        self.assertEqual(self.ga.simple_converter(-np.inf), "-Infinity")
+        self.assertEqual(
+            self.ga.simple_converter(pd.Timestamp("2024-01-01")),
+            "2024-01-01T00:00:00",
+        )
+        self.assertTrue(self.ga.simple_converter(np.bool_(1)))
+        self.assertIsNone(self.ga.simple_converter(pd.NaT))
+        self.assertEqual(
+            self.ga.simple_converter(datetime.datetime(2022, 12, 31)),
+            "2022-12-31T00:00:00",
+        )
+        self.assertEqual(
+            self.ga.simple_converter(datetime.date(2022, 12, 30)), "2022-12-30"
+        )
+        self.assertEqual(self.ga.simple_converter("abc"), "abc")
+        self.assertEqual(self.ga.simple_converter([1, 2, 3]), [1, 2, 3])
+        self.assertIsInstance(self.ga.simple_converter(set([1, 2])), str)
+        self.assertIsInstance(self.ga.simple_converter(complex(2, 3)), str)
+
+        class DummyObj:
+            pass
+
+        self.assertIsInstance(self.ga.simple_converter(DummyObj()), str)
+
+
 if __name__ == "__main__":
     if cov:
         cov.start()
