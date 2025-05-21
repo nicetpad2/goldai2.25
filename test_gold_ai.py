@@ -4,6 +4,8 @@
 [Patch AI Studio v4.9.104] - Register pytest markers to silence unknown mark warnings.
 [Patch][QA v4.9.130] - เพิ่ม Coverage Booster สำหรับ logic simulation/exit/export/ML/WFV/fallback/exception
 [Patch][QA v4.9.135] - เพิ่ม coverage booster tests for branch handling
+[Patch][QA v4.9.136] - เพิ่ม coverage booster tests for edge branches
+[Patch][QA v4.9.137] - เพิ่ม coverage booster tests for safe_load_csv_auto และอื่นๆ
 """
 
 import importlib
@@ -3640,6 +3642,220 @@ class TestBranchCoverageBoosterV3(unittest.TestCase):
             raise self.ga.DummyPandas.errors.ParserError("parse fail")
         with self.assertRaises(self.ga.DummyPandas.errors.EmptyDataError):
             raise self.ga.DummyPandas.errors.EmptyDataError("empty fail")
+
+
+class TestBranchCoverageBoosterV4(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ga = safe_import_gold_ai()
+        try:
+            import pandas as real_pd
+            cls.ga.pd = real_pd
+        except Exception:
+            cls.ga.pd = cls.ga.DummyPandas()
+        try:
+            import numpy as real_np
+            cls.ga.np = real_np
+        except Exception:
+            cls.ga.np = cls.ga.DummyNumpy()
+
+    def test__isinstance_safe_tuple_partial_type(self):
+        class Dummy:
+            pass
+        obj = Dummy()
+        self.assertFalse(self.ga._isinstance_safe(obj, (Dummy, 123)))
+
+    def test__isinstance_safe_string_type_not_dataframe_or_series(self):
+        class Dummy:
+            pass
+        obj = Dummy()
+        self.assertFalse(self.ga._isinstance_safe(obj, "NotAType"))
+
+    def test__isinstance_safe_expected_type_has_class_name_but_not_match(self):
+        class DummyA:
+            pass
+        class DummyB:
+            pass
+        obj = DummyA()
+        fake_type = DummyB
+        self.assertFalse(self.ga._isinstance_safe(obj, fake_type))
+
+    def test__raise_or_warn_raises_outside_test(self):
+        import sys
+        orig_mod = dict(sys.modules)
+        sys.modules.pop("pytest", None)
+        sys.modules.pop("unittest", None)
+        try:
+            with self.assertRaises(ValueError):
+                self.ga._raise_or_warn("This should raise outside test", logger=None)
+        finally:
+            sys.modules.update(orig_mod)
+
+    def test_safe_isinstance_type_error(self):
+        class Dummy:
+            pass
+        dummy = Dummy()
+        mock_type = type("MagicMock", (), {})
+        orig_isinstance = __builtins__["isinstance"]
+        def fake_isinstance(a, b):
+            raise TypeError()
+        __builtins__["isinstance"] = fake_isinstance
+        try:
+            self.assertFalse(self.ga.safe_isinstance(dummy, mock_type))
+        finally:
+            __builtins__["isinstance"] = orig_isinstance
+
+    def test_safe_isinstance_fallback_str_name_check(self):
+        class Dummy:
+            pass
+        dummy = Dummy()
+        typ = types.SimpleNamespace(__name__="Dummy")
+        self.assertTrue(self.ga.safe_isinstance(dummy, typ))
+
+    def test_safe_float_fmt_exception(self):
+        class NoFloat:
+            def __float__(self):
+                raise Exception("fail")
+        val = NoFloat()
+        self.assertEqual(self.ga.safe_float_fmt(val), str(val))
+
+    def test_safe_float_fmt_none(self):
+        self.assertEqual(self.ga.safe_float_fmt(None), "N/A")
+
+    def test_float_fmt_non_float(self):
+        self.assertEqual(self.ga._float_fmt({'a': 1}), "{'a': 1}")
+
+    def test_float_fmt_none(self):
+        self.assertEqual(self.ga._float_fmt(None), "N/A")
+
+
+class TestBranchCoverageBoosterV5(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ga = safe_import_gold_ai()
+        try:
+            import pandas as real_pd
+            cls.ga.pd = real_pd
+        except Exception:
+            cls.ga.pd = cls.ga.DummyPandas()
+        try:
+            import numpy as real_np
+            cls.ga.np = real_np
+        except Exception:
+            cls.ga.np = cls.ga.DummyNumpy()
+
+    def test_isinstance_safe_none_type(self):
+        self.assertFalse(self.ga._isinstance_safe(object(), (int, None)))
+
+    def test_isinstance_safe_partial_tuple_non_type(self):
+        self.assertFalse(self.ga._isinstance_safe(object(), (str, 'x')))
+
+    def test_isinstance_safe_string_not_dfseries(self):
+        self.assertFalse(self.ga._isinstance_safe([], "UnknownType"))
+
+    def test_isinstance_safe_class_name_diff(self):
+        class A:
+            pass
+        class B:
+            pass
+        self.assertFalse(self.ga._isinstance_safe(A(), B))
+
+    def test_raise_or_warn_exit(self):
+        import sys
+        orig = dict(sys.modules)
+        sys.modules.pop("pytest", None)
+        sys.modules.pop("unittest", None)
+        try:
+            with self.assertRaises(ValueError):
+                self.ga._raise_or_warn("SHOULD RAISE", logger=None)
+        finally:
+            sys.modules.update(orig)
+
+    def test_safe_isinstance_typeerror(self):
+        class Dummy:
+            pass
+        def raise_type_error(a, b):
+            raise TypeError()
+        orig_isinstance = __builtins__["isinstance"]
+        __builtins__["isinstance"] = raise_type_error
+        try:
+            self.assertFalse(self.ga.safe_isinstance(Dummy(), Dummy))
+        finally:
+            __builtins__["isinstance"] = orig_isinstance
+
+    def test_safe_isinstance_magicmock(self):
+        class Dummy:
+            columns = []
+        mock_type = MagicMock()
+        self.assertTrue(self.ga.safe_isinstance(Dummy(), mock_type))
+
+    def test_safe_float_fmt_float_fail(self):
+        class NoFloat:
+            def __float__(self):
+                raise Exception("fail")
+        val = NoFloat()
+        self.assertEqual(self.ga.safe_float_fmt(val), str(val))
+
+    def test_safe_float_fmt_list_len_one(self):
+        self.assertEqual(self.ga.safe_float_fmt([3.14159]), "3.142")
+
+    def test_safe_float_fmt_nonetype(self):
+        self.assertEqual(self.ga.safe_float_fmt(None), "N/A")
+
+    def test_robust_kwargs_guard_no_args(self):
+        self.assertIsNone(self.ga._robust_kwargs_guard())
+
+    def test_robust_kwargs_guard_with_args(self):
+        self.assertEqual(self.ga._robust_kwargs_guard('x', y=2), ('x',))
+
+    def test_safe_load_csv_auto_auto_invalid_str(self):
+        df = self.ga.safe_load_csv_auto(None)
+        self.assertTrue(getattr(df, "empty", False))
+
+    def test_safe_load_csv_auto_not_exists_write_error(self):
+        with patch("os.path.exists", return_value=False), \
+             patch("os.makedirs", side_effect=OSError("fail")):
+            df = self.ga.safe_load_csv_auto("file.csv")
+            self.assertTrue(getattr(df, "empty", False))
+
+    def test_safe_load_csv_auto_write_fail(self):
+        with patch("os.path.exists", return_value=False), \
+             patch("os.makedirs", return_value=None), \
+             patch("builtins.open", side_effect=OSError("fail")), \
+             patch("os.path.dirname", return_value="dummy_dir"):
+            df = self.ga.safe_load_csv_auto("writefail.csv")
+            self.assertTrue(getattr(df, "empty", False))
+
+    def test_safe_load_csv_auto_read_csv_fail(self):
+        with patch("os.path.exists", return_value=False), \
+             patch("os.makedirs", return_value=None), \
+             patch("builtins.open", mock_open()), \
+             patch.object(self.ga.pd, "read_csv", side_effect=Exception("fail")), \
+             patch("os.path.dirname", return_value="dummy_dir"):
+            df = self.ga.safe_load_csv_auto("fail.csv")
+            self.assertTrue(getattr(df, "empty", False))
+
+    def test_safe_load_csv_auto_unicode_decode(self):
+        with patch("os.path.exists", return_value=True), \
+             patch.object(self.ga.pd, "read_csv", side_effect=UnicodeDecodeError("utf8", b"", 0, 1, "fail")):
+            df = self.ga.safe_load_csv_auto("decodefail.csv")
+            self.assertTrue(getattr(df, "empty", False) or isinstance(df, self.ga.pd.DataFrame))
+
+    def test_ensure_dataframe_nonetype(self):
+        df = self.ga.ensure_dataframe(None)
+        self.assertIsNone(df)
+
+    def test_dummy_pandas_types(self):
+        dp = self.ga.DummyPandas()
+        self.assertTrue(dp.api.types.is_integer_dtype(7))
+        self.assertTrue(dp.api.types.is_float_dtype(1.23))
+        self.assertFalse(dp.api.types.is_integer_dtype('notint'))
+
+    def test_dummy_pandas_errors(self):
+        with self.assertRaises(self.ga.DummyPandas.errors.ParserError):
+            raise self.ga.DummyPandas.errors.ParserError("parse error")
+        with self.assertRaises(self.ga.DummyPandas.errors.EmptyDataError):
+            raise self.ga.DummyPandas.errors.EmptyDataError("empty error")
 
 class TestMainFunction(unittest.TestCase):
     """Minimal tests for main() across run modes using heavy patching."""

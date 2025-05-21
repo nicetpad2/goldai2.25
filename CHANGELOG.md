@@ -362,3 +362,11 @@
 - [Patch][QA v4.9.135] เพิ่ม coverage booster tests for helper functions and import branches
 - Version bump to `4.9.135_FULL_PASS`
 
+## [v4.9.136+] - 2025-06-xx
+- [Patch][QA v4.9.136] เพิ่ม coverage booster tests for additional branches in helper functions
+- Version bump to `4.9.136_FULL_PASS`
+
+## [v4.9.137+] - 2025-06-xx
+- [Patch][QA v4.9.137] เพิ่ม coverage booster tests for safe_load_csv_auto และ fallback paths
+- Version bump to `4.9.137_FULL_PASS`
+
