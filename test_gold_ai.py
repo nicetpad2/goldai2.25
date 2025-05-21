@@ -2,7 +2,7 @@
 
 [Patch AI Studio v4.9.68] - Validate global pandas availability and import flag handling.
 [Patch AI Studio v4.9.104] - Register pytest markers to silence unknown mark warnings.
-[Patch][QA v4.9.120] - เพิ่มชุดทดสอบ coverage simulate_trades และ edge cases
+[Patch][QA v4.9.130] - เพิ่ม Coverage Booster สำหรับ logic simulation/exit/export/ML/WFV/fallback/exception
 """
 
 import importlib
@@ -3213,6 +3213,166 @@ class TestCoverageBooster(unittest.TestCase):
         tm.update_forced_entry_result(False)
         tm.last_trade_time = None
         self.assertFalse(tm.should_force_entry(None, None, None, None, None, None))
+
+
+class TestCoverageEnterprise(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import importlib
+        cls.ga = importlib.import_module("gold_ai2025")
+        import pandas as pd
+        cls.pd = pd
+        cls.cfg = cls.ga.StrategyConfig({})
+        cls.rm = cls.ga.RiskManager(cls.cfg)
+        cls.tm = cls.ga.TradeManager(cls.cfg, cls.rm)
+
+    def test_simulate_trades_all_exit_and_forced(self):
+        pd, ga, cfg = self.pd, self.ga, self.cfg
+        df = pd.DataFrame({
+            "Open": [1000, 1001, 1002, 1003, 1004, 1005, 1006],
+            "High": [1005, 1006, 1007, 1008, 1009, 1010, 1011],
+            "Low": [995, 996, 997, 998, 999, 1000, 1001],
+            "Close": [1001, 1002, 1003, 1004, 1005, 1006, 1007],
+            "Entry_Long": [1, 0, 0, 0, 0, 0, 0],
+            "ATR_14_Shifted": [1.0]*7,
+            "Signal_Score": [2.0]*7,
+            "Trade_Reason": ["test"]*7,
+            "session": ["Asia"]*7,
+            "Gain_Z": [0.3]*7,
+            "MACD_hist_smooth": [0.1]*7,
+            "RSI": [50]*7,
+            "forced_entry": [True, False, False, True, False, False, False],
+            "_forced_entry_flag": [False, True, False, False, False, True, False],
+            "forced_entry_flag": [False, False, True, False, False, False, True],
+        }, index=pd.date_range("2023-01-01", periods=7, freq="min"))
+        tl, eq, summ = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+        forceds = [t for t in tl if t.get("exit_reason") == "FORCED_ENTRY"]
+        self.assertTrue(len(forceds) > 0)
+
+    def test_simulate_trades_rare_edge_cases(self):
+        pd, ga, cfg = self.pd, self.ga, self.cfg
+        df1 = pd.DataFrame({
+            "Open": [1000, 1001],
+            "High": [1001, 1002],
+            "Low": [999, 1000],
+            "Close": [1001, 1002],
+            "ATR_14_Shifted": [1.0, 1.0],
+            "Signal_Score": [2.0, 2.0],
+            "Trade_Reason": ["t", "t"],
+            "session": ["Asia", "Asia"],
+        }, index=pd.date_range("2023-01-01", periods=2, freq="min"))
+        result = ga.simulate_trades(df1, cfg, return_tuple=True)
+        self.assertIsInstance(result, tuple)
+        with self.assertRaises(Exception):
+            ga.simulate_trades("not_a_df", cfg)
+
+    def test_export_run_summary_to_json_export_fail(self):
+        ga = self.ga
+        import builtins
+        orig_open = builtins.open
+        def fail_open(*a, **k):
+            raise PermissionError("no write")
+        builtins.open = fail_open
+        try:
+            with self.assertRaises(Exception):
+                ga.export_run_summary_to_json({"x": 1}, "/root/testfail.json")
+        finally:
+            builtins.open = orig_open
+
+    def test_export_trade_log_to_csv_export_fail(self):
+        ga = self.ga
+        import builtins
+        orig_open = builtins.open
+        def fail_open(*a, **k):
+            raise PermissionError("no write")
+        builtins.open = fail_open
+        try:
+            with self.assertRaises(Exception):
+                ga.export_trade_log_to_csv([{"x": 1}], "/root/testfail.csv")
+        finally:
+            builtins.open = orig_open
+
+    def test_run_backtest_simulation_v34_all_flags(self):
+        pd, ga, cfg = self.pd, self.ga, self.cfg
+        df = pd.DataFrame({
+            "Open": [1000],
+            "High": [1002],
+            "Low": [998],
+            "Close": [1001],
+            "Entry_Long": [1],
+            "ATR_14_Shifted": [1.0],
+            "Signal_Score": [2.0],
+            "Trade_Reason": ["test"],
+            "session": ["Asia"],
+            "Gain_Z": [0.3],
+            "MACD_hist_smooth": [0.1],
+            "RSI": [50],
+        }, index=pd.date_range("2023-01-01", periods=1, freq="min"))
+        result = ga.run_backtest_simulation_v34(df.copy(), config_obj=cfg, label="QA", initial_capital_segment=1000.0, return_tuple=True)
+        self.assertEqual(len(result), 12)
+        with self.assertRaises(Exception):
+            ga.run_backtest_simulation_v34("not_a_df", config_obj=cfg)
+
+    def test_wfv_fold_edge_case(self):
+        ga = self.ga
+        pd = self.pd
+        cfg = self.cfg
+        rm = ga.RiskManager(cfg)
+        tm = ga.TradeManager(cfg, rm)
+        df = pd.DataFrame({"Open": [1000], "High": [1001], "Low": [999], "Close": [1000], "Gain_Z": [0.3], "RSI": [50], "Pattern_Label": ["Breakout"], "Volatility_Index": [1.0]}, index=pd.date_range("2023-01-01", periods=1, freq="min"))
+        result = ga.run_all_folds_with_threshold(cfg, rm, tm, df.copy(), "/tmp")
+        self.assertTrue(isinstance(result, tuple))
+
+    def test_plot_equity_curve_file_fail(self):
+        ga = self.ga
+        import builtins
+        orig_open = builtins.open
+        def fail_open(*a, **k):
+            raise PermissionError("no write")
+        builtins.open = fail_open
+        try:
+            ga.plot_equity_curve(self.cfg, [100,110], "Test", "/root", "plotfail")
+        finally:
+            builtins.open = orig_open
+
+    def test_risk_manager_soft_hard_kill_branch(self):
+        ga, cfg = self.ga, self.cfg
+        rm = ga.RiskManager(cfg)
+        rm.dd_peak = 100
+        rm.soft_kill_active = False
+        rm.update_drawdown(80)
+        self.assertTrue(rm.soft_kill_active)
+        with self.assertRaises(RuntimeError):
+            rm.update_drawdown(60)
+
+    def test_trade_manager_spike_guard_session(self):
+        ga = self.ga
+        cfg = self.cfg
+        rm = ga.RiskManager(cfg)
+        tm = ga.TradeManager(cfg, rm)
+        row = {"spike_score": 1.0, "Pattern_Label": "Breakout"}
+        self.assertTrue(ga.spike_guard_blocked(row, "London", cfg))
+        self.assertFalse(ga.spike_guard_blocked(row, "Asia", cfg))
+
+    def test_branch_rare_exit(self):
+        ga, cfg = self.ga, self.cfg
+        pd = self.pd
+        df = pd.DataFrame({
+            "Open": [1000, 1001],
+            "High": [1002, 1003],
+            "Low": [998, 999],
+            "Close": [1001, 1002],
+            "Entry_Long": [0, 0],
+            "ATR_14_Shifted": [1.0, 1.0],
+            "Signal_Score": [0, 0],
+            "Trade_Reason": ["", ""],
+            "session": ["Asia", "Asia"],
+            "Gain_Z": [0.1, 0.2],
+            "MACD_hist_smooth": [0.1, 0.1],
+            "RSI": [40, 40]
+        }, index=pd.date_range("2023-01-01", periods=2, freq="min"))
+        tl, eq, summ = ga.simulate_trades(df.copy(), cfg, return_tuple=True)
+        self.assertEqual(tl, [])
 
 
 if __name__ == "__main__":
