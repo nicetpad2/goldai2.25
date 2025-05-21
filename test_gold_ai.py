@@ -3472,6 +3472,30 @@ class TestHelperFunctionsSmall(unittest.TestCase):
         self.assertFalse(self.ga.safe_isinstance(mm, bad))
         self.assertFalse(self.ga.safe_isinstance("x", int))
 
+    def test_safe_numeric_none(self):
+        self.assertEqual(self.ga._safe_numeric(None, default=0.0), 0.0)
+
+    def test_safe_numeric_string_number(self):
+        self.assertEqual(self.ga._safe_numeric("5"), 5.0)
+
+    def test_safe_numeric_string_invalid(self):
+        self.assertEqual(self.ga._safe_numeric("abc", default=2.0), 2.0)
+
+    def test_safe_numeric_pd_na(self):
+        pd = self.ga.pd
+        self.assertEqual(self.ga._safe_numeric(pd.NA, default=1.0, nan_as=-1), -1)
+
+    def test_safe_numeric_exception(self):
+        pd = self.ga.pd
+        orig = pd.to_numeric
+        def boom(*args, **kwargs):
+            raise ValueError("boom")
+        pd.to_numeric = boom
+        try:
+            self.assertEqual(self.ga._safe_numeric("x", default=1.0, log_ctx="t"), 1.0)
+        finally:
+            pd.to_numeric = orig
+
 
 class TestCoverageADA(unittest.TestCase):
     """Artificially exercise lines for coverage using exec."""
