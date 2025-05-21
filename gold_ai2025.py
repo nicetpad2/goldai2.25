@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.138_FULL_PASS"  # [Patch][QA v4.9.138] coverage booster
+MINIMAL_SCRIPT_VERSION = "4.9.139_FULL_PASS"  # [Patch][QA v4.9.139] coverage booster
 
 
 

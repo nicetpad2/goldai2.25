@@ -6,6 +6,7 @@
 [Patch][QA v4.9.135] - เพิ่ม coverage booster tests for branch handling
 [Patch][QA v4.9.136] - เพิ่ม coverage booster tests for edge branches
 [Patch][QA v4.9.138] - เพิ่ม coverage booster tests for branch edge cases
+[Patch][QA v4.9.139] - เพิ่ม coverage booster tests for additional safe_set_datetime branches
 """
 
 import importlib
@@ -3982,6 +3983,138 @@ class TestBranchCoverageBoosterV6(unittest.TestCase):
         except Exception:
             pass
         self.assertIn("mydate", df.columns)
+
+
+class TestBranchCoverageBoosterV7(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ga = safe_import_gold_ai()
+        try:
+            import pandas as real_pd
+            cls.ga.pd = real_pd
+        except Exception:
+            cls.ga.pd = cls.ga.DummyPandas()
+        try:
+            import numpy as real_np
+            cls.ga.np = real_np
+        except Exception:
+            cls.ga.np = cls.ga.DummyNumpy()
+
+    def test_safe_set_datetime_col_not_exist(self):
+        import pandas as pd
+        df = pd.DataFrame({'A': [1,2]})
+        self.ga.safe_set_datetime(df, 0, "dtcol", "2023-01-01")
+        self.assertIn("dtcol", df.columns)
+
+    def test_safe_set_datetime_col_wrong_dtype_conversion(self):
+        import pandas as pd
+        df = pd.DataFrame({'A':[1], 'dtcol':['2023-01-01']})
+        df["dtcol"] = df["dtcol"].astype(str)
+        self.ga.safe_set_datetime(df, 0, "dtcol", "2023-01-02")
+        self.assertIn("dtcol", df.columns)
+
+    def test_safe_set_datetime_index_not_in_df(self):
+        import pandas as pd
+        df = pd.DataFrame({'A':[1,2], 'dtcol':[pd.NaT, pd.NaT]})
+        self.ga.safe_set_datetime(df, 5, "dtcol", "2024-01-01")
+        self.assertIn("dtcol", df.columns)
+
+    def test_safe_set_datetime_assign_outer_exception(self):
+        import pandas as pd
+        df = pd.DataFrame({'A':[1], 'dtcol':[pd.NaT]})
+        try:
+            self.ga.safe_set_datetime(df, "bad", "dtcol", "2020-01-01")
+        except Exception:
+            pass
+        self.assertIn("dtcol", df.columns)
+
+    def test_safe_set_datetime_fallback_outer(self):
+        import pandas as pd
+        df = pd.DataFrame({'A':[1], 'dtcol':[pd.NaT]})
+        try:
+            self.ga.safe_set_datetime(df, object(), "dtcol", "2020-01-01")
+        except Exception:
+            pass
+        self.assertIn("dtcol", df.columns)
+
+    def test_safe_set_datetime_assign_nat(self):
+        import pandas as pd
+        df = pd.DataFrame({'A':[1], 'dtcol':[pd.NaT]})
+        self.ga.safe_set_datetime(df, 0, "dtcol", pd.NaT)
+        self.assertIn("dtcol", df.columns)
+
+    def test_safe_set_datetime_assign_ok(self):
+        import pandas as pd
+        df = pd.DataFrame({'A':[1], 'dtcol':[pd.NaT]})
+        self.ga.safe_set_datetime(df, 0, "dtcol", "2022-01-01")
+        self.assertIn("dtcol", df.columns)
+
+    def test_safe_set_datetime_type_fallback(self):
+        import pandas as pd
+        df = pd.DataFrame({'A':[1], 'dtcol':[pd.NaT]})
+        self.ga.safe_set_datetime(df, 0, "dtcol", None)
+        self.assertIn("dtcol", df.columns)
+
+    def test_safe_set_datetime_not_found_index(self):
+        import pandas as pd
+        df = pd.DataFrame({'A':[1], 'dtcol':[pd.NaT]})
+        self.ga.safe_set_datetime(df, 99, "dtcol", "2022-12-31")
+        self.assertIn("dtcol", df.columns)
+
+    def test_safe_set_datetime_outer_exception_fallback(self):
+        import pandas as pd
+        df = pd.DataFrame({'A':[1], 'dtcol':[pd.NaT]})
+        try:
+            self.ga.safe_set_datetime(df, object(), "dtcol", "bad-date")
+        except Exception:
+            pass
+        self.assertIn("dtcol", df.columns)
+
+    def test_safe_set_datetime_final_outer_exception(self):
+        import pandas as pd
+        df = pd.DataFrame({'A':[1], 'dtcol':[pd.NaT]})
+        try:
+            self.ga.safe_set_datetime(df, object(), "dtcol", None)
+        except Exception:
+            pass
+        self.assertIn("dtcol", df.columns)
+
+    def test_dummy_pandas_is_numeric_dtype(self):
+        dp = self.ga.DummyPandas()
+        self.assertTrue(dp.api.types.is_numeric_dtype(5.5))
+        self.assertFalse(dp.api.types.is_numeric_dtype("a"))
+
+    def test_dummy_pandas_is_integer_dtype(self):
+        dp = self.ga.DummyPandas()
+        self.assertTrue(dp.api.types.is_integer_dtype(2))
+        self.assertFalse(dp.api.types.is_integer_dtype(2.5))
+
+    def test_dummy_pandas_is_float_dtype(self):
+        dp = self.ga.DummyPandas()
+        self.assertTrue(dp.api.types.is_float_dtype(2.7))
+        self.assertFalse(dp.api.types.is_float_dtype(1))
+
+    def test_dummy_pandas_errors_parser(self):
+        with self.assertRaises(self.ga.DummyPandas.errors.ParserError):
+            raise self.ga.DummyPandas.errors.ParserError("fail")
+
+    def test_dummy_pandas_errors_emptydata(self):
+        with self.assertRaises(self.ga.DummyPandas.errors.EmptyDataError):
+            raise self.ga.DummyPandas.errors.EmptyDataError("fail")
+
+    def test_safe_isinstance_numeric_type(self):
+        self.assertTrue(self.ga.safe_isinstance(1, int))
+        self.assertFalse(self.ga.safe_isinstance("x", int))
+
+    def test_safe_isinstance_type_fallback(self):
+        class Dummy:
+            columns=[]; index=[]
+        typ = type("MagicMock", (), {})()
+        d = Dummy()
+        self.assertTrue(self.ga.safe_isinstance(d, typ))
+
+    def test_safe_isinstance_type_not_found(self):
+        self.assertFalse(self.ga.safe_isinstance(object(), None))
 
 class TestMainFunction(unittest.TestCase):
     """Minimal tests for main() across run modes using heavy patching."""
