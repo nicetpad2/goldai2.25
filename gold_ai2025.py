@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.104_FULL_PASS"  # [Patch][QA v4.9.104] refactor utils
+MINIMAL_SCRIPT_VERSION = "4.9.105_FULL_PASS"  # [Patch][QA v4.9.105] reload warning fix
 
 
 
