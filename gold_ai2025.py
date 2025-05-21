@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.105_FULL_PASS"  # [Patch][QA v4.9.105] reload warning fix
+MINIMAL_SCRIPT_VERSION = "4.9.110_FULL_PASS"  # [Patch][QA v4.9.110] utility coverage tests
 
 
 
@@ -1515,9 +1515,14 @@ def simple_converter(o):
         if np.isnan(o): return None
         if np.isinf(o): return "Infinity" if o > 0 else "-Infinity"
         return float(o)
-    if _isinstance_safe(o, pd.Timestamp): return o.isoformat()
-    if _isinstance_safe(o, np.bool_): return bool(o)
-    if pd.isna(o): return None
+    if _isinstance_safe(o, pd.Timestamp):
+        return o.isoformat()
+    if _isinstance_safe(o, np.bool_):
+        return bool(o)
+    if _isinstance_safe(o, (list, dict)):
+        return o  # [Patch][QA v4.9.110] handle lists/dicts before isna check
+    if pd.isna(o):
+        return None
     if _isinstance_safe(o, (datetime.datetime, datetime.date)): return o.isoformat()
     try:
         if _isinstance_safe(o, (str, bool, list, dict, type(None))):

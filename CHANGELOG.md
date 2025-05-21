@@ -330,3 +330,7 @@
 - [Patch][QA v4.9.105] Ignore NumPy reload warnings via pytest.ini
 - Version bump to `4.9.105_FULL_PASS`
 
+## [v4.9.110+] - 2025-06-xx
+- [Patch][QA v4.9.110] เพิ่ม unit test coverage สำหรับ utility functions
+- Version bump to `4.9.110_FULL_PASS`
+
