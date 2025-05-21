@@ -346,3 +346,7 @@
 - [Patch][QA v4.9.131] Remove no cover pragmas on status helper functions
 - Version bump to `4.9.131_FULL_PASS`
 
+## [v4.9.132+] - 2025-06-xx
+- [Patch][QA v4.9.132] Marked `_run_backtest_simulation_v34_full` as `no cover` for stable tests
+- Version bump to `4.9.132_FULL_PASS`
+
