@@ -3013,6 +3013,30 @@ def test__isinstance_safe_magicmock():
     assert mod._isinstance_safe(mock_df, fake_type) is True
 
 
+def test__isinstance_safe_magicmock_negative():
+    mod = safe_import_gold_ai()
+    from unittest.mock import MagicMock
+    assert mod._isinstance_safe(object(), MagicMock) is False
+
+
+def test__isinstance_safe_pandas_strings():
+    mod = safe_import_gold_ai()
+    pd = mod.pd
+    df = pd.DataFrame()
+    series = pd.Series(dtype=float)
+    assert mod._isinstance_safe(df, "DataFrame") is True
+    assert mod._isinstance_safe(series, "Series") is True
+
+
+def test__isinstance_safe_classname_match_dataframe():
+    mod = safe_import_gold_ai()
+    pd = mod.pd
+    df = pd.DataFrame()
+    fake_type = types.SimpleNamespace(__name__="DataFrame")
+    assert mod._isinstance_safe(df, fake_type) is True
+    assert mod._isinstance_safe(object(), fake_type) is False
+
+
 class TestUtilityCoverageQA(unittest.TestCase):
     """[Patch][QA v4.9.110] เพิ่ม coverage ให้ utility helpers"""
 
