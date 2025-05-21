@@ -39,7 +39,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.102_FULL_PASS"  # [Patch][QA v4.9.102] expanded unit tests
+MINIMAL_SCRIPT_VERSION = "4.9.103_FULL_PASS"  # [Patch][QA v4.9.103] register pytest markers
 
 
 

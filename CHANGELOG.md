@@ -318,3 +318,7 @@
 - [Patch][QA v4.9.102] Added unit tests for error, permission, fallback, forced entry, and ImportError paths
 - Version bump to `4.9.102_FULL_PASS`
 
+## [v4.9.103+] - 2025-06-xx
+- [Patch][QA v4.9.103] Added pytest.ini to register custom markers
+- Version bump to `4.9.103_FULL_PASS`
+
