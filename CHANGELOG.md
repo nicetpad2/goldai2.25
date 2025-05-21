@@ -342,3 +342,7 @@
 - [Patch][QA v4.9.130] Coverage booster สำหรับ logic simulation/exit/export/ML/WFV/fallback/exception
 - Version bump to `4.9.130_FULL_PASS`
 
+## [v4.9.131+] - 2025-06-xx
+- [Patch][QA v4.9.131] Remove no cover pragmas on status helper functions
+- Version bump to `4.9.131_FULL_PASS`
+
