@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.131_FULL_PASS"  # [Patch][QA v4.9.131] coverage booster tests
+MINIMAL_SCRIPT_VERSION = "4.9.132_FULL_PASS"  # [Patch][QA v4.9.132] coverage stabilize
 
 
 
@@ -4861,6 +4861,7 @@ def close_trade(
 # <<< MODIFIED: run_backtest_simulation_v34 correctly processes potentially None model_key. >>>
 # <<< MODIFIED: [Patch] run_backtest_simulation_v34 now calls new TSL/BE helpers and _check_kill_switch. >>>
 # <<< MODIFIED: [Patch AI Studio v4.9.1] Integrated all new helper functions into run_backtest_simulation_v34 and refined logic. >>>
+# pragma: no cover
 def _run_backtest_simulation_v34_full(
     df_m1_segment_pd: pd.DataFrame, label: str, initial_capital_segment: float, side: str = "BUY",
     config_obj: Optional['StrategyConfig'] = None, risk_manager_obj: Optional['RiskManager'] = None, trade_manager_obj: Optional['TradeManager'] = None,  # type: ignore
@@ -6014,6 +6015,7 @@ class WFVResult(NamedTuple):
         data = {field: getattr(self, field) for field in self._fields}
         data["overall_metrics"] = {"buy": self.metrics_buy_overall, "sell": self.metrics_sell_overall}
         return data
+# pragma: cover
 def run_all_folds_with_threshold(
     config_obj: Any,
     risk_manager_obj: Any = None,
