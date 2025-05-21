@@ -338,3 +338,7 @@
 - [Patch][QA v4.9.120] เพิ่มชุดทดสอบ coverage simulate_trades, export, ML fallback
 - Version bump to `4.9.120_FULL_PASS`
 
+## [v4.9.130+] - 2025-06-xx
+- [Patch][QA v4.9.130] Coverage booster สำหรับ logic simulation/exit/export/ML/WFV/fallback/exception
+- Version bump to `4.9.130_FULL_PASS`
+
