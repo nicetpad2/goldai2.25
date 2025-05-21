@@ -20,7 +20,7 @@ import subprocess
 import importlib
 import logging
 import logging.handlers  # Keep for potential use in main()
-import datetime
+import datetime as dt
 from datetime import datetime
 import time
 import warnings
@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.140_FULL_PASS"  # [Patch][QA v4.9.140] requests import fix
+MINIMAL_SCRIPT_VERSION = "4.9.141_FULL_PASS"  # [Patch][QA v4.9.141] datetime alias fix
 
 
 
@@ -1260,7 +1260,7 @@ try_import_with_install(
     success_flag_global_name="requests_imported",
     log_name="REQUESTS",
 )
-import datetime # Standard datetime import # Already imported
+import datetime as dt  # Standard datetime import - alias dt
 
 # --- Helper for Safe Global Access (DEPRECATED) ---
 def safe_get_global(var_name, default_value):
@@ -1536,7 +1536,7 @@ def simple_converter(o):
         return o  # [Patch][QA v4.9.110] handle lists/dicts before isna check
     if pd.isna(o):
         return None
-    if _isinstance_safe(o, (datetime.datetime, datetime.date)): return o.isoformat()
+    if _isinstance_safe(o, (dt.datetime, dt.date)): return o.isoformat()
     try:
         if _isinstance_safe(o, (str, bool, list, dict, type(None))):
             json.dumps(o) # Test serialization
@@ -1653,7 +1653,7 @@ import pandas as pd # Already imported
 import numpy as np # Already imported
 import warnings # Already imported
 import traceback # Already imported
-import datetime # Standard datetime import # Already imported
+import datetime as dt  # Standard datetime import - alias dt
 import gc # For memory management
 
 # --- Data Loading Function ---
@@ -6568,7 +6568,7 @@ def main(run_mode: str = 'FULL_PIPELINE', config_file: str = "config.yaml", suff
     global OUTPUT_DIR, LOG_FILENAME # Ensure global OUTPUT_DIR and LOG_FILENAME are updated
     OUTPUT_DIR = setup_output_directory(config_main_obj.output_base_dir, config_main_obj.output_dir_name)
     # [Patch - IMPORT ERROR FIX - Step MainFunc] Configure FileHandler here
-    LOG_FILENAME = f"gold_ai_v{MINIMAL_SCRIPT_VERSION.split('_')[0]}_{config_main_obj.output_dir_name}_{datetime.datetime.now().strftime('%Y%m%d')}.log"
+    LOG_FILENAME = f"gold_ai_v{MINIMAL_SCRIPT_VERSION.split('_')[0]}_{config_main_obj.output_dir_name}_{dt.datetime.now().strftime('%Y%m%d')}.log"
     log_file_path_main = os.path.join(OUTPUT_DIR, LOG_FILENAME)
     
     # Remove existing file handlers if any, then add the new one

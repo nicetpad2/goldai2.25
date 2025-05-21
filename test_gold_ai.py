@@ -3067,8 +3067,8 @@ class TestUtilityCoverageQA(unittest.TestCase):
 
         class NoFloat:
             pass
-
-        self.assertEqual(self.ga.safe_float_fmt(NoFloat()), str(NoFloat()))
+        no_float_instance = NoFloat()
+        self.assertEqual(self.ga.safe_float_fmt(no_float_instance), str(no_float_instance))
         self.assertEqual(self.ga._float_fmt(1.2345, 2), "1.23")
 
     def test_ensure_dataframe_all_cases(self):
