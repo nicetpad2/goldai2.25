@@ -3427,6 +3427,52 @@ class TestCoverageEnterprise(unittest.TestCase):
         self.assertEqual(metrics["D Total Trades (Full)"], 3)
 
 
+class TestHelperFunctionsSmall(unittest.TestCase):
+    """Coverage tests for small helper utilities"""
+
+    def setUp(self):
+        self.ga = safe_import_gold_ai()
+
+    def test_raise_or_warn_warning(self):
+        logger = logging.getLogger("helper.warn")
+        with self.assertLogs("helper.warn", level="WARNING") as cm:
+            self.ga._raise_or_warn("warn", logger=logger)
+        self.assertTrue(any("warn" in m for m in cm.output))
+
+    def test_raise_or_warn_raise(self):
+        logger = logging.getLogger("helper.raise")
+        mod_pytest = sys.modules.pop("pytest", None)
+        mod_unittest = sys.modules.pop("unittest", None)
+        try:
+            with self.assertRaises(ValueError):
+                self.ga._raise_or_warn("fail", logger=logger)
+        finally:
+            if mod_pytest is not None:
+                sys.modules["pytest"] = mod_pytest
+            if mod_unittest is not None:
+                sys.modules["unittest"] = mod_unittest
+
+    def test_robust_kwargs_guard(self):
+        self.assertEqual(self.ga._robust_kwargs_guard(1, 2, a=3), (1, 2))
+        self.assertIsNone(self.ga._robust_kwargs_guard())
+
+    def test_safe_isinstance_various(self):
+        class A:
+            pass
+
+        a = A()
+        self.assertTrue(self.ga.safe_isinstance(a, A))
+        mm = MagicMock()
+        mm.columns = []
+        mm.index = []
+        self.assertTrue(self.ga.safe_isinstance(mm, MagicMock))
+        fake = types.SimpleNamespace(__name__="MagicMock")
+        self.assertTrue(self.ga.safe_isinstance(mm, fake))
+        bad = types.SimpleNamespace(__name__="DataFrame")
+        self.assertFalse(self.ga.safe_isinstance(mm, bad))
+        self.assertFalse(self.ga.safe_isinstance("x", int))
+
+
 if __name__ == "__main__":
     if cov:
         cov.start()
