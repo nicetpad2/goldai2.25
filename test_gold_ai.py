@@ -3,6 +3,7 @@
 [Patch AI Studio v4.9.68] - Validate global pandas availability and import flag handling.
 [Patch AI Studio v4.9.104] - Register pytest markers to silence unknown mark warnings.
 [Patch][QA v4.9.130] - เพิ่ม Coverage Booster สำหรับ logic simulation/exit/export/ML/WFV/fallback/exception
+[Patch][QA v4.9.134] - เพิ่มชุดทดสอบ main() basic run modes
 """
 
 import importlib
@@ -3519,6 +3520,79 @@ class TestHelperFunctionsSmall(unittest.TestCase):
             self.assertEqual(self.ga._safe_numeric("x", default=1.0, log_ctx="t"), 1.0)
         finally:
             pd.to_numeric = orig
+
+
+class TestMainFunction(unittest.TestCase):
+    """Minimal tests for main() across run modes using heavy patching."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ga = safe_import_gold_ai()
+        try:
+            import pandas as pd
+            cls.ga.pd = pd
+        except Exception:
+            pass
+        import datetime as dt
+        cls.ga.datetime = dt
+
+    def _df(self):
+        pd = self.ga.pd
+        df = pd.DataFrame({
+            "Date": ["20240101"],
+            "Timestamp": ["00:00:00"],
+            "Open": [1.0],
+            "High": [1.0],
+            "Low": [1.0],
+            "Close": [1.0],
+        })
+        df.index = pd.date_range("2023-01-01", periods=1, freq="min")
+        return df
+
+    def _common_patches(self, cfg, df):
+        ga = self.ga
+        return [
+            patch.object(ga, "load_config_from_yaml", return_value=cfg),
+            patch.object(ga, "setup_output_directory", return_value="/tmp"),
+            patch("logging.FileHandler", return_value=MagicMock(level=logging.DEBUG)),
+            patch.object(ga, "load_data", return_value=df),
+            patch.object(ga, "prepare_datetime", return_value=df),
+            patch.object(ga, "calculate_m15_trend_zone", return_value=df.assign(Trend_Zone="NEUTRAL")),
+            patch.object(ga, "engineer_m1_features", return_value=df),
+            patch.object(ga, "clean_m1_data", return_value=(df, [])),
+            patch.object(ga, "simulate_trades", return_value=([], [100], {})),
+            patch.object(ga, "export_run_summary_to_json"),
+            patch.object(ga, "export_trade_log_to_csv"),
+            patch.object(ga, "plot_equity_curve"),
+            patch.object(ga, "ensure_model_files_exist"),
+        ]
+
+    def test_main_full_run_basic(self):
+        ga = self.ga
+        cfg = ga.StrategyConfig({})
+        df = self._df()
+        patches = self._common_patches(cfg, df)
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7], patches[8], patches[9], patches[10], patches[11], patches[12]:
+            suffix = ga.main(run_mode="FULL_RUN", config_file="dummy")
+        self.assertTrue(isinstance(suffix, str) or suffix is None)
+
+    def test_main_prepare_train_data(self):
+        ga = self.ga
+        cfg = ga.StrategyConfig({})
+        df = self._df()
+        patches = self._common_patches(cfg, df)
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7], patches[8], patches[9], patches[10], patches[11], patches[12]:
+            suffix = ga.main(run_mode="PREPARE_TRAIN_DATA", config_file="dummy")
+        self.assertIsInstance(suffix, str)
+
+    def test_main_train_model_only(self):
+        ga = self.ga
+        cfg = ga.StrategyConfig({"train_meta_model_before_run": True})
+        df = self._df()
+        patches = self._common_patches(cfg, df)
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7], patches[8], patches[9], patches[10], patches[11], patches[12]:
+            suffix = ga.main(run_mode="TRAIN_MODEL_ONLY", config_file="dummy")
+        self.assertTrue(isinstance(suffix, str) or suffix is None)
 
 
 class TestCoverageADA(unittest.TestCase):
