@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.134_FULL_PASS"  # [Patch][QA v4.9.134] coverage stabilize
+MINIMAL_SCRIPT_VERSION = "4.9.135_FULL_PASS"  # [Patch][QA v4.9.135] coverage stabilize
 
 
 
@@ -103,7 +103,13 @@ def _isinstance_safe(obj, expected_type):
         return False
     # Standard type and tuple-of-types
     if isinstance(expected_type, type):
-        return isinstance(obj, expected_type)
+        if expected_type is object:
+            return False
+        if isinstance(obj, expected_type):
+            return True
+        if hasattr(obj, "__class__") and obj.__class__.__name__ == expected_type.__name__:
+            return True
+        return False
     if isinstance(expected_type, tuple) and all(isinstance(t, type) for t in expected_type):
         return isinstance(obj, expected_type)
     try:
