@@ -379,3 +379,7 @@
 - [Patch][QA v4.9.139] Coverage booster tests for safe_set_datetime and DummyPandas numeric checks
 - Version bump to `4.9.139_FULL_PASS`
 
+## [v4.9.140+] - 2025-06-xx
+- [Patch][QA v4.9.140] ใช้ `try_import_with_install` นำเข้า requests และจับ OSError เพื่อแก้ปัญหาใน Colab
+- Version bump to `4.9.140_FULL_PASS`
+

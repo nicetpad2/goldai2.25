@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.139_FULL_PASS"  # [Patch][QA v4.9.139] coverage booster
+MINIMAL_SCRIPT_VERSION = "4.9.140_FULL_PASS"  # [Patch][QA v4.9.140] requests import fix
 
 
 
@@ -57,6 +57,7 @@ psutil_imported = False
 torch_imported = False
 pandas_imported = False
 numpy_imported = False
+requests_imported = False
 
 # --- Global Variables for System State ---
 IN_COLAB = False
@@ -1252,7 +1253,13 @@ import gzip # Already imported
 import matplotlib.pyplot as plt # Already imported
 import matplotlib.font_manager as fm # Already imported
 from IPython import get_ipython # type: ignore # Already imported
-import requests # Already imported
+try_import_with_install(
+    "requests",
+    pip_install_name="requests",
+    import_as_name="requests",
+    success_flag_global_name="requests_imported",
+    log_name="REQUESTS",
+)
 import datetime # Standard datetime import # Already imported
 
 # --- Helper for Safe Global Access (DEPRECATED) ---
