@@ -1,12 +1,12 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.103+
+**Version:** v4.9.104+
 **Project:** Gold AI (Enterprise Refactor)
 **Maintainer:** AI Studio QA/Dev Team
 **Last updated:** 2025-06-13
 
-Gold AI Enterprise QA/Dev version: v4.9.103+ (register pytest markers and expand QA coverage)
+Gold AI Enterprise QA/Dev version: v4.9.104+ (refactor utils and maintain QA coverage)
 
 ---
 
@@ -207,7 +207,7 @@ Review vs. this AGENTS.md
 
 No merge without Execution_Test_Unit pass and log review
 
-ล่าสุด: [Patch AI Studio v4.9.103+]
+ล่าสุด: [Patch AI Studio v4.9.104+]
 เพิ่มไฟล์ `pytest.ini` ลงทะเบียน markers `unit` และ `integration`
 ลด PytestUnknownMarkWarning ในรายงานเทส
 ปรับปรุง log และ coverage สม่ำเสมอ

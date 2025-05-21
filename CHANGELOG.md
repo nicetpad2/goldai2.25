@@ -322,3 +322,7 @@
 - [Patch][QA v4.9.103] Added pytest.ini to register custom markers
 - Version bump to `4.9.103_FULL_PASS`
 
+## [v4.9.104+] - 2025-06-xx
+- [Patch][QA v4.9.104] Extract `_safe_numeric` to `refactor_utils` for clarity
+- Version bump to `4.9.104_FULL_PASS`
+

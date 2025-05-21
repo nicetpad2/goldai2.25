@@ -1,7 +1,7 @@
 """Gold AI Test Suite
 
 [Patch AI Studio v4.9.68] - Validate global pandas availability and import flag handling.
-[Patch AI Studio v4.9.103] - Register pytest markers to silence unknown mark warnings.
+[Patch AI Studio v4.9.104] - Register pytest markers to silence unknown mark warnings.
 """
 
 import importlib
