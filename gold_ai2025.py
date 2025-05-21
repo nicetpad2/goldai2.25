@@ -27,6 +27,7 @@ import warnings
 import traceback
 import pandas as pd  # [Patch AI Studio v4.9.42] - Global import for QA/CI/CD robustness
 # <<< [PATCH QA v4.9.42] >>>: Global import pandas as pd to ensure pd is always available in all backtest/simulation functions and their nested calls.
+from refactor_utils import _safe_numeric  # [Patch AI Studio v4.9.104+] moved helper
 # This patch fixes any ImportError or unbound pd reference in backtesting, walk-forward, and simulate_trades pipeline for all environments (prod/test/mocked).
 # import numpy as np  # Deferred: Will be imported robustly or via try_import_with_install
 import json
@@ -39,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.103_FULL_PASS"  # [Patch][QA v4.9.103] register pytest markers
+MINIMAL_SCRIPT_VERSION = "4.9.104_FULL_PASS"  # [Patch][QA v4.9.104] refactor utils
 
 
 
@@ -170,31 +171,7 @@ def _float_fmt(val, ndigit: int = 3) -> str:
     """Backward compatible wrapper for ``safe_float_fmt``."""
     return safe_float_fmt(val, ndigit)
 
-# [Patch AI Studio v4.9.43+] Numeric type guard helper for simulation metrics
-def _safe_numeric(val: Any, default: float = 0.0, *, nan_as: Optional[float] = None, log_ctx: str = "") -> float:
-    """Convert ``val`` to float safely.
-
-    Handles strings, ``None``, pandas NA/NaT, and other objects. Returns
-    ``default`` or ``nan_as`` if conversion fails.
-    """
-    try:
-        import pandas as pd  # Local import for mocks
-        import numpy as np
-
-        if val is None or (hasattr(pd, "isna") and pd.isna(val)):
-            return nan_as if nan_as is not None else default
-        if isinstance(val, (int, float, np.integer, np.floating)):
-            return float(val)
-
-        conv = pd.to_numeric(val, errors="coerce")
-        if pd.isna(conv):
-            return nan_as if nan_as is not None else default
-        return float(conv)
-    except Exception as exc:  # pragma: no cover - unexpected types
-        logging.error(
-            f"[Patch AI Studio v4.9.43+] _safe_numeric: Failed in {log_ctx}: {exc}"
-        )
-        return nan_as if nan_as is not None else default
+# [Patch AI Studio v4.9.104+] `_safe_numeric` moved to refactor_utils for reuse
 
 
 # [Patch AI Studio v4.9.50+] Robust guard: absorb unknown kwargs in public entry points
