@@ -44,7 +44,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.164_FULL_PASS"  # [Patch][QA v4.9.164] Risk log & data clean
+MINIMAL_SCRIPT_VERSION = "4.9.166_FULL_PASS"  # [Patch][QA v4.9.166] Requirements update & version sync
 
 
 
