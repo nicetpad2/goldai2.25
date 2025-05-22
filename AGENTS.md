@@ -1,12 +1,12 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.159+  
+**Version:** v4.9.161+
 **Project:** Gold AI (Enterprise Refactor)  
 **Maintainer:** AI Studio QA/Dev Team  
 **Last updated:** 2025-07-xx
 
-Gold AI Enterprise QA/Dev version: v4.9.159+ (major patch for NaN/feature audit, config fail-safe, patch verbose suppression, class attribute fix)
+Gold AI Enterprise QA/Dev version: v4.9.161+ (ATR feature update, doc update instructions, config fail-safe, patch verbose suppression, class attribute fix)
 
 ---
 
@@ -76,6 +76,7 @@ Gold AI Enterprise QA/Dev version: v4.9.159+ (major patch for NaN/feature audit,
 - **Patch Logging:**  
   All logic changes must log `[Patch AI Studio vX.Y.Z+]` หรือ `[Patch][QA vX.Y.Z+]` ตรงกับเวอร์ชันจริงใน CHANGELOG.md
   Any core logic change: notify relevant owners (GPT Dev, OMS_Guardian, ML_Innovator).
+  After each patch/update, append details to **CHANGELOG.md** และปรับเวอร์ชันใน **AGENTS.md** ให้ตรงกัน
 
 - **Critical Constraints:**  
     - **No direct production commits:** Must pass QA (`pytest -v`, `--cov`)
@@ -86,7 +87,7 @@ Gold AI Enterprise QA/Dev version: v4.9.159+ (major patch for NaN/feature audit,
 
 ## 🚦 **Enterprise QA Status (Current): ON**
 
-- QA Enterprise Status: **ON (patch v4.9.159+)**
+- QA Enterprise Status: **ON (patch v4.9.161+)**
 - Patch focus: **Fail-safe NaN/inf cleaning in all critical features, class attribute compliance, config path & logging suppression, drift audit.**
 - **กำลังรอการตรวจสอบ/approve จาก OMS_Guardian, Model_Inspector, Execution_Test_Unit หลัง patch ใหม่**
 - Release readiness: **Only after**  

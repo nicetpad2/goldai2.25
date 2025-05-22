@@ -457,3 +457,8 @@
 ## [v4.9.160+] - 2025-07-xx
 - [Patch][QA v4.9.160] Added default `use_meta_classifier` to StrategyConfig to prevent AttributeError.
 - Version bump to `4.9.160_FULL_PASS`
+
+## [v4.9.161+] - 2025-07-xx
+- [Patch][QA v4.9.161] Renamed `ATR_Shifted` to `ATR_14_Shifted` and introduced `ATR_14_Rolling_Avg`.
+- [Patch][QA v4.9.161] Added guideline to update CHANGELOG.md and AGENTS.md after each patch.
+- Version bump to `4.9.161_FULL_PASS`
