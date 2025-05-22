@@ -5,3 +5,11 @@ scipy
 pytest
 pytest-cov
 coverage
+optuna
+catboost
+gputil
+psutil
+shap
+torch
+ta
+tqdm

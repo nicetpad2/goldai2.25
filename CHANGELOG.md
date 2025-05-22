@@ -482,3 +482,7 @@
 - [Patch][QA v4.9.165] CLI arg support for config and output dir overrides.
 - Version bump to `4.9.165_FULL_PASS`
 
+## [v4.9.166+] - 2025-07-xx
+- [Patch][QA v4.9.166] Added missing libraries to requirements and synced version constants.
+- Version bump to `4.9.166_FULL_PASS`
+
