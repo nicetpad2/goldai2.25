@@ -438,3 +438,7 @@
 ## [v4.9.156+] - 2025-07-xx
 - [Patch][QA v4.9.156] engineer_m1_features fills NaN Gain_Z values instead of raising errors when data is sufficient.
 - Version bump to `4.9.156_FULL_PASS`
+
+## [v4.9.157+] - 2025-07-xx
+- [Patch][QA v4.9.157] Refactored Colab environment setup into `setup_colab_environment` helper.
+- Version bump to `4.9.157_FULL_PASS`
