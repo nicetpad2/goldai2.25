@@ -1,32 +1,70 @@
-# STEP 1: ติดตั้งไลบรารีที่ต้องใช้
-pip install -U google-generativeai
+
+"""Helper script for running GoldAI hyperparameter sweeps locally.
+
+This file was originally written for Google Colab and attempted to install
+`google-generativeai` using a notebook style command.  The execution
+environment here does not allow network access, so any installation or API
+calls to Gemini must be optional.  This patch removes the notebook install
+syntax and provides a lightweight fallback implementation when the
+`google-generativeai` package is unavailable.
+"""
 
 
 import subprocess
 import os
 import sys
-import getpass
 import glob
 import time
 import json
 import hashlib
 import pandas as pd
-import psutil
+try:
+    import psutil
+except Exception:  # pragma: no cover - optional dependency
+    class _VMem:
+        used = total = percent = 0
+
+    class psutil:
+        @staticmethod
+        def virtual_memory():
+            return _VMem()
 import yaml
 import random
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+except Exception:  # noqa: E722 - broad exception for optional import
+    class _DummyGenAI:
+        @staticmethod
+        def configure(api_key=None):
+            pass
+
+        class GenerativeModel:
+            def __init__(self, *a, **kw):
+                pass
+
+            def generate_content(self, prompt):
+                class _Resp:
+                    text = "[offline] Gemini QA skipped"
+
+                return _Resp()
+
+    genai = _DummyGenAI()
 
 # ---------- CONFIG -------------
-GOLD_AI_SCRIPT = "/content/drive/MyDrive/new/gold_ai2025.py"
-CFG_BASE = "/content/drive/MyDrive/new/"
-OUTPUT_BASE = "/content/drive/MyDrive/new/gold_ai_sweep/"
-REPORT_PATH = CFG_BASE + "goldai_sweep_qa_report.txt"
-CSV_RESULT_PATH = CFG_BASE + "goldai_sweep_qa_results.csv"
-MD_REPORT_PATH = CFG_BASE + "goldai_sweep_qa_report.md"
-CHANGELOG_PATH = CFG_BASE + "goldai_changelog.txt"
-LOG_PATH = CFG_BASE + "goldai_sweep_stdout.log"
-RAM_PATH = CFG_BASE + "goldai_sweep_max_ram.txt"
-GEMINI_API_KEY = os.environ.get("AIzaSyAmNvZzYZHPIFmPhmRnnMpVmFG11DIFcm4") or getpass.getpass("🔑 ใส่ Gemini API Key (จะไม่โชว์): ")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+GOLD_AI_SCRIPT = os.path.join(BASE_DIR, "gold_ai2025.py")
+CFG_BASE = os.path.join(BASE_DIR, "sweep_configs")
+OUTPUT_BASE = os.path.join(BASE_DIR, "sweep_output")
+REPORT_PATH = os.path.join(CFG_BASE, "goldai_sweep_qa_report.txt")
+CSV_RESULT_PATH = os.path.join(CFG_BASE, "goldai_sweep_qa_results.csv")
+MD_REPORT_PATH = os.path.join(CFG_BASE, "goldai_sweep_qa_report.md")
+CHANGELOG_PATH = os.path.join(CFG_BASE, "goldai_changelog.txt")
+LOG_PATH = os.path.join(CFG_BASE, "goldai_sweep_stdout.log")
+RAM_PATH = os.path.join(CFG_BASE, "goldai_sweep_max_ram.txt")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+os.makedirs(CFG_BASE, exist_ok=True)
+os.makedirs(OUTPUT_BASE, exist_ok=True)
 
 # ---------- PARAM GRID (Hyperparameter Sweep) -------------
 PARAM_GRID = [
@@ -153,9 +191,13 @@ for idx, param in enumerate(PARAM_GRID):
         else:
             continue
 
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-1.5-pro-latest")
-        review_text = model.generate_content(prompt).text
+        review_text = ""
+        if GEMINI_API_KEY:
+            genai.configure(api_key=GEMINI_API_KEY)
+            model = genai.GenerativeModel("gemini-1.5-pro-latest")
+            review_text = model.generate_content(prompt).text
+        else:
+            review_text = "[Gemini QA skipped]"
         print(f"\n=== Gemini QA Review ({basename}) ===\n", review_text)
         qa_summary += f"\n--- {basename} ---\n{review_text}"
 
