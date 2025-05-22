@@ -1,8 +1,6 @@
 # STEP 1: ติดตั้งไลบรารีที่ต้องใช้
-!pip install -U google-generativeai
-!pip install -U pandas numpy matplotlib ta optuna catboost gputil psutil shap tqdm scikit-learn pyyaml
-!pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-!pip install catboost
+pip install -U google-generativeai
+
 
 import subprocess
 import os
