@@ -1,12 +1,20 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
+
 **Version:** v4.9.163+
+=======
+**Version:** v4.9.162+
+
 **Project:** Gold AI (Enterprise Refactor)  
 **Maintainer:** AI Studio QA/Dev Team  
 **Last updated:** 2025-07-xx
 
+
 Gold AI Enterprise QA/Dev version: v4.9.163+ (ATR feature update, doc update instructions, config fail-safe, patch verbose suppression, class attribute fix, equity history dict fix, equity history QA test)
+=======
+Gold AI Enterprise QA/Dev version: v4.9.162+ (ATR feature update, doc update instructions, config fail-safe, patch verbose suppression, class attribute fix, equity history dict fix)
+
 
 ---
 
@@ -87,7 +95,11 @@ Gold AI Enterprise QA/Dev version: v4.9.163+ (ATR feature update, doc update ins
 
 ## 🚦 **Enterprise QA Status (Current): ON**
 
+
  - QA Enterprise Status: **ON (patch v4.9.163+)**
+=======
+ - QA Enterprise Status: **ON (patch v4.9.162+)**
+
 - Patch focus: **Fail-safe NaN/inf cleaning in all critical features, class attribute compliance, config path & logging suppression, drift audit.**
 - **กำลังรอการตรวจสอบ/approve จาก OMS_Guardian, Model_Inspector, Execution_Test_Unit หลัง patch ใหม่**
 - Release readiness: **Only after**  
