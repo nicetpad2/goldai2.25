@@ -417,3 +417,9 @@
 - Added logging of all arguments and ignore message when lag_features_setting is provided.
 - Version bump to `4.9.152_FULL_PASS`
 
+## [v4.9.153+] - 2025-07-xx
+- [Patch][QA v4.9.152] Removed Thai font auto-install logic and defaulted to English fonts only.
+- [Patch][QA v4.9.152] Strict config path fallback with error if no config found.
+- [Patch][QA v4.9.152] engineer_m1_features validates required columns individually.
+- Version bump to `4.9.153_FULL_PASS`
+

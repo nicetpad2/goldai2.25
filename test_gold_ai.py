@@ -360,6 +360,16 @@ class TestGoldAI2025(unittest.TestCase):
         self.assertEqual(cfg.risk_per_trade, 0.02)
         self.assertEqual(cfg.max_lot, 2.0)
 
+    def test_load_config_path_fallback(self):
+        ga = self.gold_ai
+        with patch("os.path.exists", return_value=True):
+            self.assertEqual(ga.load_config("config.yaml"), "config.yaml")
+        with patch("os.path.exists", side_effect=lambda p: p == "/content/drive/MyDrive/new/config.yaml"):
+            self.assertEqual(ga.load_config("missing.yaml"), "/content/drive/MyDrive/new/config.yaml")
+        with patch("os.path.exists", return_value=False):
+            with self.assertRaises(FileNotFoundError):
+                ga.load_config("missing.yaml")
+
     def test_setup_output_directory(self):
         # [Patch][QA v4.9.87] Use fixed path /content/drive/MyDrive/new only
         base_dir = "/content/drive/MyDrive/new"

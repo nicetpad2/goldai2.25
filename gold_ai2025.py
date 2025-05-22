@@ -28,6 +28,9 @@ import traceback
 import pandas as pd  # [Patch AI Studio v4.9.42] - Global import for QA/CI/CD robustness
 # <<< [PATCH QA v4.9.42] >>>: Global import pandas as pd to ensure pd is always available in all backtest/simulation functions and their nested calls.
 from refactor_utils import _safe_numeric  # [Patch AI Studio v4.9.104+] moved helper
+# Thai font/auto-fallback logic removed (QA v4.9.152+)
+import matplotlib
+matplotlib.rcParams['font.family'] = 'DejaVu Sans'  # [Patch][QA v4.9.152+] Always use English font, skip Thai font setup.
 # This patch fixes any ImportError or unbound pd reference in backtesting, walk-forward, and simulate_trades pipeline for all environments (prod/test/mocked).
 # import numpy as np  # Deferred: Will be imported robustly or via try_import_with_install
 import json
@@ -40,7 +43,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.152_FULL_PASS"  # [Patch][QA v4.9.152] strict enterprise behavior
+MINIMAL_SCRIPT_VERSION = "4.9.153_FULL_PASS"  # [Patch][QA v4.9.153] strict enterprise behavior
 
 
 
@@ -1234,6 +1237,19 @@ def load_config_from_yaml(path: str = "config.yaml") -> StrategyConfig:
         config_loader_logger.error(f"[Patch][ConfigPath] Failed to load config from '{chosen_path}', using defaults. Reason: {e}", exc_info=True)
         return StrategyConfig({})
 
+def load_config(config_path: str | None = None) -> str:
+    """Return usable config path, defaulting to drive location if exists."""
+    import logging
+    logger = logging.getLogger("GoldAI.Config")
+    if config_path and os.path.exists(config_path):
+        return config_path
+    default_path = "/content/drive/MyDrive/new/config.yaml"
+    if os.path.exists(default_path):
+        if config_path and config_path != default_path:
+            logger.warning("[Patch][ConfigPath] Config not found at '%s', fallback to '%s'", config_path, default_path)
+        return default_path
+    raise FileNotFoundError("Config not found at any default path.")  # [Patch][QA v4.9.152+] Strict
+
 
 # --- Holding Period Exit Function ---
 def should_exit_due_to_holding(current_bar_idx: int, entry_bar_idx: int, max_holding_bars_config: Optional[int]) -> bool:
@@ -1364,76 +1380,11 @@ def set_thai_font(font_name: str = "Loma", warn_on_failure: bool = True) -> bool
         plt.rcParams['font.family'] = 'DejaVu Sans'
         return False
 
-def setup_fonts(output_dir: str | None = None): # output_dir is not used currently
-    """
-    Sets up Thai fonts for Matplotlib plots. Only run once per session.
-    """
-    global font_setup_has_run
-    font_setup_logger = logging.getLogger(f"{__name__}.setup_fonts")
-    if font_setup_has_run:
-        font_setup_logger.info("[Patch][FontSetup] setup_fonts() was already run; skipping duplicate font setup and warnings.")
-        return
-    font_setup_has_run = True
-    font_setup_logger.info("\n(Processing) Setting up Thai font for plots...")
-    font_set_successfully = False
-    preferred_font_name = "TH Sarabun New"
-
-    try:
-        ipython = get_ipython()
-        in_colab_setup_fonts = ipython is not None and 'google.colab' in str(ipython)
-
-        font_setup_logger.info("   Attempting to set font directly using findfont...")
-        font_set_successfully = set_thai_font(preferred_font_name)
-
-        if not font_set_successfully and in_colab_setup_fonts:
-            font_setup_logger.info("\n   Preferred font not found. Attempting installation via apt-get (Colab)...")
-            try:
-                font_setup_logger.info("      Installing Thai fonts (fonts-thai-tlwg)... This might take a moment.")
-                apt_update_process = subprocess.run(["apt-get", "update", "-qq"], check=False, capture_output=True, text=True, timeout=120)
-                if apt_update_process.returncode != 0:
-                    font_setup_logger.warning(f"      (Warning) apt-get update failed (Code: {apt_update_process.returncode}): {apt_update_process.stderr[:200]}...")
-                apt_install_process = subprocess.run(["apt-get", "install", "-y", "-qq", "fonts-thai-tlwg"], check=False, capture_output=True, text=True, timeout=180)
-                if apt_install_process.returncode == 0:
-                    font_setup_logger.info("      (Success) apt-get install fonts-thai-tlwg potentially completed.")
-                    font_setup_logger.info("      Rebuilding Matplotlib font cache...")
-                    try:
-                        fm._load_fontmanager(try_read_cache=False) # type: ignore
-                        font_setup_logger.info("      Font cache rebuilt. Attempting to set font again...")
-                        font_set_successfully = set_thai_font(preferred_font_name)
-                        if not font_set_successfully:
-                            font_set_successfully = set_thai_font("Loma", warn_on_failure=False)
-                        if font_set_successfully: font_setup_logger.info("      (Success) Thai font set after installation and cache rebuild.")
-                        else:
-                            font_setup_logger.warning("      (Warning) Thai font still not set after installation. A manual Colab Runtime Restart might be needed.")
-                            font_setup_logger.warning("      *****************************************************")
-                            font_setup_logger.warning("      *** Please RESTART RUNTIME now for Matplotlib     ***")
-                            font_setup_logger.warning("      *** to recognize the new fonts if plots fail.     ***")
-                            font_setup_logger.warning("      *** (เมนู Runtime -> Restart runtime...)         ***")
-                            font_setup_logger.warning("      *****************************************************")
-                    except Exception as e_cache:
-                        font_setup_logger.error(f"      (Error) Failed to rebuild font cache or set font after install: {e_cache}", exc_info=True)
-                else:
-                    font_setup_logger.warning(f"      (Warning) apt-get install failed (Code: {apt_install_process.returncode}): {apt_install_process.stderr[:200]}...")
-            except subprocess.TimeoutExpired:
-                font_setup_logger.error("      (Error) Timeout during apt-get font installation.")
-            except Exception as e_generic_install:
-                font_setup_logger.error(f"      (Error) General error during font installation attempt: {e_generic_install}", exc_info=True)
-
-        if not font_set_successfully:
-            fallback_fonts = ["Loma", "Garuda", "Norasi", "Kinnari", "Waree", "THSarabunNew"]
-            font_setup_logger.info(f"\n   Trying fallbacks ({', '.join(fallback_fonts)})...")
-            for fb_font in fallback_fonts:
-                if set_thai_font(fb_font, warn_on_failure=False):
-                    font_set_successfully = True
-                    break
-        if not font_set_successfully:
-            import matplotlib.pyplot as plt
-            plt.rcParams['font.family'] = 'DejaVu Sans'
-            font_setup_logger.warning("[Patch][QA v4.9.91+] Could not set any Thai font. Defaulting to 'DejaVu Sans'. Plots may not render Thai characters correctly.")
-        else:
-            font_setup_logger.info("\n   (Info) Font setup process complete.")
-    except Exception as e:
-        font_setup_logger.error(f"   (Error) Critical error during font setup: {e}", exc_info=True)
+def setup_fonts(output_dir: str | None = None):  # output_dir kept for signature compatibility
+    """Set default font to DejaVu Sans only."""
+    import matplotlib
+    matplotlib.rcParams["font.family"] = "DejaVu Sans"  # [Patch][QA v4.9.152+] Always use English font.
+    logging.getLogger(f"{__name__}.setup_fonts").info("[Patch][QA v4.9.152+] Fonts set to DejaVu Sans (English only)")
 
 # --- Data Loading Helper ---
 def safe_load_csv_auto(file_path: str) -> pd.DataFrame:
@@ -2458,11 +2409,10 @@ def engineer_m1_features(
         logger.info(
             "[Patch][QA v4.9.151] lag_features_setting received, but not used in core logic (SAFE IGNORE)"
         )
-    price_cols = ["Open", "High", "Low", "Close"]
-    missing_cols = [c for c in price_cols if c not in df.columns]
-    if missing_cols:
-        logger.critical(f"[Patch][QA v4.9.151][Enterprise] Missing core columns: {missing_cols}. Raising error.")
-        raise ValueError(f"Missing core columns: {missing_cols}")
+    required_cols = ["Open", "High", "Low", "Close"]
+    for c in required_cols:
+        if c not in df.columns:
+            raise ValueError(f"[Patch][QA v4.9.152] Missing required column '{c}' in input data (engineer_m1_features)")
     df = df.copy()
     df["ATR_14"] = ta.volatility.AverageTrueRange(
         high=df["High"], low=df["Low"], close=df["Close"], window=14, fillna=False
@@ -6515,12 +6465,12 @@ def main(run_mode: str = 'FULL_PIPELINE', config_file: str = "config.yaml", suff
     main_exec_logger_func.info(f"  Data M15 Path: {DATA_FILE_PATH_M15}")
     main_exec_logger_func.info(f"  Data M1 Path: {DATA_FILE_PATH_M1}")
 
+    # [Patch][QA v4.9.152+] Remove all font Thai fallback log, always call setup_fonts() (English only)
     try:
-        if 'setup_fonts' in globals() and callable(setup_fonts): # pragma: no cover
-            setup_fonts(OUTPUT_DIR)
+        setup_fonts(OUTPUT_DIR)
         # GPU utilization will be printed after setup_gpu_acceleration is called in __main__
-    except Exception as e_setup_main_call_in_main: # pragma: no cover
-        main_exec_logger_func.warning(f"(Warning) Error during post-config setup (fonts): {e_setup_main_call_in_main}")
+    except Exception as e_setup_main_call_in_main:  # pragma: no cover
+        main_exec_logger_func.warning(f"(Warning) Error during font setup: {e_setup_main_call_in_main}")
 
     train_model_in_main = False
     run_final_backtest_in_main = False
