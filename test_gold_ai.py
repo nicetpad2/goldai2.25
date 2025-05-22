@@ -506,8 +506,8 @@ class TestGoldAI2025(unittest.TestCase):
         with patch("os.path.exists", return_value=True):
             df_ret = pd_dummy.DataFrame({"A": [1]})
             with patch.object(pd_dummy, "read_csv", return_value=df_ret) as mock_rc:
-                res = self.gold_ai.safe_load_csv_auto("data.csv")
-                self.assertTrue(res.equals(df_ret))
+                with self.assertRaises(ValueError):
+                    self.gold_ai.safe_load_csv_auto("data.csv")
                 mock_rc.assert_called_with(
                     "data.csv", index_col=0, parse_dates=False, low_memory=False
                 )
@@ -521,8 +521,8 @@ class TestGoldAI2025(unittest.TestCase):
             with patch.object(self.gold_ai.gzip, "open", m):
                 df_ret2 = pd_dummy.DataFrame({"A": [2]})
                 with patch.object(pd_dummy, "read_csv", return_value=df_ret2) as mrc:
-                    res = self.gold_ai.safe_load_csv_auto("data.csv.gz")
-                    self.assertTrue(res.equals(df_ret2))
+                    with self.assertRaises(ValueError):
+                        self.gold_ai.safe_load_csv_auto("data.csv.gz")
                     m.assert_called_with("data.csv.gz", "rt", encoding="utf-8")
                     mrc.assert_called()
 
@@ -700,27 +700,13 @@ class TestGoldAI2025(unittest.TestCase):
         funcs = [n for n, o in vars(self.gold_ai).items() if callable(o) and getattr(o, "__module__", None) == self.gold_ai.__name__]
         self.assertTrue(len(funcs) > 0)
 
-    def test_set_thai_font_and_setup_fonts(self):
+    def test_setup_fonts(self):
         mod = self.gold_ai
         rc_params = {}
-        mod.plt = types.SimpleNamespace(
-            rcParams=rc_params,
-            subplots=lambda figsize=None: (MagicMock(), MagicMock()),
-            close=lambda fig=None: None,
-        )
-        mod.fm = types.SimpleNamespace(
-            findfont=lambda *args, **kwargs: "/content/drive/MyDrive/new/font.ttf",
-            FontProperties=lambda fname=None: types.SimpleNamespace(get_name=lambda: "Loma"),
-            _load_fontmanager=lambda try_read_cache=False: None,
-        )
-        mod.get_ipython = lambda: types.SimpleNamespace(__str__=lambda self: "google.colab")
-        with patch.object(mod.subprocess, "run") as mock_run, \
-             patch("os.path.exists", return_value=True):
-            mock_run.return_value = MagicMock(returncode=0)
-            res = mod.set_thai_font("Loma")
-            # Accept either True or False (fallback), never fail test if font missing
-            self.assertIn(res, [True, False])
-            mod.setup_fonts()
+        dummy_matplotlib = types.SimpleNamespace(rcParams=rc_params)
+        sys.modules['matplotlib'] = dummy_matplotlib
+        mod.setup_fonts()
+        self.assertEqual(rc_params.get("font.family"), "DejaVu Sans")
 
     def test_risk_manager_update_and_soft_kill(self):
         # [Patch][QA v4.9.90] Risk manager edge coverage
@@ -1784,8 +1770,8 @@ class TestWarningEdgeCases(unittest.TestCase):
         with patch("os.path.exists", return_value=True), \
              patch("builtins.open", mock_open(read_data=csv_data)), \
              patch.object(self.ga.pd, "read_csv", return_value=self.ga.pd.DataFrame({"A": [1]})) as mock_rc:
-            result = self.ga.safe_load_csv_auto("bom_file.csv")
-            self.assertTrue(isinstance(result, self.ga.pd.DataFrame))
+            with self.assertRaises(ValueError):
+                self.ga.safe_load_csv_auto("bom_file.csv")
             mock_rc.assert_called()
 
 

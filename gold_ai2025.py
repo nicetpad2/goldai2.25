@@ -28,9 +28,9 @@ import traceback
 import pandas as pd  # [Patch AI Studio v4.9.42] - Global import for QA/CI/CD robustness
 # <<< [PATCH QA v4.9.42] >>>: Global import pandas as pd to ensure pd is always available in all backtest/simulation functions and their nested calls.
 from refactor_utils import _safe_numeric  # [Patch AI Studio v4.9.104+] moved helper
-# Thai font/auto-fallback logic removed (QA v4.9.152+)
+# Thai font/auto-fallback logic removed (QA v4.9.154+)
 import matplotlib
-matplotlib.rcParams['font.family'] = 'DejaVu Sans'  # [Patch][QA v4.9.152+] Always use English font, skip Thai font setup.
+matplotlib.rcParams['font.family'] = 'DejaVu Sans'  # [Patch][QA v4.9.154+] Always use English font for all plots.
 # This patch fixes any ImportError or unbound pd reference in backtesting, walk-forward, and simulate_trades pipeline for all environments (prod/test/mocked).
 # import numpy as np  # Deferred: Will be imported robustly or via try_import_with_install
 import json
@@ -1381,19 +1381,21 @@ def set_thai_font(font_name: str = "Loma", warn_on_failure: bool = True) -> bool
         return False
 
 def setup_fonts(output_dir: str | None = None):  # output_dir kept for signature compatibility
-    """Set default font to DejaVu Sans only."""
+    """
+    [Patch][QA v4.9.154+] Force use English font only (DejaVu Sans). Suppress Thai font setup/logging.
+    """
     import matplotlib
-    matplotlib.rcParams["font.family"] = "DejaVu Sans"  # [Patch][QA v4.9.152+] Always use English font.
-    logging.getLogger(f"{__name__}.setup_fonts").info("[Patch][QA v4.9.152+] Fonts set to DejaVu Sans (English only)")
+    matplotlib.rcParams["font.family"] = "DejaVu Sans"
+    logging.getLogger(f"{__name__}.setup_fonts").info("[Patch][QA v4.9.154+] Fonts set to DejaVu Sans (English only)")
 
 # --- Data Loading Helper ---
 def safe_load_csv_auto(file_path: str) -> pd.DataFrame:
     """
-    [Patch][QA v4.9.151][Enterprise] Loads CSV or .csv.gz file using pandas.
-    Fails immediately if file/column/data missing (No fallback DataFrame).
+    [Patch][QA v4.9.154+] Log path before loading and validate columns after loading.
     """
     read_csv_kwargs = {"index_col": 0, "parse_dates": False, "low_memory": False}
     load_logger = logging.getLogger(f"{__name__}.safe_load_csv_auto")
+    load_logger.info(f"[Patch][QA v4.9.154+] Loading CSV file: {file_path}")
     if not _isinstance_safe(file_path, str) or not file_path:
         load_logger.critical("[Patch][QA v4.9.151][Enterprise] Invalid file path for safe_load_csv_auto. Raising error.")
         raise ValueError("Invalid file path for safe_load_csv_auto")
@@ -1406,6 +1408,12 @@ def safe_load_csv_auto(file_path: str) -> pd.DataFrame:
                 df = pd.read_csv(f, **read_csv_kwargs)
         else:
             df = pd.read_csv(file_path, **read_csv_kwargs)
+        load_logger.info(f"[Patch][QA v4.9.154+] Columns in {file_path}: {list(df.columns)}")
+        required_cols = ['Open', 'High', 'Low', 'Close']
+        for c in required_cols:
+            if c not in df.columns:
+                load_logger.critical(f"[Patch][QA v4.9.154+] Missing required column '{c}' in {file_path}")
+                raise ValueError(f"[Patch][QA v4.9.154+] Missing required column '{c}' in {file_path}")
         if df.empty:
             load_logger.critical("[Patch][QA v4.9.151][Enterprise] Loaded DataFrame is empty. Raising error.")
             raise ValueError("Loaded DataFrame is empty.")
@@ -2391,7 +2399,7 @@ def engineer_m1_features(
     lag_features_setting=None,
 ) -> pd.DataFrame:
     """
-    [Patch][QA v4.9.151][Enterprise] Feature engineering (no patch/fallback allowed).
+    [Patch][QA v4.9.154+] Log columns and enforce required OHLC columns.
     รองรับการเรียกแบบ 2 หรือ 3 argument โดย lag_features_setting จะไม่ถูกใช้ใน logic หลัก
     แต่จำเป็นต้องรับไว้เพื่อความเข้ากันได้กับ production/main
     """
@@ -2400,11 +2408,12 @@ def engineer_m1_features(
     import numpy as np
     logger = logging.getLogger(f"{__name__}.engineer_m1_features")
     logger.info(
-        "[Patch][QA v4.9.151] engineer_m1_features invoked: df.shape=%r, config=%r, lag_features_setting=%r",
+        "[Patch][QA v4.9.154+] engineer_m1_features invoked: df.shape=%r, config=%r, lag_features_setting=%r",
         df.shape,
         config,
         lag_features_setting,
     )
+    logger.info("[Patch][QA v4.9.154+] Columns entering engineer_m1_features: %r", list(df.columns))
     if lag_features_setting is not None:
         logger.info(
             "[Patch][QA v4.9.151] lag_features_setting received, but not used in core logic (SAFE IGNORE)"
@@ -2412,7 +2421,8 @@ def engineer_m1_features(
     required_cols = ["Open", "High", "Low", "Close"]
     for c in required_cols:
         if c not in df.columns:
-            raise ValueError(f"[Patch][QA v4.9.152] Missing required column '{c}' in input data (engineer_m1_features)")
+            logger.critical(f"[Patch][QA v4.9.154+] Missing required column '{c}' in DataFrame entering engineer_m1_features")
+            raise ValueError(f"[Patch][QA v4.9.154+] Missing required column '{c}' in DataFrame (engineer_m1_features)")
     df = df.copy()
     df["ATR_14"] = ta.volatility.AverageTrueRange(
         high=df["High"], low=df["Low"], close=df["Close"], window=14, fillna=False
@@ -6465,7 +6475,7 @@ def main(run_mode: str = 'FULL_PIPELINE', config_file: str = "config.yaml", suff
     main_exec_logger_func.info(f"  Data M15 Path: {DATA_FILE_PATH_M15}")
     main_exec_logger_func.info(f"  Data M1 Path: {DATA_FILE_PATH_M1}")
 
-    # [Patch][QA v4.9.152+] Remove all font Thai fallback log, always call setup_fonts() (English only)
+    # [Patch][QA v4.9.154+] Always call setup_fonts() with English font only
     try:
         setup_fonts(OUTPUT_DIR)
         # GPU utilization will be printed after setup_gpu_acceleration is called in __main__
