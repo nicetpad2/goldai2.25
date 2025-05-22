@@ -491,3 +491,8 @@
 - Added `export_fold_qa_summary` and integrated calls in walk-forward pipeline.
 - Version bump to `4.9.201_FULL_PASS`
 
+## [v4.9.202+] - 2025-07-xx
+- [Patch][QA v4.9.202] Enhanced QA root cause export with simulation failure checks.
+- Updated data validation threshold for folds (<50 rows).
+- Version bump to `4.9.202_FULL_PASS`
+

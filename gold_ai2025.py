@@ -44,7 +44,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.201_FULL_PASS"  # [Patch][QA v4.9.201] Auto QA root cause export
+MINIMAL_SCRIPT_VERSION = "4.9.202_FULL_PASS"  # [Patch][QA v4.9.202] QA root cause enhancements
 
 
 
@@ -6143,12 +6143,12 @@ def run_all_folds_with_threshold(
         df_train_current_fold = df_m1_final_for_wfv.iloc[train_indices].copy()
         df_test_current_fold_orig = df_m1_final_for_wfv.iloc[test_indices].copy()
 
-        if df_test_current_fold_orig.empty:  # pragma: no cover
-            wfv_logger.warning(f"   Skipping {fold_label}: Test data is empty.")
+        if df_test_current_fold_orig is None or len(df_test_current_fold_orig) < 50:  # pragma: no cover
+            wfv_logger.warning(f"   Skipping {fold_label}: Test data insufficient after clean ({len(df_test_current_fold_orig)} rows).")
             export_fold_qa_summary(
                 fold_idx,
                 "no_data_after_clean",
-                {"rows_after_clean": 0},
+                {"rows_after_clean": len(df_test_current_fold_orig)},
                 output_dir=output_dir_for_wfv,
             )
             all_fold_metrics_list.append({})  # Keep list length consistent
@@ -6206,6 +6206,7 @@ def run_all_folds_with_threshold(
 
         fold_metrics_this_run: Dict[str, Any] = {}
         trades_made_in_fold = 0
+        sim_fail_this_fold = False
         for side_wfv in ["BUY", "SELL"]:
             wfv_logger.info(f"   Simulating {side_wfv} for {fold_label}...")
             # Get current capital and kill switch state for this side from previous fold
@@ -6217,25 +6218,49 @@ def run_all_folds_with_threshold(
             risk_manager_obj.dd_peak = current_capital_for_side # Reset peak for this fold's sim for this side
             risk_manager_obj.soft_kill_active = False # Reset soft kill
 
-            (df_sim_side, trade_log_side, final_equity_side, equity_history_side,
-             max_dd_side, run_summary_side, blocked_log_side, model_l1_used_side,
-            model_l2_used_side, ks_activated_side, cons_losses_side, ib_lot_side) = _run_backtest_simulation_v34_full(
-                df_m1_segment_pd=df_test_current_fold_with_signals, # Use data with signals calculated
-                label=f"{fold_label}_{side_wfv}",
-                initial_capital_segment=current_capital_for_side, # Use chained capital
-                side=side_wfv,
-                config_obj=config_obj,
-                risk_manager_obj=risk_manager_obj, # Pass the single RM instance
-                trade_manager_obj=trade_manager_obj, # Pass the single TM instance
-                fund_profile=current_fund_profile_wfv,
-                fold_config_override=fold_config_wfv, # Pass the adjusted fold config
-                available_models=available_models_for_wfv,
-                model_switcher_func=model_switcher_func_for_wfv,
-                meta_min_proba_thresh_override=l1_thresh_to_use_wfv,
-                current_fold_index=fold_idx,
-                initial_kill_switch_state=current_ks_for_side, # Pass chained KS state
-                initial_consecutive_losses=current_losses_for_side # Pass chained losses
-            )
+            try:
+                (
+                    df_sim_side,
+                    trade_log_side,
+                    final_equity_side,
+                    equity_history_side,
+                    max_dd_side,
+                    run_summary_side,
+                    blocked_log_side,
+                    model_l1_used_side,
+                    model_l2_used_side,
+                    ks_activated_side,
+                    cons_losses_side,
+                    ib_lot_side,
+                ) = _run_backtest_simulation_v34_full(
+                    df_m1_segment_pd=df_test_current_fold_with_signals,  # Use data with signals calculated
+                    label=f"{fold_label}_{side_wfv}",
+                    initial_capital_segment=current_capital_for_side,  # Use chained capital
+                    side=side_wfv,
+                    config_obj=config_obj,
+                    risk_manager_obj=risk_manager_obj,  # Pass the single RM instance
+                    trade_manager_obj=trade_manager_obj,  # Pass the single TM instance
+                    fund_profile=current_fund_profile_wfv,
+                    fold_config_override=fold_config_wfv,  # Pass the adjusted fold config
+                    available_models=available_models_for_wfv,
+                    model_switcher_func=model_switcher_func_for_wfv,
+                    meta_min_proba_thresh_override=l1_thresh_to_use_wfv,
+                    current_fold_index=fold_idx,
+                    initial_kill_switch_state=current_ks_for_side,  # Pass chained KS state
+                    initial_consecutive_losses=current_losses_for_side,  # Pass chained losses
+                )
+            except Exception as e_sim_fail:
+                export_fold_qa_summary(
+                    fold_idx,
+                    "sim_fail",
+                    {"error": str(e_sim_fail)},
+                    output_dir=output_dir_for_wfv,
+                )
+                wfv_logger.error(
+                    f"[Patch][QA v4.9.202+] Fold {fold_idx}: Simulation failed. {e_sim_fail}"
+                )
+                sim_fail_this_fold = True
+                break
 
             all_fold_results_list.append(df_sim_side)
             if not trade_log_side.empty:
@@ -6277,6 +6302,9 @@ def run_all_folds_with_threshold(
             wfv_logger.info(f"   Finished {side_wfv} for {fold_label}. Final Equity: ${final_equity_side:.2f}, Trades: {len(trade_log_side)}")
             gc.collect()
 
+        if sim_fail_this_fold:
+            all_fold_metrics_list.append({})
+            continue
         if trades_made_in_fold == 0:
             export_fold_qa_summary(
                 fold_idx,
