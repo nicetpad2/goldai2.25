@@ -1,92 +1,84 @@
-Collecting ta
-  Downloading ta-0.11.0.tar.gz (25 kB)
+Requirement already satisfied: google-generativeai in /usr/local/lib/python3.11/dist-packages (0.8.5)
+Requirement already satisfied: google-ai-generativelanguage==0.6.15 in /usr/local/lib/python3.11/dist-packages (from google-generativeai) (0.6.15)
+Requirement already satisfied: google-api-core in /usr/local/lib/python3.11/dist-packages (from google-generativeai) (2.24.2)
+Requirement already satisfied: google-api-python-client in /usr/local/lib/python3.11/dist-packages (from google-generativeai) (2.169.0)
+Requirement already satisfied: google-auth>=2.15.0 in /usr/local/lib/python3.11/dist-packages (from google-generativeai) (2.38.0)
+Requirement already satisfied: protobuf in /usr/local/lib/python3.11/dist-packages (from google-generativeai) (5.29.4)
+Requirement already satisfied: pydantic in /usr/local/lib/python3.11/dist-packages (from google-generativeai) (2.11.4)
+Requirement already satisfied: tqdm in /usr/local/lib/python3.11/dist-packages (from google-generativeai) (4.67.1)
+Requirement already satisfied: typing-extensions in /usr/local/lib/python3.11/dist-packages (from google-generativeai) (4.13.2)
+Requirement already satisfied: proto-plus<2.0.0dev,>=1.22.3 in /usr/local/lib/python3.11/dist-packages (from google-ai-generativelanguage==0.6.15->google-generativeai) (1.26.1)
+Requirement already satisfied: googleapis-common-protos<2.0.0,>=1.56.2 in /usr/local/lib/python3.11/dist-packages (from google-api-core->google-generativeai) (1.70.0)
+Requirement already satisfied: requests<3.0.0,>=2.18.0 in /usr/local/lib/python3.11/dist-packages (from google-api-core->google-generativeai) (2.32.3)
+Requirement already satisfied: cachetools<6.0,>=2.0.0 in /usr/local/lib/python3.11/dist-packages (from google-auth>=2.15.0->google-generativeai) (5.5.2)
+Requirement already satisfied: pyasn1-modules>=0.2.1 in /usr/local/lib/python3.11/dist-packages (from google-auth>=2.15.0->google-generativeai) (0.4.2)
+Requirement already satisfied: rsa<5,>=3.1.4 in /usr/local/lib/python3.11/dist-packages (from google-auth>=2.15.0->google-generativeai) (4.9.1)
+Requirement already satisfied: httplib2<1.0.0,>=0.19.0 in /usr/local/lib/python3.11/dist-packages (from google-api-python-client->google-generativeai) (0.22.0)
+Requirement already satisfied: google-auth-httplib2<1.0.0,>=0.2.0 in /usr/local/lib/python3.11/dist-packages (from google-api-python-client->google-generativeai) (0.2.0)
+Requirement already satisfied: uritemplate<5,>=3.0.1 in /usr/local/lib/python3.11/dist-packages (from google-api-python-client->google-generativeai) (4.1.1)
+Requirement already satisfied: annotated-types>=0.6.0 in /usr/local/lib/python3.11/dist-packages (from pydantic->google-generativeai) (0.7.0)
+Requirement already satisfied: pydantic-core==2.33.2 in /usr/local/lib/python3.11/dist-packages (from pydantic->google-generativeai) (2.33.2)
+Requirement already satisfied: typing-inspection>=0.4.0 in /usr/local/lib/python3.11/dist-packages (from pydantic->google-generativeai) (0.4.0)
+Requirement already satisfied: grpcio<2.0dev,>=1.33.2 in /usr/local/lib/python3.11/dist-packages (from google-api-core[grpc]!=2.0.*,!=2.1.*,!=2.10.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,!=2.8.*,!=2.9.*,<3.0.0dev,>=1.34.1->google-ai-generativelanguage==0.6.15->google-generativeai) (1.71.0)
+Requirement already satisfied: grpcio-status<2.0.dev0,>=1.33.2 in /usr/local/lib/python3.11/dist-packages (from google-api-core[grpc]!=2.0.*,!=2.1.*,!=2.10.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,!=2.8.*,!=2.9.*,<3.0.0dev,>=1.34.1->google-ai-generativelanguage==0.6.15->google-generativeai) (1.71.0)
+Requirement already satisfied: pyparsing!=3.0.0,!=3.0.1,!=3.0.2,!=3.0.3,<4,>=2.4.2 in /usr/local/lib/python3.11/dist-packages (from httplib2<1.0.0,>=0.19.0->google-api-python-client->google-generativeai) (3.2.3)
+Requirement already satisfied: pyasn1<0.7.0,>=0.6.1 in /usr/local/lib/python3.11/dist-packages (from pyasn1-modules>=0.2.1->google-auth>=2.15.0->google-generativeai) (0.6.1)
+Requirement already satisfied: charset-normalizer<4,>=2 in /usr/local/lib/python3.11/dist-packages (from requests<3.0.0,>=2.18.0->google-api-core->google-generativeai) (3.4.2)
+Requirement already satisfied: idna<4,>=2.5 in /usr/local/lib/python3.11/dist-packages (from requests<3.0.0,>=2.18.0->google-api-core->google-generativeai) (3.10)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /usr/local/lib/python3.11/dist-packages (from requests<3.0.0,>=2.18.0->google-api-core->google-generativeai) (2.4.0)
+Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.11/dist-packages (from requests<3.0.0,>=2.18.0->google-api-core->google-generativeai) (2025.4.26)
   Preparing metadata (setup.py) ... done
-Collecting optuna
-  Downloading optuna-4.3.0-py3-none-any.whl.metadata (17 kB)
-Collecting catboost
-  Downloading catboost-1.2.8-cp311-cp311-manylinux2014_x86_64.whl.metadata (1.2 kB)
-Collecting gputil
-  Downloading GPUtil-1.4.0.tar.gz (5.5 kB)
-  Preparing metadata (setup.py) ... done
-Requirement already satisfied: numpy in /usr/local/lib/python3.11/dist-packages (from ta) (2.0.2)
-Requirement already satisfied: pandas in /usr/local/lib/python3.11/dist-packages (from ta) (2.2.2)
-Collecting alembic>=1.5.0 (from optuna)
-  Downloading alembic-1.16.1-py3-none-any.whl.metadata (7.3 kB)
-Collecting colorlog (from optuna)
-  Downloading colorlog-6.9.0-py3-none-any.whl.metadata (10 kB)
-Requirement already satisfied: packaging>=20.0 in /usr/local/lib/python3.11/dist-packages (from optuna) (24.2)
-Requirement already satisfied: sqlalchemy>=1.4.2 in /usr/local/lib/python3.11/dist-packages (from optuna) (2.0.40)
-Requirement already satisfied: tqdm in /usr/local/lib/python3.11/dist-packages (from optuna) (4.67.1)
-Requirement already satisfied: PyYAML in /usr/local/lib/python3.11/dist-packages (from optuna) (6.0.2)
-Requirement already satisfied: graphviz in /usr/local/lib/python3.11/dist-packages (from catboost) (0.20.3)
-Requirement already satisfied: matplotlib in /usr/local/lib/python3.11/dist-packages (from catboost) (3.10.0)
-Requirement already satisfied: scipy in /usr/local/lib/python3.11/dist-packages (from catboost) (1.15.3)
-Requirement already satisfied: plotly in /usr/local/lib/python3.11/dist-packages (from catboost) (5.24.1)
-Requirement already satisfied: six in /usr/local/lib/python3.11/dist-packages (from catboost) (1.17.0)
-Requirement already satisfied: Mako in /usr/lib/python3/dist-packages (from alembic>=1.5.0->optuna) (1.1.3)
-Requirement already satisfied: typing-extensions>=4.12 in /usr/local/lib/python3.11/dist-packages (from alembic>=1.5.0->optuna) (4.13.2)
-Requirement already satisfied: python-dateutil>=2.8.2 in /usr/local/lib/python3.11/dist-packages (from pandas->ta) (2.9.0.post0)
-Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.11/dist-packages (from pandas->ta) (2025.2)
-Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.11/dist-packages (from pandas->ta) (2025.2)
-Requirement already satisfied: greenlet>=1 in /usr/local/lib/python3.11/dist-packages (from sqlalchemy>=1.4.2->optuna) (3.2.2)
-Requirement already satisfied: contourpy>=1.0.1 in /usr/local/lib/python3.11/dist-packages (from matplotlib->catboost) (1.3.2)
-Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.11/dist-packages (from matplotlib->catboost) (0.12.1)
-Requirement already satisfied: fonttools>=4.22.0 in /usr/local/lib/python3.11/dist-packages (from matplotlib->catboost) (4.58.0)
-Requirement already satisfied: kiwisolver>=1.3.1 in /usr/local/lib/python3.11/dist-packages (from matplotlib->catboost) (1.4.8)
-Requirement already satisfied: pillow>=8 in /usr/local/lib/python3.11/dist-packages (from matplotlib->catboost) (11.2.1)
-Requirement already satisfied: pyparsing>=2.3.1 in /usr/local/lib/python3.11/dist-packages (from matplotlib->catboost) (3.2.3)
-Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.11/dist-packages (from plotly->catboost) (9.1.2)
-Downloading optuna-4.3.0-py3-none-any.whl (386 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 386.6/386.6 kB 32.1 MB/s eta 0:00:00
-Downloading catboost-1.2.8-cp311-cp311-manylinux2014_x86_64.whl (99.2 MB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 99.2/99.2 MB 9.3 MB/s eta 0:00:00
-Downloading alembic-1.16.1-py3-none-any.whl (242 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 242.5/242.5 kB 26.9 MB/s eta 0:00:00
-Downloading colorlog-6.9.0-py3-none-any.whl (11 kB)
-Building wheels for collected packages: ta, gputil
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 244.2/244.2 kB 14.9 MB/s eta 0:00:00
   Building wheel for ta (setup.py) ... done
-  Created wheel for ta: filename=ta-0.11.0-py3-none-any.whl size=29412 sha256=0b8e6273906b94e70906cf8acee80bdb9fc7ea4ebddbde967ea5505a56b708a7
-  Stored in directory: /root/.cache/pip/wheels/a1/d7/29/7781cc5eb9a3659d032d7d15bdd0f49d07d2b24fec29f44bc4
-  Building wheel for gputil (setup.py) ... done
-  Created wheel for gputil: filename=GPUtil-1.4.0-py3-none-any.whl size=7392 sha256=85813df2960d85a0fe728e4a89e2a67c22227b5abfd760a3ee5fa6f0a2eca2cd
-  Stored in directory: /root/.cache/pip/wheels/2b/4d/8f/55fb4f7b9b591891e8d3f72977c4ec6c7763b39c19f0861595
-Successfully built ta gputil
-Installing collected packages: gputil, colorlog, alembic, ta, optuna, catboost
-Successfully installed alembic-1.16.1 catboost-1.2.8 colorlog-6.9.0 gputil-1.4.0 optuna-4.3.0 ta-0.11.0
-04:08:54 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 & 3] Initial StreamHandler for logger configured. FileHandler deferred to main().
-04:08:54 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.146_FULL_PASS - Logger Initialized (Import Phase).
-04:08:54 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
-04:08:54 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
-04:08:54 - INFO - [GoldAI_Enterprise_v4.9] - 
+🔑 ใส่ Gemini API Key (จะไม่โชว์): ··········
+
+
+========== PARAM SWEEP [1/3] (hash=ea238c4799a393a1d445a8eacc22c9d1) ==========
+{'risk_per_trade': 0.01, 'base_tp_multiplier': 1.8, 'max_holding_bars': 24, 'pipeline_id': '19e51cb2c99f'}
+[RAM ก่อนรัน GoldAI (Sweep 1)] ใช้งาน 0.99 GB / 12.67 GB (10.2%)
+07:26:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 & 3] Initial StreamHandler for logger configured. FileHandler deferred to main().
+07:26:27 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.158_FULL_PASS - Logger Initialized (Import Phase).
+07:26:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
+07:26:27 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
+07:26:27 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Importing core libraries (with robust fallbacks)...
-04:08:55 - INFO - [GoldAI_Enterprise_v4.9] - [Patch AI Studio v4.9.49+] Setting optuna.logging.set_verbosity(optuna.logging.WARNING)
-04:08:56 - INFO - [GoldAI_Enterprise_v4.9] -    (Success) CatBoost components (Classifier, Pool) loaded. EShapCalcType: Found, EFeaturesSelectionAlgorithm: Found
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - 
+ไม่พบ Library: OPTUNA. กำลังพยายามติดตั้ง...
+   (Warning) ไม่ได้ระบุชื่อ pip package สำหรับ OPTUNA. ข้ามการติดตั้ง.
+ไม่พบ Library: CATBOOST. กำลังพยายามติดตั้ง...
+   (Warning) ไม่ได้ระบุชื่อ pip package สำหรับ CATBOOST. ข้ามการติดตั้ง.
+ไม่พบ Library: GPUTIL. กำลังพยายามติดตั้ง...
+   (Warning) ไม่ได้ระบุชื่อ pip package สำหรับ GPUTIL. ข้ามการติดตั้ง.
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - 
 (Processing) Setting up environment (Colab, GPU)...
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][ColabEnv] Not running in Google Colab environment.
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.146_FULL_PASS
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.158_FULL_PASS
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
 Part 2: Is DEPRECATED. All tunable strategy parameters should be managed by StrategyConfig.
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - Part 3 (New): Enterprise Classes & Config Loader Implemented with Feature Engineering and Default Signal Thresholds.
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - Part 4 (Original Part 3): Helper Functions (Setup, Utils, Font, Config) Loaded.
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - Part 5 (Original Part 4): Data Loading & Initial Preparation Functions Loaded.
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - Part 6 (Original Part 5): Feature Engineering & Indicator Calculation Functions Loaded and Refactored to use StrategyConfig.
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - Part 7 (Original Part 6): Machine Learning Configuration & Helpers Loaded and Refactored.
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - [Patch AI Studio v4.9.49+] Setting optuna.logging.set_verbosity(optuna.logging.WARNING)
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - Part 8 (Original Part 7): Model Training Function Loaded and Refactored with Optuna Integration.
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - Part 9 (Original Part 8): Backtesting Engine (v4.9.23 - Added TSL/BE Helpers & _check_kill_switch) Loaded and Refactored.
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - Part 10 (Original Part 9): Walk-Forward Orchestration & Analysis Functions (Fuller Logic v4.9.18 - Corrected WFV Type Hint) Loaded and Refactored.
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - Part 11 (Original Part 10): Main Execution & Pipeline Control Loaded and Refactored with Full Data/Model Logic.
-04:09:03 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step MainBlock] Calling setup_gpu_acceleration() from __main__ block.
-   [CRITICAL GPU INIT FAIL][Patch AI Studio SmartFix] PyTorch or torch.cuda not available. Disabling GPU acceleration.
-[Patch][ConfigPath] Config not found at 'config.yaml', fallback to '/content/drive/MyDrive/new/config.yaml'
-04:09:04 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.87] Using /content/drive/MyDrive/new as the only valid test path.
-[Patch][QA v4.9.91+] No Thai fonts found in: ['TH Sarabun New', 'THSarabunNew', 'Garuda', 'Norasi', 'Kinnari', 'Waree', 'Laksaman', 'Loma']. Fallback to DejaVu Sans.
-[Patch][QA v4.9.91+] Could not set any Thai font. Defaulting to 'DejaVu Sans'. Plots may not render Thai characters correctly.
-[Patch][ConfigPath] Config not found at 'config.yaml', fallback to '/content/drive/MyDrive/new/config.yaml'
-04:09:04 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.87] Using /content/drive/MyDrive/new as the only valid test path.
-[Patch][QA v4.9.90] engineer_m1_features: ATR_14 missing or all NaN, fallback to pd.Series([np.nan]*len(df)).
-[Patch][ATR_Missing] ไม่พบข้อมูล ATR_14 หรือข้อมูลไม่เพียงพอ กรุณาตรวจสอบขั้นตอนเตรียมข้อมูลหรือเตรียมคอลัมน์ราคาให้ครบ
-[Patch][Gain_Z_Missing] ไม่พบ Gain_Z ในข้อมูล จะเติม 0.0 ทั้งหมด
-  Sim (Fold_1_UnnamedFund_WFV_BUY, BUY):   0%|          | 0/295328 [00:00<?, ?it/s]
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 3 (New): Enterprise Classes & Config Loader Implemented with Feature Engineering and Default Signal Thresholds.
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 4 (Original Part 3): Helper Functions (Setup, Utils, Font, Config) Loaded.
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 5 (Original Part 4): Data Loading & Initial Preparation Functions Loaded.
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 6 (Original Part 5): Feature Engineering & Indicator Calculation Functions Loaded and Refactored to use StrategyConfig.
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 7 (Original Part 6): Machine Learning Configuration & Helpers Loaded and Refactored.
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 8 (Original Part 7): Model Training Function Loaded and Refactored with Optuna Integration.
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 9 (Original Part 8): Backtesting Engine (v4.9.23 - Added TSL/BE Helpers & _check_kill_switch) Loaded and Refactored.
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 10 (Original Part 9): Walk-Forward Orchestration & Analysis Functions (Fuller Logic v4.9.18 - Corrected WFV Type Hint) Loaded and Refactored.
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - Part 11 (Original Part 10): Main Execution & Pipeline Control Loaded and Refactored with Full Data/Model Logic.
+07:26:37 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step MainBlock] Calling setup_gpu_acceleration() from __main__ block.
+[Patch][ConfigPath v4.9.155+] Config not found at 'config.yaml', fallback to '/content/drive/MyDrive/new/config.yaml'
+07:26:38 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.87] Using /content/drive/MyDrive/new as the only valid test path.
+[Patch][ConfigPath v4.9.155+] Config not found at 'config.yaml', fallback to '/content/drive/MyDrive/new/config.yaml'
+07:26:38 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.87] Using /content/drive/MyDrive/new as the only valid test path.
+[Patch][QA v4.9.158+] Drop 149 rows with NaN in ['Gain_Z', 'ATR_14']
+          [DRIFT ALERT] Feature='ATR_14', Wasserstein=0.1826 (Threshold: 0.10) (Fold 1)
+   (CRITICAL) Outer error in simulation loop for Fold_1_UnnamedFund_WFV_BUY: 'StrategyConfig' object has no attribute 'use_meta_classifier'
+Traceback (most recent call last):
+  File "/content/drive/MyDrive/new/gold_ai2025.py", line 5046, in _run_backtest_simulation_v34_full
+    can_open_new_val_call, block_reason_open_val_call, entry_type_open_val_call, meta_proba_open_val_call, model_key_open_val_call, model_conf_open_val_call = is_entry_allowed(
+                                                                                                                                                               ^^^^^^^^^^^^^^^^^
+  File "/content/drive/MyDrive/new/gold_ai2025.py", line 4575, in is_entry_allowed
+    elif pd.isna(meta_proba_tp_allow) and config.use_meta_classifier : # type: ignore
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'StrategyConfig' object has no attribute 'use_meta_classifier'
+  Sim (Fold_1_UnnamedFund_WFV_BUY, BUY):   0%|          | 0/295303 [00:00<?, ?it/s]
+07:27:07 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+    No trades logged for 'Fold_1_UnnamedFund_WFV BUY'.
