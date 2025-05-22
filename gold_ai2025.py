@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.145_FULL_PASS"  # [Patch][QA v4.9.145] clustering/session warnings reduced
+MINIMAL_SCRIPT_VERSION = "4.9.146_FULL_PASS"  # [Patch][QA v4.9.146] multi-logic improvements
 
 
 
@@ -578,38 +578,38 @@ import_core_libraries()
 # --- Environment Setup (Colab, GPU) ---
 logger.info("\n(Processing) Setting up environment (Colab, GPU)...")
 try:
-    from IPython import get_ipython # type: ignore
+    from IPython import get_ipython  # type: ignore
     shell = get_ipython()
-    logger.debug(f"[IN_COLAB Check - Patch G] Value from get_ipython(): {shell}")
+    logger.debug(f"[IN_COLAB Check - Patch] Value from get_ipython(): {shell}")
+    is_colab = False
     if shell is not None:
         shell_str = str(shell)
-        logger.debug(f"[IN_COLAB Check - Patch G] Value from str(get_ipython()): {shell_str}")
+        logger.debug(f"[IN_COLAB Check - Patch] Value from str(get_ipython()): {shell_str}")
         if 'google.colab' in shell_str:
-            IN_COLAB = True
-            logger.info("   Running in Google Colab environment.")
-            try:
-                from google.colab import drive # type: ignore
-                logger.info("   Attempting to mount Google Drive...")
-                drive.mount('/content/drive', force_remount=True)
-                logger.info("   Google Drive mounted successfully.")
-            except ImportError: # pragma: no cover
-                logger.error("   (Error) Failed to import google.colab.drive. Drive mounting skipped.")
-                drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("DummyDrive.mount called.")})() # type: ignore
-            except Exception as e_drive: # pragma: no cover
-                logger.error(f"   (Error) Failed to mount Google Drive: {e_drive}", exc_info=True)
-                drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("DummyDrive.mount called.")})() # type: ignore
-        else: # pragma: no cover
-            logger.info("   Not running in Google Colab environment (based on get_ipython string).")
-            drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("DummyDrive.mount called.")})() # type: ignore
-    else: # pragma: no cover
-        logger.info("   Not running in Google Colab environment (get_ipython is None).")
-        drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("DummyDrive.mount called.")})() # type: ignore
-except ImportError: # pragma: no cover
-    logger.info("   IPython not found. Assuming not in Colab environment.")
-    drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("DummyDrive.mount called.")})() # type: ignore
-except Exception as e_colab_setup: # pragma: no cover
-    logger.error(f"   Error during Colab environment setup: {e_colab_setup}", exc_info=True)
-    drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("DummyDrive.mount called.")})() # type: ignore
+            is_colab = True
+    if is_colab:
+        IN_COLAB = True
+        logger.info("[Patch][ColabEnv] Detected running in Google Colab environment.")
+        try:
+            from google.colab import drive  # type: ignore
+            logger.info("[Patch][ColabEnv] Attempting to mount Google Drive...")
+            drive.mount('/content/drive', force_remount=True)
+            logger.info("[Patch][ColabEnv] Google Drive mounted successfully.")
+        except ImportError:
+            logger.error("[Patch][ColabEnv] (Error) Failed to import google.colab.drive. Drive mounting skipped.")
+            drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("[Patch][ColabEnv] DummyDrive.mount called.")})()
+        except Exception as e_drive:
+            logger.error(f"[Patch][ColabEnv] (Error) Failed to mount Google Drive: {e_drive}", exc_info=True)
+            drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("[Patch][ColabEnv] DummyDrive.mount called.")})()
+    else:
+        logger.info("[Patch][ColabEnv] Not running in Google Colab environment.")
+        drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("[Patch][ColabEnv] DummyDrive.mount called.")})()
+except ImportError:
+    logger.info("[Patch][ColabEnv] IPython not found. Assuming not in Colab environment.")
+    drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("[Patch][ColabEnv] DummyDrive.mount called.")})()
+except Exception as e_colab_setup:
+    logger.error(f"[Patch][ColabEnv] Error during Colab environment setup: {e_colab_setup}", exc_info=True)
+    drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("[Patch][ColabEnv] DummyDrive.mount called.")})()
 
 
 # --- GPU Acceleration Setup Function Definition (will be called from __main__) ---
@@ -1206,22 +1206,32 @@ class TradeManager:
 # --- Configuration Loading Function ---
 def load_config_from_yaml(path: str = "config.yaml") -> StrategyConfig:
     config_loader_logger = logging.getLogger(f"{__name__}.load_config_from_yaml")
+    project_default = "./config.yaml"
+    drive_default = "/content/drive/MyDrive/new/config.yaml"
+    # [Patch][ConfigPath] robust path search: project -> drive fallback
+    chosen_path = None
+    for try_path in [path, project_default, drive_default]:
+        if os.path.exists(try_path):
+            chosen_path = try_path
+            break
+    if chosen_path is None:
+        config_loader_logger.warning("[Patch][ConfigPath] No config.yaml found in project or drive path. Using default config values.")
+        return StrategyConfig({})
+    if chosen_path != path:
+        config_loader_logger.warning(f"[Patch][ConfigPath] Config not found at '{path}', fallback to '{chosen_path}'")
     try:
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(chosen_path, 'r', encoding='utf-8') as f:
             raw_config = yaml.safe_load(f)
         if raw_config is None:
-            config_loader_logger.warning(f"Config file '{path}' is empty or invalid. Using default config values.")
+            config_loader_logger.warning(f"[Patch][ConfigPath] Config file '{chosen_path}' is empty or invalid. Using default config values.")
             return StrategyConfig({})
-        config_loader_logger.info(f"Successfully loaded configuration from: {path}")
+        config_loader_logger.info(f"Successfully loaded configuration from: {chosen_path}")
         return StrategyConfig(raw_config)
-    except FileNotFoundError:
-        config_loader_logger.warning(f"[Warning] Config file '{path}' not found. Using default config values.")
+    except yaml.YAMLError as e_yaml:
+        config_loader_logger.error(f"[Patch][ConfigPath] Failed to parse YAML from '{chosen_path}': {e_yaml}. Using default config values.")
         return StrategyConfig({})
-    except yaml.YAMLError as e_yaml: # pragma: no cover
-        config_loader_logger.error(f"[Error] Failed to parse YAML from '{path}': {e_yaml}. Using default config values.")
-        return StrategyConfig({})
-    except Exception as e: # pragma: no cover
-        config_loader_logger.error(f"[Error] Failed to load config from '{path}', using defaults. Reason: {e}", exc_info=True)
+    except Exception as e:
+        config_loader_logger.error(f"[Patch][ConfigPath] Failed to load config from '{chosen_path}', using defaults. Reason: {e}", exc_info=True)
         return StrategyConfig({})
 
 
@@ -1302,6 +1312,7 @@ def setup_output_directory(base_dir: str, dir_name: str) -> str:
         sys.exit(f"   ออก: ข้อผิดพลาดร้ายแรงในการตั้งค่า Output Directory ({output_path}).")
 
 # --- Font Setup Helpers ---
+font_setup_has_run = False  # [Patch][FontSetup] global flag
 def set_thai_font(font_name: str = "Loma", warn_on_failure: bool = True) -> bool:
     """[Patch][QA v4.9.91+] Robust fallback for Thai font. Added warn_on_failure to avoid duplicate warnings."""
     try:
@@ -1355,10 +1366,14 @@ def set_thai_font(font_name: str = "Loma", warn_on_failure: bool = True) -> bool
 
 def setup_fonts(output_dir: str | None = None): # output_dir is not used currently
     """
-    Sets up Thai fonts for Matplotlib plots.
-    Attempts to find preferred fonts, installs 'fonts-thai-tlwg' on Colab if needed.
+    Sets up Thai fonts for Matplotlib plots. Only run once per session.
     """
+    global font_setup_has_run
     font_setup_logger = logging.getLogger(f"{__name__}.setup_fonts")
+    if font_setup_has_run:
+        font_setup_logger.info("[Patch][FontSetup] setup_fonts() was already run; skipping duplicate font setup and warnings.")
+        return
+    font_setup_has_run = True
     font_setup_logger.info("\n(Processing) Setting up Thai font for plots...")
     font_set_successfully = False
     preferred_font_name = "TH Sarabun New"
@@ -2064,7 +2079,7 @@ logger.info("Part 5 (Original Part 4): Data Loading & Initial Preparation Functi
 # === END OF PART 5/15 ===
 # === START OF PART 6/15 ===
 # ==============================================================================
-# === PART 6: Feature Engineering & Indicator Calculation (v4.9.15 - Signals Use Config Defaults) ===
+# [Patch] === PART 6: Feature Engineering & Indicator Calculation (v4.9.15 - Signals Use Config Defaults) ===
 # ==============================================================================
 # <<< MODIFIED: calculate_m1_entry_signals now correctly uses default thresholds from StrategyConfig. >>>
 # <<< MODIFIED: [Patch] Ensured DataFrame boolean checks use .empty in calculate_m15_trend_zone. >>>
@@ -2515,9 +2530,10 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
             "[Patch][QA v4.9.90] engineer_m1_features: ATR_14 missing or all NaN, fallback to pd.Series([np.nan]*len(df))."
         )
         df['ATR_14'] = pd.Series([np.nan] * len(df), index=df.index)
-        # [Patch][QA v4.9.90] Log fallback applied
-        eng_m1_logger.info(
-            "[Patch][QA v4.9.90] engineer_m1_features: Fallback applied, ATR_14 is all NaN as expected for missing."
+        df['ATR_14_Shifted'] = pd.Series([np.nan] * len(df), index=df.index)
+        # [Patch] ตรวจสอบและแจ้งเตือนว่าข้อมูลสำคัญไม่ครบ
+        eng_m1_logger.warning(
+            "[Patch][ATR_Missing] ไม่พบข้อมูล ATR_14 หรือข้อมูลไม่เพียงพอ กรุณาตรวจสอบขั้นตอนเตรียมข้อมูลหรือเตรียมคอลัมน์ราคาให้ครบ"
         )
     price_cols = ["Open", "High", "Low", "Close"]
     normalized_map = {c.lower(): c for c in df.columns}
@@ -2681,8 +2697,13 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
     # Spike Score (Simple heuristic)
     if 'spike_score' not in df.columns: # pragma: no cover
         try:
-            gain_z_series_spike = df['Gain_Z'] if 'Gain_Z' in df else pd.Series(0.0, index=df.index)
-            gain_z_abs_spike = abs(pd.to_numeric(gain_z_series_spike, errors='coerce').fillna(0.0))
+            if 'Gain_Z' in df:
+                gain_z_series = pd.to_numeric(df['Gain_Z'], errors='coerce')
+            else:
+                eng_m1_logger.warning("[Patch][Gain_Z_Missing] ไม่พบ Gain_Z ในข้อมูล จะเติม 0.0 ทั้งหมด")
+                gain_z_series = pd.Series([0.0] * len(df), index=df.index)
+            gain_z_abs_spike = abs(gain_z_series.fillna(0.0))
+
             wick_ratio_series_spike = df['Wick_Ratio'] if 'Wick_Ratio' in df else pd.Series(0.0, index=df.index)
             wick_ratio_val_spike = abs(pd.to_numeric(wick_ratio_series_spike, errors='coerce').fillna(0.0))
             atr_series_spike = df['ATR_14'] if 'ATR_14' in df else pd.Series(1.0, index=df.index)
@@ -2692,8 +2713,11 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
             score_spike = np.where((atr_val_for_spike > 1.5) & (wick_ratio_val_spike > 0.6), score_spike * 1.2, score_spike)
             df['spike_score'] = score_spike.clip(0, 1).astype('float32')
         except Exception as e_spike:
-            df['spike_score'] = 0.0 # Default on error
-            eng_m1_logger.error(f"         (Error) Spike score calculation failed: {e_spike}.", exc_info=True)
+            df['spike_score'] = 0.0  # Default on error
+            eng_m1_logger.error(
+                "[Patch][GainZ_Fallback] (Error) Spike score calculation failed, fallback zeros.",
+                exc_info=True,
+            )
 
     # Session Tag
     if 'session' not in df.columns: # pragma: no cover

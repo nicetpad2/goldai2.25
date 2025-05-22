@@ -403,3 +403,7 @@
 - [Patch][QA v4.9.145] Reduced warning noise in engineer_m1_features (price column handling, volatility index fallback, clustering and session tag)
 - Version bump to `4.9.145_FULL_PASS`
 
+## [v4.9.146+] - 2025-06-xx
+- [Patch][QA v4.9.146] Multi-logic QA updates: ATR fallback warning, font setup flag, improved Colab drive detection, config path fallback
+- Version bump to `4.9.146_FULL_PASS`
+
