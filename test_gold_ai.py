@@ -360,6 +360,12 @@ class TestGoldAI2025(unittest.TestCase):
         self.assertEqual(cfg.risk_per_trade, 0.02)
         self.assertEqual(cfg.max_lot, 2.0)
 
+    def test_load_config_defaults_when_missing(self):
+        with patch("os.path.exists", return_value=False):
+            cfg = self.gold_ai.load_config_from_yaml("missing.yaml")
+        self.assertEqual(cfg.risk_per_trade, 0.01)
+        self.assertEqual(cfg.max_lot, 5.0)
+
     def test_load_config_path_fallback(self):
         ga = self.gold_ai
         with patch("os.path.exists", return_value=True):

@@ -429,3 +429,8 @@
 - [Patch][QA v4.9.154] safe_load_csv_auto logs path/columns and validates OHLC columns.
 - [Patch][QA v4.9.154] engineer_m1_features logs input columns and enforces OHLC columns.
 - Version bump to `4.9.154_FULL_PASS`
+
+## [v4.9.155+] - 2025-07-xx
+- [Patch][QA v4.9.155] Embedded default configuration inside `load_config_from_yaml`.
+- [Patch][QA v4.9.155] Function now returns defaults when YAML missing or invalid.
+- Version bump to `4.9.155_FULL_PASS`
