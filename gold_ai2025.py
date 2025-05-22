@@ -44,7 +44,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.166_FULL_PASS"  # [Patch][QA v4.9.166] Requirements update & version sync
+MINIMAL_SCRIPT_VERSION = "4.9.201_FULL_PASS"  # [Patch][QA v4.9.201] Auto QA root cause export
 
 
 
@@ -5391,6 +5391,27 @@ def export_run_summary_to_json(run_summary_exp: Dict[str, Any], label: str, outp
         export_logger_json.error(f"[Patch AI Studio v4.9.59+] [Patch] run_summary export failed: {e_export_json}")
         return None  # pragma: no cover
 
+def export_fold_qa_summary(fold_id: int, root_cause: str, detail_dict: Dict[str, Any], output_dir: str = "./"):
+    """[Patch][QA v4.9.201+] Export QA root cause summary for a fold."""
+    qa_logger = logging.getLogger(f"{__name__}.export_fold_qa_summary")
+    summary = {
+        "fold_id": fold_id,
+        "root_cause": root_cause,
+        **detail_dict,
+    }
+    fname = f"fold_{fold_id}_qa_summary.json"
+    summary_path = os.path.join(output_dir, fname)
+    try:
+        with open(summary_path, "w", encoding="utf-8") as f_json:
+            json.dump(summary, f_json, ensure_ascii=False, indent=2)
+        qa_logger.warning(
+            f"[Patch][QA v4.9.201+] Exported QA summary: {fname} (root_cause={root_cause}) | {detail_dict}"
+        )
+        return summary_path
+    except Exception as e_export_qa:  # pragma: no cover
+        qa_logger.error(f"[Patch][QA v4.9.201+] Failed exporting QA summary {fname}: {e_export_qa}")
+        return None
+
 logger.info("Part 9 (Original Part 8): Backtesting Engine (v4.9.23 - Added TSL/BE Helpers & _check_kill_switch) Loaded and Refactored.")
 # === END OF PART 9/15 ===
 # === START OF PART 10/15 ===
@@ -6122,9 +6143,15 @@ def run_all_folds_with_threshold(
         df_train_current_fold = df_m1_final_for_wfv.iloc[train_indices].copy()
         df_test_current_fold_orig = df_m1_final_for_wfv.iloc[test_indices].copy()
 
-        if df_test_current_fold_orig.empty: # pragma: no cover
+        if df_test_current_fold_orig.empty:  # pragma: no cover
             wfv_logger.warning(f"   Skipping {fold_label}: Test data is empty.")
-            all_fold_metrics_list.append({}) # Add empty metrics for this fold to keep list length consistent
+            export_fold_qa_summary(
+                fold_idx,
+                "no_data_after_clean",
+                {"rows_after_clean": 0},
+                output_dir=output_dir_for_wfv,
+            )
+            all_fold_metrics_list.append({})  # Keep list length consistent
             continue
         if fold_idx == 0 and first_fold_test_data_output is None: # Save first fold test data for later SHAP
             first_fold_test_data_output = df_test_current_fold_orig.copy()
@@ -6155,10 +6182,30 @@ def run_all_folds_with_threshold(
             fold_specific_config=fold_config_wfv,
             strategy_config=config_obj
         )
+        entry_mask = (
+            (df_test_current_fold_with_signals.get("Entry_Long") == 1)
+            | (df_test_current_fold_with_signals.get("Entry_Short") == 1)
+        )
+        signal_stat = {
+            "signal_score_min": float(df_test_current_fold_with_signals["Signal_Score"].min()),
+            "signal_score_max": float(df_test_current_fold_with_signals["Signal_Score"].max()),
+            "entry_pass_count": int(entry_mask.sum()),
+            "rows_total": len(df_test_current_fold_with_signals),
+        }
+        if entry_mask.sum() == 0:
+            export_fold_qa_summary(
+                fold_idx,
+                "no_entry_pass",
+                signal_stat,
+                output_dir=output_dir_for_wfv,
+            )
+            all_fold_metrics_list.append({})
+            continue
         wfv_logger.debug(f"   Test data for {fold_label} after signal calculation: {df_test_current_fold_with_signals.shape}")
         # Now df_test_current_fold_with_signals has Entry_Long, Entry_Short, Signal_Score, Trade_Reason, Trade_Tag columns
 
         fold_metrics_this_run: Dict[str, Any] = {}
+        trades_made_in_fold = 0
         for side_wfv in ["BUY", "SELL"]:
             wfv_logger.info(f"   Simulating {side_wfv} for {fold_label}...")
             # Get current capital and kill switch state for this side from previous fold
@@ -6193,6 +6240,7 @@ def run_all_folds_with_threshold(
             all_fold_results_list.append(df_sim_side)
             if not trade_log_side.empty:
                 all_trade_logs_list.append(trade_log_side)
+                trades_made_in_fold += len(trade_log_side)
             all_equity_histories_dict[f"{fold_label}_{side_wfv}"] = equity_history_side
             if blocked_log_side: # pragma: no cover
                 all_blocked_logs_list.extend(blocked_log_side)
@@ -6204,9 +6252,17 @@ def run_all_folds_with_threshold(
             )
             fold_metrics_this_run[side_wfv.lower()] = metrics_side_fold # Store BUY/SELL metrics separately
 
-            if not trade_log_side.empty: # pragma: no cover
-                export_trade_log_to_csv(trade_log_side, f"{fold_label}_{side_wfv}", output_dir_for_wfv, config_obj) # type: ignore
-            export_run_summary_to_json(metrics_side_fold, f"{fold_label}_{side_wfv}_metrics", output_dir_for_wfv, config_obj) # type: ignore
+            trade_path = None
+            if not trade_log_side.empty:  # pragma: no cover
+                trade_path = export_trade_log_to_csv(trade_log_side, f"{fold_label}_{side_wfv}", output_dir_for_wfv, config_obj)  # type: ignore
+            export_run_summary_to_json(metrics_side_fold, f"{fold_label}_{side_wfv}_metrics", output_dir_for_wfv, config_obj)  # type: ignore
+            if trade_log_side.empty and trade_path is None:
+                export_fold_qa_summary(
+                    fold_idx,
+                    "no_trade_log_artifact",
+                    {"param": side_wfv, "output_dir": output_dir_for_wfv},
+                    output_dir=output_dir_for_wfv,
+                )
 
             # Update chained capital and KS state for the next fold for this side
             if side_wfv == "BUY":
@@ -6220,6 +6276,14 @@ def run_all_folds_with_threshold(
 
             wfv_logger.info(f"   Finished {side_wfv} for {fold_label}. Final Equity: ${final_equity_side:.2f}, Trades: {len(trade_log_side)}")
             gc.collect()
+
+        if trades_made_in_fold == 0:
+            export_fold_qa_summary(
+                fold_idx,
+                "simulation_no_trade",
+                {"note": "Simulation ran, but no trade executed."},
+                output_dir=output_dir_for_wfv,
+            )
 
         all_fold_metrics_list.append(fold_metrics_this_run) # List of dicts, each dict has 'buy' and 'sell' keys
         previous_fold_metrics_data = fold_metrics_this_run # For potential future use

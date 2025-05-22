@@ -486,3 +486,8 @@
 - [Patch][QA v4.9.166] Added missing libraries to requirements and synced version constants.
 - Version bump to `4.9.166_FULL_PASS`
 
+## [v4.9.201+] - 2025-07-xx
+- [Patch][QA v4.9.201] Auto QA root cause summary export for each fold.
+- Added `export_fold_qa_summary` and integrated calls in walk-forward pipeline.
+- Version bump to `4.9.201_FULL_PASS`
+
