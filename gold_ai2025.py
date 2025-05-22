@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.144_FULL_PASS"  # [Patch][QA v4.9.144] reduce duplicate Thai font warnings
+MINIMAL_SCRIPT_VERSION = "4.9.145_FULL_PASS"  # [Patch][QA v4.9.145] clustering/session warnings reduced
 
 
 
@@ -2520,10 +2520,18 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
             "[Patch][QA v4.9.90] engineer_m1_features: Fallback applied, ATR_14 is all NaN as expected for missing."
         )
     price_cols = ["Open", "High", "Low", "Close"]
-    if any(col not in df.columns for col in price_cols): # pragma: no cover
-        eng_m1_logger.warning("   (Warning) ขาดคอลัมน์ราคาใน M1 Data. Filling with NaN.")
-        # Define base features that might be missing if price columns are absent
-        base_feature_cols = ["Candle_Body", "Candle_Range", "Gain", "Candle_Ratio", "Upper_Wick", "Lower_Wick", "Wick_Length", "Wick_Ratio", "Gain_Z", "MACD_line", "MACD_signal", "MACD_hist", "MACD_hist_smooth", "ATR_14", "ATR_14_Shifted", "ATR_14_Rolling_Avg", "Candle_Speed", 'Volatility_Index', 'ADX', 'RSI', 'cluster', 'spike_score', 'session', 'Pattern_Label', 'model_tag']
+    normalized_map = {c.lower(): c for c in df.columns}
+    for pcol in price_cols:
+        if pcol not in df.columns and pcol.lower() in normalized_map:
+            df.rename(columns={normalized_map[pcol.lower()]: pcol}, inplace=True)
+    if any(col not in df.columns for col in price_cols):  # pragma: no cover
+        eng_m1_logger.info("   Missing price columns in M1 Data. Filling with NaN.")
+        base_feature_cols = [
+            "Candle_Body", "Candle_Range", "Gain", "Candle_Ratio", "Upper_Wick", "Lower_Wick",
+            "Wick_Length", "Wick_Ratio", "Gain_Z", "MACD_line", "MACD_signal", "MACD_hist",
+            "MACD_hist_smooth", "ATR_14", "ATR_14_Shifted", "ATR_14_Rolling_Avg", "Candle_Speed",
+            'Volatility_Index', 'ADX', 'RSI', 'cluster', 'spike_score', 'session', 'Pattern_Label',
+            'model_tag']
         for col in base_feature_cols:
             if col not in df.columns:
                 df[col] = np.nan if 'Label' not in col and 'session' not in col and 'tag' not in col else "N/A"
@@ -2588,12 +2596,16 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
                 eng_m1_logger.warning(f"      Cannot create lag for '{feature_name_lag}': not found or not numeric.")
 
     # Volatility Index
-    if 'ATR_14' in df.columns and 'ATR_14_Rolling_Avg' in df.columns and df['ATR_14_Rolling_Avg'].notna().any():
-        df['Volatility_Index'] = np.where(df['ATR_14_Rolling_Avg'].abs() > 1e-9, df['ATR_14'] / df['ATR_14_Rolling_Avg'], np.nan)
-        df['Volatility_Index'] = df['Volatility_Index'].ffill().fillna(1.0).astype('float32') # Fill NaNs from division or initial period
-    else: # pragma: no cover
-        df['Volatility_Index'] = 1.0 # Default if ATR components are missing
-        eng_m1_logger.warning("         (Warning) ไม่สามารถคำนวณ Volatility_Index. Setting to 1.0.")
+    if 'ATR_14_Rolling_Avg' not in df.columns or df['ATR_14_Rolling_Avg'].isna().all():
+        if 'ATR_14' in df.columns and df['ATR_14'].notna().any():
+            df['ATR_14_Rolling_Avg'] = sma(df['ATR_14'], atr_rolling_avg_period)
+        else:
+            df['ATR_14_Rolling_Avg'] = 1.0
+    if 'ATR_14' in df.columns:
+        df['Volatility_Index'] = np.where(df['ATR_14_Rolling_Avg'].abs() > 1e-9, df['ATR_14'] / df['ATR_14_Rolling_Avg'], 1.0)
+    else:
+        df['Volatility_Index'] = 1.0
+    df['Volatility_Index'] = pd.to_numeric(df['Volatility_Index'], errors='coerce').fillna(1.0).astype('float32')
 
     # ADX
     if all(c in df.columns for c in ['High', 'Low', 'Close']):
@@ -2646,9 +2658,9 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
         try:
             cluster_features = ['Gain_Z', 'Volatility_Index', 'Candle_Ratio', 'RSI', 'ADX']
             features_present = [f_cluster for f_cluster in cluster_features if f_cluster in df.columns and df[f_cluster].notna().any()]
-            if len(features_present) < 2 or len(df[features_present].dropna()) < 3: # Need at least 2 features and 3 samples
+            if len(features_present) < 2 or len(df[features_present].dropna()) < 3:  # Need at least 2 features and 3 samples
                 df['cluster'] = 0
-                eng_m1_logger.warning("         (Warning) Not enough valid features/samples for clustering. Setting cluster to 0.")
+                eng_m1_logger.info("         Not enough valid features/samples for clustering. Setting cluster to 0.")
             else:
                 X_cluster_raw = df[features_present].copy().replace([np.inf, -np.inf], np.nan)
                 X_cluster = X_cluster_raw.fillna(X_cluster_raw.median()).fillna(0) # Fill NaNs robustly
@@ -2659,7 +2671,7 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
                     df['cluster'] = kmeans.fit_predict(X_scaled)
                 else:
                     df['cluster'] = 0
-                    eng_m1_logger.warning("         (Warning) Not enough samples after cleaning for clustering. Setting cluster to 0.")
+                    eng_m1_logger.info("         Not enough samples after cleaning for clustering. Setting cluster to 0.")
         except Exception as e_cluster:
             df['cluster'] = 0 # Default on error
             eng_m1_logger.error(f"         (Error) Clustering failed: {e_cluster}.", exc_info=True)
@@ -2694,13 +2706,14 @@ def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_feat
                 else:
                     df['session'] = "N/A_EmptyDF" # Handle empty DataFrame case
             else:
-                eng_m1_logger.warning("         (Warning) Original index is not a valid DatetimeIndex. Session tagging will result in 'Error_Tagging_Reindex_Fill'.")
                 temp_index_for_apply_session = pd.to_datetime(df.index, errors='coerce')
                 if not temp_index_for_apply_session.isna().all():
+                    eng_m1_logger.info("         Index converted for session tagging.")
                     session_values_on_temp_index_session = temp_index_for_apply_session.to_series().apply(lambda ts: get_session_tag(ts, config.session_times_utc))
-                    df['session'] = session_values_on_temp_index_session.reindex(df.index) # Reindex back
-                    df['session'] = df['session'].fillna("Error_Tagging_Reindex_Fill") # Fill any new NaNs
+                    df['session'] = session_values_on_temp_index_session.reindex(df.index)
+                    df['session'] = df['session'].fillna("Error_Tagging_Reindex_Fill")
                 else:
+                    eng_m1_logger.info("         Session tagging failed due to invalid index.")
                     df['session'] = "Error_Index_Conv"
             df['session'] = df['session'].astype('category')
             if not df.empty: # Check again before value_counts
