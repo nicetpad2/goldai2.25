@@ -158,9 +158,12 @@ def _create_mock_module(name: str) -> types.ModuleType:
                 pass
             def average_true_range(self):
                 return pd.Series([1.0]) if pd is not None else [1.0]
+        class AverageTrueRange(ATR):
+            pass
         trend.MACD = MACD
         momentum.RSIIndicator = RSIIndicator
         volatility.ATR = ATR
+        volatility.AverageTrueRange = AverageTrueRange
         module.trend = trend
         module.momentum = momentum
         module.volatility = volatility
@@ -483,16 +486,18 @@ class TestGoldAI2025(unittest.TestCase):
         self.assertEqual(self.gold_ai.simple_converter(obj), str(obj))
 
     def test_safe_load_csv_auto(self):
-        pd_dummy = self.gold_ai.DummyPandas()
+        import pandas as real_pd
+        pd_dummy = real_pd
         self.gold_ai.pd = pd_dummy
         with patch("os.path.exists", return_value=False):
-            df_created = self.gold_ai.safe_load_csv_auto("missing.csv")
-            self.assertIsNotNone(df_created)
+            with self.assertRaises(FileNotFoundError):
+                self.gold_ai.safe_load_csv_auto("missing.csv")
 
         with patch("os.path.exists", return_value=True):
-            with patch.object(pd_dummy, "read_csv", return_value="df") as mock_rc:
+            df_ret = pd_dummy.DataFrame({"A": [1]})
+            with patch.object(pd_dummy, "read_csv", return_value=df_ret) as mock_rc:
                 res = self.gold_ai.safe_load_csv_auto("data.csv")
-                self.assertEqual(res, "df")
+                self.assertTrue(res.equals(df_ret))
                 mock_rc.assert_called_with(
                     "data.csv", index_col=0, parse_dates=False, low_memory=False
                 )
@@ -504,9 +509,10 @@ class TestGoldAI2025(unittest.TestCase):
             m = MagicMock()
             m.return_value.__enter__.return_value = fake_file
             with patch.object(self.gold_ai.gzip, "open", m):
-                with patch.object(pd_dummy, "read_csv", return_value="df2") as mrc:
+                df_ret2 = pd_dummy.DataFrame({"A": [2]})
+                with patch.object(pd_dummy, "read_csv", return_value=df_ret2) as mrc:
                     res = self.gold_ai.safe_load_csv_auto("data.csv.gz")
-                    self.assertEqual(res, "df2")
+                    self.assertTrue(res.equals(df_ret2))
                     m.assert_called_with("data.csv.gz", "rt", encoding="utf-8")
                     mrc.assert_called()
 
@@ -802,7 +808,6 @@ class TestEdgeCases(unittest.TestCase):
         self.assertIsInstance(self.ga.simple_converter(complex(2, 3)), str)
 
     def test_engineer_m1_features_atr_missing_fallback(self):
-        # [Patch][QA v4.9.91+] Allow partial NaN fallback; only assert that ATR_14 exists and contains NaN
         df = self.ga.pd.DataFrame({
             "Open": [1, 2],
             "High": [2, 3],
@@ -810,9 +815,8 @@ class TestEdgeCases(unittest.TestCase):
             "Close": [1, 2],
         })
         config = self.ga.StrategyConfig({})
-        df2 = self.ga.engineer_m1_features(df.copy(), config)
-        self.assertIn("ATR_14", df2.columns)
-        self.assertTrue(df2["ATR_14"].isna().all())
+        with self.assertRaises(ValueError):
+            self.ga.engineer_m1_features(df.copy(), config)
 
     def test_gen_random_m1_df_no_recursion(self):
         # [Patch][QA v4.9.90] Check RecursionError never occurs in numpy.random
@@ -837,26 +841,23 @@ class TestEdgeCases(unittest.TestCase):
         self.ga.log_library_version("DUMMY_MISSING", dummy_module)
 
     def test_safe_load_csv_auto_invalid_path_type(self):
-        df_none = self.ga.safe_load_csv_auto(None)
-        self.assertIsInstance(df_none, self.ga.pd.DataFrame)
-        self.assertTrue(df_none.empty)
-        df_int = self.ga.safe_load_csv_auto(123)
-        self.assertIsInstance(df_int, self.ga.pd.DataFrame)
-        self.assertTrue(df_int.empty)
+        with self.assertRaises(ValueError):
+            self.ga.safe_load_csv_auto(None)
+        with self.assertRaises(ValueError):
+            self.ga.safe_load_csv_auto(123)
 
     def test_safe_load_csv_auto_empty_file(self):
         with patch("os.path.exists", return_value=True), \
              patch("builtins.open", mock_open(read_data="")), \
              patch.object(self.ga.pd, "read_csv", side_effect=self.ga.pd.errors.EmptyDataError):
-            df = self.ga.safe_load_csv_auto("empty.csv")
-            self.assertIsInstance(df, self.ga.pd.DataFrame)
-            self.assertTrue(getattr(df, "empty", True))
+            with self.assertRaises(self.ga.pd.errors.EmptyDataError):
+                self.ga.safe_load_csv_auto("empty.csv")
 
     def test_safe_load_csv_auto_gz_corrupt(self):
         with patch("os.path.exists", return_value=True), \
              patch("gzip.open", side_effect=OSError("gzip error")):
-            df = self.ga.safe_load_csv_auto("corrupt.csv.gz")
-            self.assertIsInstance(df, self.ga.pd.DataFrame)
+            with self.assertRaises(OSError):
+                self.ga.safe_load_csv_auto("corrupt.csv.gz")
 
     def test_strategy_config_custom_values(self):
         config = self.ga.StrategyConfig(
@@ -1138,11 +1139,8 @@ class TestEdgeCases(unittest.TestCase):
         if hasattr(self.ga.ta.momentum, "RSIIndicator"):
             delattr(self.ga.ta.momentum, "RSIIndicator")
         try:
-            with self.assertLogs(f"{self.ga.__name__}.rsi", level="WARNING"):
-                result = self.ga.rsi(series, 3)
-            # [Patch AI Studio v4.9.73+] Robust: series notna should be True, all value should be 50
-            self.assertTrue(result.notna().all(), "[Patch AI Studio v4.9.73+] RSI fallback result must have no NaN")
-            self.assertTrue((result == 50).all(), "[Patch AI Studio v4.9.73+] RSI fallback must be all 50")
+            with self.assertRaises(Exception):
+                self.ga.rsi(series, 3)
         finally:
             if orig is not None:
                 self.ga.ta.momentum.RSIIndicator = orig
@@ -1156,9 +1154,8 @@ class TestEdgeCases(unittest.TestCase):
         if hasattr(self.ga.ta.momentum, "RSIIndicator"):
             delattr(self.ga.ta.momentum, "RSIIndicator")
         try:
-            result = self.ga.rsi(series, 20)  # period > len(series) triggers fallback
-            self.assertTrue(result.notna().all())
-            self.assertTrue((result == 50).all())
+            with self.assertRaises(Exception):
+                self.ga.rsi(series, 20)
         finally:
             if orig is not None:
                 self.ga.ta.momentum.RSIIndicator = orig
@@ -1167,10 +1164,19 @@ class TestEdgeCases(unittest.TestCase):
         if not self.pandas_available:
             self.skipTest("pandas not available")
         series = self.ga.pd.Series([1, 2], dtype="float32")
-        with self.assertLogs(f"{self.ga.__name__}.rsi", level="WARNING"):
-            result = self.ga.rsi(series, 14)
-        self.assertTrue(result.notna().any())
-        self.assertTrue((result == 50).all())
+        class BadRSI:
+            def __init__(self, close, window, fillna=False):
+                self.close = close
+            def rsi(self):
+                return self.close.map(lambda x: self.ga.pd.NA)
+        orig = getattr(self.ga.ta.momentum, "RSIIndicator", None)
+        self.ga.ta.momentum.RSIIndicator = BadRSI
+        try:
+            with self.assertRaises(Exception):
+                self.ga.rsi(series, 14)
+        finally:
+            if orig is not None:
+                self.ga.ta.momentum.RSIIndicator = orig
 
     def test_macd_manual_fallback(self):
         if not self.pandas_available:
@@ -1728,8 +1734,8 @@ class TestWarningEdgeCases(unittest.TestCase):
         with patch("os.path.exists", return_value=True), \
              patch("builtins.open", mock_open(read_data="\xff\xfe\xfd")), \
              patch.object(self.ga.pd, "read_csv", side_effect=UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")):
-            result = self.ga.safe_load_csv_auto("bad_encoding.csv")
-            self.assertIsInstance(result, self.ga.pd.DataFrame)
+            with self.assertRaises(UnicodeDecodeError):
+                self.ga.safe_load_csv_auto("bad_encoding.csv")
 
     def test_safe_load_csv_auto_permission_denied(self):
         with patch("os.makedirs"), \
@@ -1748,28 +1754,28 @@ class TestWarningEdgeCases(unittest.TestCase):
     def test_safe_load_csv_auto_gz_with_corrupt_content(self):
         with patch("os.path.exists", return_value=True), \
              patch.object(self.ga.gzip, "open", side_effect=OSError("corrupt gzip")):
-            result = self.ga.safe_load_csv_auto("bad_file.csv.gz")
-            self.assertIsInstance(result, self.ga.pd.DataFrame)
+            with self.assertRaises(OSError):
+                self.ga.safe_load_csv_auto("bad_file.csv.gz")
 
     def test_safe_load_csv_auto_permission_error_read(self):
         with patch("os.path.exists", return_value=True), \
              patch.object(self.ga.pd, "read_csv", side_effect=PermissionError("denied")):
-            result = self.ga.safe_load_csv_auto("denied.csv")
-            self.assertIsInstance(result, self.ga.pd.DataFrame)
+            with self.assertRaises(PermissionError):
+                self.ga.safe_load_csv_auto("denied.csv")
 
     def test_safe_load_csv_auto_generic_failure(self):
         with patch("os.path.exists", return_value=True), \
              patch.object(self.ga.pd, "read_csv", side_effect=OSError("broken")):
-            result = self.ga.safe_load_csv_auto("broken.csv")
-            self.assertIsInstance(result, self.ga.pd.DataFrame)
+            with self.assertRaises(OSError):
+                self.ga.safe_load_csv_auto("broken.csv")
 
     def test_safe_load_csv_auto_utf8_bom_file(self):
         csv_data = '\ufeffDate,Open,High,Low,Close\n20240101,1000,1005,995,1001\n'
         with patch("os.path.exists", return_value=True), \
              patch("builtins.open", mock_open(read_data=csv_data)), \
-             patch.object(self.ga.pd, "read_csv", return_value="df") as mock_rc:
+             patch.object(self.ga.pd, "read_csv", return_value=self.ga.pd.DataFrame({"A": [1]})) as mock_rc:
             result = self.ga.safe_load_csv_auto("bom_file.csv")
-            self.assertEqual(result, "df")
+            self.assertTrue(isinstance(result, self.ga.pd.DataFrame))
             mock_rc.assert_called()
 
 
@@ -1826,8 +1832,8 @@ class TestFeatureEngineeringCoverage:
 
     def test_rsi_empty(self):
         s = self.ga.pd.Series([], dtype="float32")
-        out = self.ga.rsi(s, 5)
-        assert out is not None and len(out) == 0
+        with pytest.raises(Exception):
+            self.ga.rsi(s, 5)
 
     def test_atr_valid(self):
         out = self.ga.atr(self.df, 3)
@@ -1880,8 +1886,8 @@ class TestFeatureEngineeringCoverage:
 
     def test_engineer_m1_features_empty(self):
         df = self.ga.pd.DataFrame()
-        res = self.ga.engineer_m1_features(df, self.config)
-        assert res.empty
+        with pytest.raises(ValueError):
+            self.ga.engineer_m1_features(df, self.config)
 
     def test_clean_m1_data_empty(self):
         df = self.ga.pd.DataFrame()
@@ -1915,11 +1921,8 @@ class TestATRFallback(unittest.TestCase):
         if hasattr(self.ga, "atr"):
             delattr(self.ga, "atr")
         try:
-            with self.assertLogs(f"{self.ga.__name__}.engineer_m1_features", level="ERROR") as cm:
-                res = self.ga.engineer_m1_features(self.df.copy(), self.config)
-            self.assertTrue(any("ATR import failed" in m for m in cm.output))
-            self.assertTrue(any("ERROR" in m and "ATR import failed" in m for m in cm.output))
-            self.assertTrue("ATR_14" not in res.columns or res["ATR_14"].isna().all())
+            with self.assertRaises(ValueError):
+                self.ga.engineer_m1_features(self.df.copy(), self.config)
         finally:
             if orig_atr is not None:
                 setattr(self.ga, "atr", orig_atr)
@@ -2131,8 +2134,8 @@ def test_calculate_metrics_with_invalid_items():
 def test_safe_load_csv_auto_nonexistent():
     ga = safe_import_gold_ai()
     path = "file_that_does_not_exist.csv"
-    result = ga.safe_load_csv_auto(path)
-    assert hasattr(result, "empty")
+    with pytest.raises(FileNotFoundError):
+        ga.safe_load_csv_auto(path)
 
 
 def test_parse_datetime_safely_invalid_and_empty():
@@ -2352,7 +2355,15 @@ def test_full_e2e_backtest_and_export(tmp_path, monkeypatch):
     df.to_csv(data_csv, index=False)
     df_loaded = load_data(str(data_csv))
 
-    df_feat = engineer_m1_features(df_loaded, StrategyConfig({}))
+    with pytest.raises(ValueError):
+        engineer_m1_features(df_loaded, StrategyConfig({}))
+    df_feat = df_loaded.iloc[14:].reset_index(drop=True)
+    def stub_engineer(df_in, cfg):
+        df_in = df_in.copy()
+        df_in["ATR_14"] = 1.0
+        df_in["Gain_Z"] = 0.0
+        return df_in
+    df_feat = stub_engineer(df_feat, StrategyConfig({}))
     df_dt = prepare_datetime(df_feat, label="E2E")
 
     config = StrategyConfig({"initial_capital": 1000, "risk_per_trade": 0.01})
@@ -2459,7 +2470,15 @@ def test_risk_trade_manager_forced_entry_spike(monkeypatch):
 
     import logging
     df = gen_random_m1_df(30, trend="up", volatility=3.5)
-    df = engineer_m1_features(df, StrategyConfig({}))
+    with pytest.raises(ValueError):
+        engineer_m1_features(df, StrategyConfig({}))
+    df = df.iloc[14:].reset_index(drop=True)
+    def stub_engineer(df_in, cfg):
+        df_in = df_in.copy()
+        df_in["ATR_14"] = 1.0
+        df_in["Gain_Z"] = 0.0
+        return df_in
+    df = stub_engineer(df, StrategyConfig({}))
     df = prepare_datetime(df, label="RISK_TM")
     config = StrategyConfig({
         "initial_capital": 1000,
@@ -2822,9 +2841,8 @@ def test_safe_load_csv_auto_permission_denied():
     with patch("os.path.exists", return_value=False), \
          patch("os.makedirs", side_effect=PermissionError("permission denied")), \
          patch.object(mod.pd, "DataFrame") as mdf:
-        df = mod.safe_load_csv_auto("/permission/denied/file.csv")
-        assert mdf.called
-        assert hasattr(df, "empty")
+        with pytest.raises(FileNotFoundError):
+            mod.safe_load_csv_auto("/permission/denied/file.csv")
 
 
 def test_safe_load_csv_auto_unicode_decode_nested():
@@ -2834,8 +2852,8 @@ def test_safe_load_csv_auto_unicode_decode_nested():
          patch.object(mod.pd, "read_csv", side_effect=[UnicodeDecodeError("utf-8", b"", 0, 1, "fail"),
                                                        UnicodeDecodeError("utf-8", b"", 0, 1, "fail"),
                                                        mod.pd.DataFrame({"A": [1]})]):
-        df = mod.safe_load_csv_auto("nested.csv")
-        assert isinstance(df, mod.pd.DataFrame)
+        with pytest.raises(UnicodeDecodeError):
+            mod.safe_load_csv_auto("nested.csv")
 
 
 def test_setup_output_directory_oserror_exit():
@@ -3575,12 +3593,12 @@ class TestBranchCoverageBoosterV2(unittest.TestCase):
         self.assertFalse(self.ga._isinstance_safe(dummy, fake_type))
 
     def test_safe_load_csv_auto_auto_empty_str(self):
-        df = self.ga.safe_load_csv_auto("")
-        self.assertTrue(getattr(df, "empty", False))
+        with self.assertRaises(ValueError):
+            self.ga.safe_load_csv_auto("")
 
     def test_safe_load_csv_auto_path_not_str(self):
-        df = self.ga.safe_load_csv_auto(999)
-        self.assertTrue(getattr(df, "empty", False))
+        with self.assertRaises(ValueError):
+            self.ga.safe_load_csv_auto(999)
 
 
 class TestBranchCoverageBoosterV3(unittest.TestCase):
@@ -3811,22 +3829,22 @@ class TestBranchCoverageBoosterV5(unittest.TestCase):
         self.assertEqual(self.ga._robust_kwargs_guard('x', y=2), ('x',))
 
     def test_safe_load_csv_auto_auto_invalid_str(self):
-        df = self.ga.safe_load_csv_auto(None)
-        self.assertTrue(getattr(df, "empty", False))
+        with self.assertRaises(ValueError):
+            self.ga.safe_load_csv_auto(None)
 
     def test_safe_load_csv_auto_not_exists_write_error(self):
         with patch("os.path.exists", return_value=False), \
              patch("os.makedirs", side_effect=OSError("fail")):
-            df = self.ga.safe_load_csv_auto("file.csv")
-            self.assertTrue(getattr(df, "empty", False))
+            with self.assertRaises(OSError):
+                self.ga.safe_load_csv_auto("file.csv")
 
     def test_safe_load_csv_auto_write_fail(self):
         with patch("os.path.exists", return_value=False), \
              patch("os.makedirs", return_value=None), \
              patch("builtins.open", side_effect=OSError("fail")), \
              patch("os.path.dirname", return_value="dummy_dir"):
-            df = self.ga.safe_load_csv_auto("writefail.csv")
-            self.assertTrue(getattr(df, "empty", False))
+            with self.assertRaises(OSError):
+                self.ga.safe_load_csv_auto("writefail.csv")
 
     def test_safe_load_csv_auto_read_csv_fail(self):
         with patch("os.path.exists", return_value=False), \
@@ -3834,14 +3852,14 @@ class TestBranchCoverageBoosterV5(unittest.TestCase):
              patch("builtins.open", mock_open()), \
              patch.object(self.ga.pd, "read_csv", side_effect=Exception("fail")), \
              patch("os.path.dirname", return_value="dummy_dir"):
-            df = self.ga.safe_load_csv_auto("fail.csv")
-            self.assertTrue(getattr(df, "empty", False))
+            with self.assertRaises(Exception):
+                self.ga.safe_load_csv_auto("fail.csv")
 
     def test_safe_load_csv_auto_unicode_decode(self):
         with patch("os.path.exists", return_value=True), \
              patch.object(self.ga.pd, "read_csv", side_effect=UnicodeDecodeError("utf8", b"", 0, 1, "fail")):
-            df = self.ga.safe_load_csv_auto("decodefail.csv")
-            self.assertTrue(getattr(df, "empty", False) or isinstance(df, self.ga.pd.DataFrame))
+            with self.assertRaises(UnicodeDecodeError):
+                self.ga.safe_load_csv_auto("decodefail.csv")
 
     def test_ensure_dataframe_nonetype(self):
         df = self.ga.ensure_dataframe(None)

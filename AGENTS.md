@@ -1,10 +1,10 @@
 # AGENTS.md
 
 **Gold AI Enterprise – Agent Roles, Patch Protocol, and Test/QA Standards**  
-**Version:** v4.9.146+
+**Version:** v4.9.151+
 **Project:** Gold AI (Enterprise Refactor)
 **Maintainer:** AI Studio QA/Dev Team
-**Last updated:** 2025-06-30
+**Last updated:** 2025-07-01
 
 Gold AI Enterprise QA/Dev version: v4.9.139+ (refactor utils and maintain QA coverage)
 
