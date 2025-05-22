@@ -2467,6 +2467,7 @@ def engineer_m1_features(
     import pandas as pd
     import numpy as np
     logger = logging.getLogger(f"{__name__}.engineer_m1_features")
+    eng_m1_logger = logger
     logger.info(
         "[Patch][QA v4.9.154+] engineer_m1_features invoked: df.shape=%r, config=%r, lag_features_setting=%r",
         df.shape,
@@ -2479,6 +2480,7 @@ def engineer_m1_features(
             "[Patch][QA v4.9.151] lag_features_setting received, but not used in core logic (SAFE IGNORE)"
         )
     required_cols = ["Open", "High", "Low", "Close"]
+    original_index = df.index
     for c in required_cols:
         if c not in df.columns:
             logger.critical(f"[Patch][QA v4.9.154+] Missing required column '{c}' in DataFrame entering engineer_m1_features")
@@ -2487,6 +2489,13 @@ def engineer_m1_features(
     df["ATR_14"] = ta.volatility.AverageTrueRange(
         high=df["High"], low=df["Low"], close=df["Close"], window=14, fillna=False
     ).average_true_range()
+    df["ATR_14_Shifted"] = df["ATR_14"].shift(1).bfill().astype("float32")
+    atr_avg_window = getattr(config, "atr_rolling_avg_period", 50) if config else 50
+    df["ATR_14_Rolling_Avg"] = (
+        df["ATR_14"].rolling(window=atr_avg_window, min_periods=max(1, atr_avg_window // 2))
+        .mean()
+        .astype("float32")
+    )
     if df["ATR_14"].isna().any():
         logger.critical("[Patch][QA v4.9.151][Enterprise] ATR_14 has NaN after calculation. Raising error.")
         raise ValueError("ATR_14 has NaN after calculation.")
@@ -2499,7 +2508,7 @@ def engineer_m1_features(
             "[Patch][QA v4.9.156][Enterprise] Gain_Z all NaN after calculation. Insufficient data."
         )
         raise ValueError("Gain_Z all NaN after calculation.")
-    critical_cols = [c for c in ["Gain_Z", "ATR_14", "ATR_Shifted"] if c in df.columns]
+    critical_cols = [c for c in ["Gain_Z", "ATR_14", "ATR_14_Shifted"] if c in df.columns]
     nan_rows = df[critical_cols].isnull().any(axis=1).sum() if critical_cols else 0
     if nan_rows > 0:
         logger.warning(
@@ -2511,7 +2520,6 @@ def engineer_m1_features(
         logger.info(
             f"[Patch][QA v4.9.158+] {col} NaN remaining after clean: {n_nan}"
         )
-    return df
 
     # ADX
     if all(c in df.columns for c in ['High', 'Low', 'Close']):
@@ -2642,7 +2650,7 @@ def engineer_m1_features(
         df['model_tag'] = 'N/A'
 
     eng_m1_logger.info("(Success) สร้าง Features M1 (using StrategyConfig) เสร็จสิ้น.")
-    return df.reindex(df_m1.index) # Reindex to original to ensure no rows are lost/gained if NaNs were dropped internally
+    return df
 
 def clean_m1_data(df_m1: pd.DataFrame, config: 'StrategyConfig') -> tuple[pd.DataFrame, list]:  # type: ignore
     """Cleans M1 data, converts types, and identifies features for drift analysis, using config."""
