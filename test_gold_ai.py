@@ -1889,6 +1889,17 @@ class TestFeatureEngineeringCoverage:
         with pytest.raises(ValueError):
             self.ga.engineer_m1_features(df, self.config)
 
+    def test_engineer_m1_features_three_args(self):
+        df = self.ga.pd.DataFrame({
+            "Open": [1, 2],
+            "High": [2, 3],
+            "Low": [0, 1],
+            "Close": [1, 2],
+        })
+        config = self.ga.StrategyConfig({})
+        with pytest.raises(ValueError):
+            self.ga.engineer_m1_features(df.copy(), config, {})
+
     def test_clean_m1_data_empty(self):
         df = self.ga.pd.DataFrame()
         clean, feats = self.ga.clean_m1_data(df, self.config)

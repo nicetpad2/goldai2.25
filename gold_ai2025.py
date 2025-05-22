@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.151_FULL_PASS"  # [Patch][QA v4.9.151] strict enterprise behavior
+MINIMAL_SCRIPT_VERSION = "4.9.152_FULL_PASS"  # [Patch][QA v4.9.152] strict enterprise behavior
 
 
 
@@ -2434,15 +2434,30 @@ def get_session_tag(timestamp: pd.Timestamp, session_times_utc_config: dict) -> 
         session_logger.error(f"   (Error) Error in get_session_tag for {timestamp}: {e}", exc_info=True)
         return "Error_Tagging"
 
-def engineer_m1_features(df: pd.DataFrame, config: Optional["StrategyConfig"] = None) -> pd.DataFrame:
+def engineer_m1_features(
+    df: pd.DataFrame,
+    config: Optional["StrategyConfig"] = None,
+    lag_features_setting=None,
+) -> pd.DataFrame:
     """
     [Patch][QA v4.9.151][Enterprise] Feature engineering (no patch/fallback allowed).
-    If any required column missing or NaN, raise error immediately.
+    รองรับการเรียกแบบ 2 หรือ 3 argument โดย lag_features_setting จะไม่ถูกใช้ใน logic หลัก
+    แต่จำเป็นต้องรับไว้เพื่อความเข้ากันได้กับ production/main
     """
     import ta
     import pandas as pd
     import numpy as np
     logger = logging.getLogger(f"{__name__}.engineer_m1_features")
+    logger.info(
+        "[Patch][QA v4.9.151] engineer_m1_features invoked: df.shape=%r, config=%r, lag_features_setting=%r",
+        df.shape,
+        config,
+        lag_features_setting,
+    )
+    if lag_features_setting is not None:
+        logger.info(
+            "[Patch][QA v4.9.151] lag_features_setting received, but not used in core logic (SAFE IGNORE)"
+        )
     price_cols = ["Open", "High", "Low", "Close"]
     missing_cols = [c for c in price_cols if c not in df.columns]
     if missing_cols:
