@@ -434,3 +434,7 @@
 - [Patch][QA v4.9.155] Embedded default configuration inside `load_config_from_yaml`.
 - [Patch][QA v4.9.155] Function now returns defaults when YAML missing or invalid.
 - Version bump to `4.9.155_FULL_PASS`
+
+## [v4.9.156+] - 2025-07-xx
+- [Patch][QA v4.9.156] engineer_m1_features fills NaN Gain_Z values instead of raising errors when data is sufficient.
+- Version bump to `4.9.156_FULL_PASS`

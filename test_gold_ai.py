@@ -8,6 +8,7 @@
 [Patch][QA v4.9.138] - เพิ่ม coverage booster tests for branch edge cases
 [Patch][QA v4.9.139] - เพิ่ม coverage booster tests for additional safe_set_datetime branches
 [Patch][QA v4.9.145] - Verify engineer_m1_features logging uses module logger
+[Patch][QA v4.9.156] - Ensure engineer_m1_features fills NaN Gain_Z values
 """
 
 import importlib
@@ -1901,6 +1902,25 @@ class TestFeatureEngineeringCoverage:
         config = self.ga.StrategyConfig({})
         with pytest.raises(ValueError):
             self.ga.engineer_m1_features(df.copy(), config, {})
+
+    def test_engineer_m1_features_gain_z_filled(self):
+        rows = 200
+        df = self.ga.pd.DataFrame({
+            "Open": list(range(rows)),
+            "High": list(range(1, rows + 1)),
+            "Low": list(range(-1, rows - 1)),
+            "Close": list(range(rows)),
+        })
+        with patch.object(
+            self.ga.ta.volatility, "AverageTrueRange"
+        ) as atr_mock:
+            atr_instance = atr_mock.return_value
+            atr_instance.average_true_range.return_value = self.ga.pd.Series(
+                [1.0] * rows, index=df.index
+            )
+            result = self.ga.engineer_m1_features(df, self.config)
+        assert "Gain_Z" in result.columns
+        assert not result["Gain_Z"].isna().any()
 
     def test_clean_m1_data_empty(self):
         df = self.ga.pd.DataFrame()
