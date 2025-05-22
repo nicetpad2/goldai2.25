@@ -43,7 +43,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.156_FULL_PASS"  # [Patch][QA v4.9.156] Gain_Z NaN handling
+MINIMAL_SCRIPT_VERSION = "4.9.157_FULL_PASS"  # [Patch][QA v4.9.157] Colab setup refactor
 
 
 
@@ -576,43 +576,49 @@ def import_core_libraries() -> None:
         logger.error(f"Error importing PyTorch: {e_torch_import}. GPU acceleration might be affected.")
         torch_imported = False
 
+
 import_core_libraries()
 
-# --- Environment Setup (Colab, GPU) ---
+
+# --- Environment Setup Helper -------------------------------------------------
+def setup_colab_environment():
+    """Detect Google Colab environment and mount drive if available.
+
+    Returns a drive-like object with a ``mount`` method. When Google Colab is
+    unavailable, a DummyDrive is returned to keep API compatibility.
+
+    [Patch AI Studio v4.9.157+] Centralized environment detection for QA
+    robustness and easier reuse across modules.
+    """
+
+    global IN_COLAB
+    try:
+        from IPython import get_ipython  # type: ignore
+        shell = get_ipython()
+        logger.debug(f"[IN_COLAB Check] get_ipython(): {shell}")
+        if shell is not None and 'google.colab' in str(shell):
+            IN_COLAB = True
+            logger.info("[Patch AI Studio v4.9.157+] Detected Google Colab environment.")
+            try:
+                from google.colab import drive  # type: ignore
+                logger.info("[Patch AI Studio v4.9.157+] Mounting Google Drive...")
+                drive.mount('/content/drive', force_remount=True)
+                logger.info("[Patch AI Studio v4.9.157+] Google Drive mounted successfully.")
+                return drive
+            except ImportError:
+                logger.error("[Patch AI Studio v4.9.157+] google.colab.drive not available. Drive mount skipped.")
+            except Exception as e_drive:
+                logger.error(f"[Patch AI Studio v4.9.157+] Failed to mount Google Drive: {e_drive}", exc_info=True)
+    except ImportError:
+        logger.info("[Patch AI Studio v4.9.157+] IPython not found. Assuming not running in Colab.")
+    except Exception as e_colab_setup:
+        logger.error(f"[Patch AI Studio v4.9.157+] Error during Colab environment setup: {e_colab_setup}", exc_info=True)
+
+    return type('DummyDrive', (), {'mount': lambda *a, **k: logger.warning("[Patch AI Studio v4.9.157+] DummyDrive.mount called.")})()
+
+
 logger.info("\n(Processing) Setting up environment (Colab, GPU)...")
-try:
-    from IPython import get_ipython  # type: ignore
-    shell = get_ipython()
-    logger.debug(f"[IN_COLAB Check - Patch] Value from get_ipython(): {shell}")
-    is_colab = False
-    if shell is not None:
-        shell_str = str(shell)
-        logger.debug(f"[IN_COLAB Check - Patch] Value from str(get_ipython()): {shell_str}")
-        if 'google.colab' in shell_str:
-            is_colab = True
-    if is_colab:
-        IN_COLAB = True
-        logger.info("[Patch][ColabEnv] Detected running in Google Colab environment.")
-        try:
-            from google.colab import drive  # type: ignore
-            logger.info("[Patch][ColabEnv] Attempting to mount Google Drive...")
-            drive.mount('/content/drive', force_remount=True)
-            logger.info("[Patch][ColabEnv] Google Drive mounted successfully.")
-        except ImportError:
-            logger.error("[Patch][ColabEnv] (Error) Failed to import google.colab.drive. Drive mounting skipped.")
-            drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("[Patch][ColabEnv] DummyDrive.mount called.")})()
-        except Exception as e_drive:
-            logger.error(f"[Patch][ColabEnv] (Error) Failed to mount Google Drive: {e_drive}", exc_info=True)
-            drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("[Patch][ColabEnv] DummyDrive.mount called.")})()
-    else:
-        logger.info("[Patch][ColabEnv] Not running in Google Colab environment.")
-        drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("[Patch][ColabEnv] DummyDrive.mount called.")})()
-except ImportError:
-    logger.info("[Patch][ColabEnv] IPython not found. Assuming not in Colab environment.")
-    drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("[Patch][ColabEnv] DummyDrive.mount called.")})()
-except Exception as e_colab_setup:
-    logger.error(f"[Patch][ColabEnv] Error during Colab environment setup: {e_colab_setup}", exc_info=True)
-    drive = type('DummyDrive', (), {'mount': lambda *args, **kwargs: logger.warning("[Patch][ColabEnv] DummyDrive.mount called.")})()
+drive = setup_colab_environment()
 
 
 # --- GPU Acceleration Setup Function Definition (will be called from __main__) ---
