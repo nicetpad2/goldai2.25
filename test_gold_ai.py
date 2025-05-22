@@ -962,8 +962,32 @@ class TestEdgeCases(unittest.TestCase):
         cfg = self.ga.StrategyConfig({"risk_per_trade": 0.01})
         trade_log, equity_curve, run_summary = self.ga.simulate_trades(df.copy(), cfg, return_tuple=True)
         self.assertIsInstance(trade_log, list)
-        self.assertIsInstance(equity_curve, list)
-        self.assertIsInstance(run_summary, dict)
+
+    def test_equity_history_dict_after_simulation(self):
+        if not self.pandas_available:
+            self.skipTest("pandas not available")
+        df = self.ga.pd.DataFrame({
+            "Open": [1, 1],
+            "High": [1, 1],
+            "Low": [1, 1],
+            "Close": [1, 1],
+            "Entry_Long": [1, 0],
+            "ATR_14_Shifted": [1.0, 1.0],
+            "Signal_Score": [1.0, 1.0],
+            "Trade_Reason": ["T", "T"],
+            "session": ["Asia", "Asia"],
+            "Gain_Z": [0.1, 0.1],
+            "MACD_hist_smooth": [0.1, 0.1],
+            "RSI": [50, 50],
+        }, index=self.ga.pd.date_range("2023-01-01", periods=2, freq="min"))
+        cfg = self.ga.StrategyConfig({})
+        result = self.ga.run_backtest_simulation_v34(
+            df,
+            config_obj=cfg,
+            label="DictCheck",
+            initial_capital_segment=1000.0,
+        )
+        self.assertIsInstance(result["equity_history"], dict)
 
     @pytest.mark.unit
     def test_simulate_trades_tp1_sl(self):

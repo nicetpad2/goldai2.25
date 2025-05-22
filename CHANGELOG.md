@@ -466,3 +466,9 @@
 ## [v4.9.162+] - 2025-07-xx
 - [Patch][QA v4.9.162] Unified `equity_tracker['history']` to always be a dictionary keyed by timestamp.
 - Version bump to `4.9.162_FULL_PASS`
+
+
+## [v4.9.163+] - 2025-07-xx
+- [Patch][QA v4.9.163] Added unit test to verify equity history tracking uses a dictionary.
+- Version bump to `4.9.163_FULL_PASS`
+=======

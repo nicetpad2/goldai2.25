@@ -43,7 +43,10 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.162_FULL_PASS"  # [Patch][QA v4.9.162] equity history dict fix
+
+MINIMAL_SCRIPT_VERSION = "4.9.163_FULL_PASS"  # [Patch][QA v4.9.163] equity history QA test
+
+
 
 
 
