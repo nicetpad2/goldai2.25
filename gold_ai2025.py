@@ -6527,7 +6527,12 @@ def ensure_model_files_exist(config: 'StrategyConfig', output_dir_to_check: str)
 
 
 # --- Main Execution Function (Refactored to use StrategyConfig) ---
-def main(run_mode: str = 'FULL_PIPELINE', config_file: str = "config.yaml", suffix_from_prev_step: Optional[str] = None) -> Optional[str]:
+def main(
+    run_mode: str = 'FULL_PIPELINE',
+    config_file: str = "config.yaml",
+    suffix_from_prev_step: Optional[str] = None,
+    output_dir_override: Optional[str] = None,
+) -> Optional[str]:
     main_exec_logger_func = logging.getLogger(f"{__name__}.main")
     start_time_main_call = time.time()
     main_exec_logger_func.info(f"\n(Starting) Gold AI Main Execution (Mode: {run_mode}, Config: {config_file})...")
@@ -6538,6 +6543,16 @@ def main(run_mode: str = 'FULL_PIPELINE', config_file: str = "config.yaml", suff
     if config_main_obj is None: # pragma: no cover
         main_exec_logger_func.critical("CRITICAL: Failed to load StrategyConfig. Exiting.")
         return None
+    if output_dir_override:
+        override_base = os.path.dirname(output_dir_override)
+        override_name = os.path.basename(output_dir_override)
+        if not override_base:
+            override_base = os.path.abspath('.')
+        config_main_obj.output_base_dir = override_base
+        config_main_obj.output_dir_name = override_name
+        main_exec_logger_func.info(
+            f"(Override) Using custom output dir: {output_dir_override}"
+        )
     main_exec_logger_func.info(f"StrategyConfig loaded. Initial Capital: ${config_main_obj.initial_capital:.2f}, Risk/Trade: {config_main_obj.risk_per_trade:.3f}")
 
     global OUTPUT_DIR, LOG_FILENAME # Ensure global OUTPUT_DIR and LOG_FILENAME are updated
@@ -6606,7 +6621,11 @@ def main(run_mode: str = 'FULL_PIPELINE', config_file: str = "config.yaml", suff
     elif run_mode == 'FULL_PIPELINE': # pragma: no cover
         main_exec_logger_func.info("\n(Pipeline) FULL PIPELINE execution started...")
         main_exec_logger_func.info("\n--- Pipeline Step 1: PREPARE_TRAIN_DATA mode ---")
-        prep_suffix_pipeline_run = main(run_mode='PREPARE_TRAIN_DATA', config_file=config_file)
+        prep_suffix_pipeline_run = main(
+            run_mode='PREPARE_TRAIN_DATA',
+            config_file=config_file,
+            output_dir_override=output_dir_override,
+        )
         if prep_suffix_pipeline_run is None:
             main_exec_logger_func.critical("Pipeline Step 1 (PREPARE_TRAIN_DATA) failed.")
             return None
@@ -6645,7 +6664,11 @@ def main(run_mode: str = 'FULL_PIPELINE', config_file: str = "config.yaml", suff
         ensure_model_files_exist(config_main_obj, OUTPUT_DIR) # Call with the config
 
         main_exec_logger_func.info("\n--- Pipeline Step 4: FULL_RUN mode ---")
-        full_run_suffix_pipeline_exec_main = main(run_mode='FULL_RUN', config_file=config_file) # Suffix from this run will be the final one
+        full_run_suffix_pipeline_exec_main = main(
+            run_mode='FULL_RUN',
+            config_file=config_file,
+            output_dir_override=output_dir_override,
+        )  # Suffix from this run will be the final one
         main_exec_logger_func.info("\n(Pipeline) FULL PIPELINE finished.")
         return full_run_suffix_pipeline_exec_main
     else: # pragma: no cover
@@ -7148,6 +7171,7 @@ import sys # Already imported
 import time # Already imported
 import pandas as pd # Already imported (or dummy if import failed)
 import traceback # Already imported
+import argparse
 # main function is defined in Part 11
 # run_log_analysis_pipeline is defined in Part 10 (as placeholder)
 # StrategyConfig related globals (like OUTPUT_DIR) are set/updated within main()
@@ -7177,22 +7201,30 @@ if __name__ == "__main__":
         main_entry_logger.error(f"Error during setup_gpu_acceleration in __main__: {e_gpu_setup_main_block}", exc_info=True)
 
 
+    parser = argparse.ArgumentParser(description="Gold AI Enterprise Runner")
+    parser.add_argument("--config", default="config.yaml", help="Config YAML path")
+    parser.add_argument("--output_dir", default=None, help="Override output directory")
+    args = parser.parse_args()
+
     # --- Determine Run Mode and Configuration File ---
     selected_run_mode_entry = 'FULL_PIPELINE'
-    # selected_run_mode_entry = 'PREPARE_TRAIN_DATA'
-    # selected_run_mode_entry = 'TRAIN_MODEL_ONLY'
-    # selected_run_mode_entry = 'FULL_RUN'
 
-    config_file_to_use = "config.yaml"
+    config_file_to_use = args.config
 
-    main_entry_logger.info(f"(Starting) กำลังเริ่มการทำงานหลัก (main) ในโหมด: {selected_run_mode_entry} ด้วย Config: '{config_file_to_use}'...")
+    main_entry_logger.info(
+        f"(Starting) กำลังเริ่มการทำงานหลัก (main) ในโหมด: {selected_run_mode_entry} ด้วย Config: '{config_file_to_use}'..."
+    )
     final_run_suffix_from_main = None
 
     try:
         tuning_mode_used_main_entry = "Fixed Params (Default)" # Default, might be updated by main logic if applicable
 
         # Call the main execution function
-        final_run_suffix_from_main = main(run_mode=selected_run_mode_entry, config_file=config_file_to_use)
+        final_run_suffix_from_main = main(
+            run_mode=selected_run_mode_entry,
+            config_file=config_file_to_use,
+            output_dir_override=args.output_dir,
+        )
 
         # --- Post-Run Analysis (if applicable) ---
         if selected_run_mode_entry not in ['TRAIN_MODEL_ONLY', 'PREPARE_TRAIN_DATA'] and final_run_suffix_from_main is not None: # pragma: no cover
