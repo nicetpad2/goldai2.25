@@ -43,7 +43,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.157_FULL_PASS"  # [Patch][QA v4.9.157] Colab setup refactor
+MINIMAL_SCRIPT_VERSION = "4.9.158_FULL_PASS"  # [Patch][QA v4.9.158] NaN drop & config path improvements
 
 
 
@@ -73,7 +73,7 @@ LOG_FILENAME: str = f"gold_ai_v{MINIMAL_SCRIPT_VERSION.split('_')[0]}_temp_impor
 logger = logging.getLogger("GoldAI_Enterprise_v4.9")
 import os
 if os.environ.get("PROD", "") == "1":
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.WARNING)
 else:
     logger.setLevel(logging.DEBUG)
 logger.propagate = False
@@ -628,7 +628,9 @@ def setup_gpu_acceleration():
     gpu_setup_logger.info("   Checking GPU availability for acceleration (called from main)...") # Log context
 
     if not torch_imported or not hasattr(torch, 'cuda') or not hasattr(torch.cuda, 'is_available'): # pragma: no cover
-        gpu_setup_logger.warning("   [CRITICAL GPU INIT FAIL][Patch AI Studio SmartFix] PyTorch or torch.cuda not available. Disabling GPU acceleration.")
+        gpu_setup_logger.info(
+            "[Patch][QA v4.9.158+] Running on CPU. GPU unavailable, but this will NOT affect pipeline."
+        )
         USE_GPU_ACCELERATION = False
         globals()['pynvml'] = None
         nvml_handle = None
@@ -1271,18 +1273,26 @@ def load_config_from_yaml(path: str = "config.yaml") -> StrategyConfig:
         config_loader_logger.error(f"[Patch][ConfigPath v4.9.155+] Failed to load config from '{chosen_path}', using defaults. Reason: {e}", exc_info=True)
         return StrategyConfig(DEFAULT_CONFIG)
 
+def get_valid_config_path(path_candidates: list[str]) -> str:
+    for path in path_candidates:
+        if os.path.exists(path):
+            if path != path_candidates[0]:
+                logger.warning(
+                    f"[Patch][QA v4.9.158+] Using fallback config path: {path}"
+                )
+            return path
+    raise FileNotFoundError(
+        "[Patch][QA v4.9.158+] Config file not found in any valid path!"
+    )
+
+
 def load_config(config_path: str | None = None) -> str:
     """Return usable config path, defaulting to drive location if exists."""
     import logging
     logger = logging.getLogger("GoldAI.Config")
-    if config_path and os.path.exists(config_path):
-        return config_path
-    default_path = "/content/drive/MyDrive/new/config.yaml"
-    if os.path.exists(default_path):
-        if config_path and config_path != default_path:
-            logger.warning("[Patch][ConfigPath] Config not found at '%s', fallback to '%s'", config_path, default_path)
-        return default_path
-    raise FileNotFoundError("Config not found at any default path.")  # [Patch][QA v4.9.152+] Strict
+    candidates = [config_path] if config_path else []
+    candidates.extend(["./config.yaml", "/content/drive/MyDrive/new/config.yaml"])
+    return get_valid_config_path(candidates)
 
 
 # --- Holding Period Exit Function ---
@@ -2473,9 +2483,18 @@ def engineer_m1_features(
             "[Patch][QA v4.9.156][Enterprise] Gain_Z all NaN after calculation. Insufficient data."
         )
         raise ValueError("Gain_Z all NaN after calculation.")
-    if df["Gain_Z"].isna().any():
-        logger.warning("[Patch][QA v4.9.156] Filling NaN Gain_Z values with 0.0")
-        df["Gain_Z"] = df["Gain_Z"].fillna(0.0)
+    critical_cols = [c for c in ["Gain_Z", "ATR_14", "ATR_Shifted"] if c in df.columns]
+    nan_rows = df[critical_cols].isnull().any(axis=1).sum() if critical_cols else 0
+    if nan_rows > 0:
+        logger.warning(
+            f"[Patch][QA v4.9.158+] Drop {nan_rows} rows with NaN in {critical_cols}"
+        )
+        df = df.dropna(subset=critical_cols)
+    for col in critical_cols:
+        n_nan = df[col].isnull().sum()
+        logger.info(
+            f"[Patch][QA v4.9.158+] {col} NaN remaining after clean: {n_nan}"
+        )
     return df
 
     # ADX

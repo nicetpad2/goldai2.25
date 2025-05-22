@@ -442,3 +442,10 @@
 ## [v4.9.157+] - 2025-07-xx
 - [Patch][QA v4.9.157] Refactored Colab environment setup into `setup_colab_environment` helper.
 - Version bump to `4.9.157_FULL_PASS`
+
+## [v4.9.158+] - 2025-07-xx
+- [Patch][QA v4.9.158] engineer_m1_features drops rows with NaN in critical columns and logs remaining NaNs.
+- [Patch][QA v4.9.158] Added get_valid_config_path helper and updated load_config.
+- [Patch][QA v4.9.158] Default logger level changed to WARNING for PROD.
+- [Patch][QA v4.9.158] GPU unavailable message downgraded to info.
+- Version bump to `4.9.158_FULL_PASS`
