@@ -44,7 +44,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.163_FULL_PASS"  # [Patch][QA v4.9.163] equity history QA test
+MINIMAL_SCRIPT_VERSION = "4.9.164_FULL_PASS"  # [Patch][QA v4.9.164] Risk log & data clean
 
 
 
@@ -1104,20 +1104,28 @@ class RiskManager:
             if drawdown < 0:
                 self.logger.warning(f"[Patch AI Studio v4.9.58+] Negative drawdown ({drawdown:.6f}) detected, forcing to 0.0.")
                 drawdown = 0.0
-        self.logger.info(f"[Patch AI Studio v4.9.58+] Drawdown updated: Equity={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f}")
+        self.logger.info(
+            f"[Patch][QA v4.9.164] Drawdown updated: Equity={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f}"
+        )
         if drawdown is None or (hasattr(pd, "isna") and pd.isna(drawdown)) or drawdown < 0 or drawdown > 10:
             self.logger.error(f"[Patch AI Studio v4.9.58+] Invalid drawdown value detected: {drawdown}. Resetting to 0.0")
             drawdown = 0.0
         if drawdown >= self.config.soft_kill_dd:
             if not self.soft_kill_active:
-                self.logger.critical(f"[Patch AI Studio v4.9.58+][RISK] Soft Kill ACTIVATED: DD={drawdown:.4f} >= {self.config.soft_kill_dd:.4f}")
+                self.logger.critical(
+                    f"[Patch][QA v4.9.164] Soft Kill ACTIVATED: DD={drawdown:.4f} >= {self.config.soft_kill_dd:.4f}"
+                )
             self.soft_kill_active = True
         else:
             if self.soft_kill_active:
-                self.logger.critical(f"[Patch AI Studio v4.9.58+][RISK] Soft Kill DEACTIVATED: DD={drawdown:.4f} < {self.config.soft_kill_dd:.4f}")
+                self.logger.critical(
+                    f"[Patch][QA v4.9.164] Soft Kill DEACTIVATED: DD={drawdown:.4f} < {self.config.soft_kill_dd:.4f}"
+                )
             self.soft_kill_active = False
         if drawdown >= self.config.kill_switch_dd:
-            self.logger.critical(f"[Patch AI Studio v4.9.59+][Patch] [RISK - KILL SWITCH] Max Drawdown Triggered! EQ={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f} >= {self.config.kill_switch_dd:.4f}")
+            self.logger.critical(
+                f"[Patch][QA v4.9.164] Hard Kill Triggered! EQ={current_equity:.2f}, Peak={self.dd_peak:.2f}, DD={drawdown:.4f} >= {self.config.kill_switch_dd:.4f}"
+            )
             raise RuntimeError(f"[Patch AI Studio v4.9.59+] [Patch] [KILL SWITCH] Max Drawdown ({drawdown:.2%}) Triggered. System Stopped.")
         return drawdown
 
@@ -1454,7 +1462,7 @@ def setup_fonts(output_dir: str | None = None):  # output_dir kept for signature
 # --- Data Loading Helper ---
 def safe_load_csv_auto(file_path: str) -> pd.DataFrame:
     """
-    [Patch][QA v4.9.154+] Log path before loading and validate columns after loading.
+    [Patch][QA v4.9.164+] Log path before loading, validate columns, and clean raw data.
     """
     read_csv_kwargs = {"index_col": 0, "parse_dates": False, "low_memory": False}
     load_logger = logging.getLogger(f"{__name__}.safe_load_csv_auto")
@@ -1477,6 +1485,22 @@ def safe_load_csv_auto(file_path: str) -> pd.DataFrame:
             if c not in df.columns:
                 load_logger.critical(f"[Patch][QA v4.9.154+] Missing required column '{c}' in {file_path}")
                 raise ValueError(f"[Patch][QA v4.9.154+] Missing required column '{c}' in {file_path}")
+        # [Patch][QA v4.9.164] Basic raw data cleaning and audit
+        before_dedup = len(df)
+        df = df.drop_duplicates()
+        dup_dropped = before_dedup - len(df)
+        if dup_dropped:
+            load_logger.warning(
+                f"[Patch][QA v4.9.164] Dropped {dup_dropped} duplicate rows from {file_path}"
+            )
+        before_clean = len(df)
+        df = df.dropna(subset=required_cols)
+        df = df[(df[required_cols] > 0).all(axis=1)]
+        after_clean = len(df)
+        if after_clean < before_clean:
+            load_logger.warning(
+                f"[Patch][QA v4.9.164] Dropped {before_clean - after_clean} rows with NaN/invalid OHLC"
+            )
         if df.empty:
             load_logger.critical("[Patch][QA v4.9.151][Enterprise] Loaded DataFrame is empty. Raising error.")
             raise ValueError("Loaded DataFrame is empty.")

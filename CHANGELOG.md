@@ -471,4 +471,9 @@
 ## [v4.9.163+] - 2025-07-xx
 - [Patch][QA v4.9.163] Added unit test to verify equity history tracking uses a dictionary.
 - Version bump to `4.9.163_FULL_PASS`
+
+## [v4.9.164+] - 2025-07-xx
+- [Patch][QA v4.9.164] Raw CSV loading drops duplicates and invalid OHLC rows.
+- [Patch][QA v4.9.164] RiskManager logs drawdown updates and kill switch events.
+- Version bump to `4.9.164_FULL_PASS`
 =======
