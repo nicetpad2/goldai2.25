@@ -43,7 +43,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.155_FULL_PASS"  # [Patch][QA v4.9.155] embedded config defaults
+MINIMAL_SCRIPT_VERSION = "4.9.156_FULL_PASS"  # [Patch][QA v4.9.156] Gain_Z NaN handling
 
 
 
@@ -2461,10 +2461,15 @@ def engineer_m1_features(
     window = 300
     mean = df["Close"].rolling(window=window, min_periods=window // 2).mean()
     std = df["Close"].rolling(window=window, min_periods=window // 2).std()
-    df["Gain_Z"] = ((df["Close"] - mean) / std)
+    df["Gain_Z"] = ((df["Close"] - mean) / std).replace([np.inf, -np.inf], np.nan)
+    if df["Gain_Z"].isna().all():
+        logger.critical(
+            "[Patch][QA v4.9.156][Enterprise] Gain_Z all NaN after calculation. Insufficient data."
+        )
+        raise ValueError("Gain_Z all NaN after calculation.")
     if df["Gain_Z"].isna().any():
-        logger.critical("[Patch][QA v4.9.151][Enterprise] Gain_Z has NaN after calculation. Raising error.")
-        raise ValueError("Gain_Z has NaN after calculation.")
+        logger.warning("[Patch][QA v4.9.156] Filling NaN Gain_Z values with 0.0")
+        df["Gain_Z"] = df["Gain_Z"].fillna(0.0)
     return df
 
     # ADX
