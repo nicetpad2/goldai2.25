@@ -43,7 +43,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.160_FULL_PASS"  # [Patch][QA v4.9.160] add use_meta_classifier default
+MINIMAL_SCRIPT_VERSION = "4.9.161_FULL_PASS"  # [Patch][QA v4.9.161] ATR rolling avg & doc updates
 
 
 
@@ -5094,7 +5094,7 @@ def _run_backtest_simulation_v34_full(
                     trade_manager_obj.update_last_trade_time(now_bar)
                     atr_at_entry_val_open_call = pd.to_numeric(row_data_bar.get("ATR_14_Shifted"), errors='coerce')
                     if pd.isna(atr_at_entry_val_open_call) or atr_at_entry_val_open_call < 1e-9: # pragma: no cover
-                        sim_logger.warning(f"   Cannot open order at {now_bar}: Invalid ATR_Shifted ({atr_at_entry_val_open_call}).")
+                        sim_logger.warning(f"   Cannot open order at {now_bar}: Invalid ATR_14_Shifted ({atr_at_entry_val_open_call}).")
                     else:
                         entry_price_new_val_call = pd.to_numeric(row_data_bar.get("Open"), errors='coerce')
                         if pd.isna(entry_price_new_val_call): sim_logger.error(f"  Cannot open order at {now_bar}: Invalid Open price."); continue # pragma: no cover
