@@ -43,7 +43,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.153_FULL_PASS"  # [Patch][QA v4.9.153] strict enterprise behavior
+MINIMAL_SCRIPT_VERSION = "4.9.154_FULL_PASS"  # [Patch][QA v4.9.154] strict enterprise behavior
 
 
 
@@ -6578,6 +6578,7 @@ def main(run_mode: str = 'FULL_PIPELINE', config_file: str = "config.yaml", suff
                 df_m1_with_trend = df_m1_prepared.copy()
                 df_m1_with_trend['Trend_Zone'] = "NEUTRAL"
             else:
+                df_m15_trend_zone = df_m15_trend_zone[["Trend_Zone"]]
                 df_m1_with_trend = pd.merge_asof(
                     df_m1_prepared.sort_index(),
                     df_m15_trend_zone.sort_index(),

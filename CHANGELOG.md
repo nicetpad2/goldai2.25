@@ -423,3 +423,6 @@
 - [Patch][QA v4.9.152] engineer_m1_features validates required columns individually.
 - Version bump to `4.9.153_FULL_PASS`
 
+## [v4.9.154+] - 2025-07-xx
+- [Patch][QA v4.9.154] main merges M15 Trend Zone using only the 'Trend_Zone' column to avoid duplicate OHLC columns.
+- Version bump to `4.9.154_FULL_PASS`
