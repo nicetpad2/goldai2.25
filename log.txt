@@ -41,3 +41,107 @@ CRITICAL:__main__.run_backtest_simulation_v34.Fold_1_UnnamedFund_WFV_BUY.BUY:KIL
 WARNING:__main__.run_backtest_simulation_v34.Fold_1_UnnamedFund_WFV_BUY.BUY:Kill switch active at 2021-03-02 12:24:00. Closing any remaining orders & stopping new entries.
   Sim (Fold_1_UnnamedFund_WFV_BUY, BUY):   0%|          | 0/295303 [00:00<?, ?it/s]
 11:24:24 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+  Sim (Fold_1_UnnamedFund_WFV_SELL, SELL):   0%|          | 0/295303 [00:00<?, ?it/s]
+11:30:38 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_1_UnnamedFund_WFV SELL:    No trades logged for 'Fold_1_UnnamedFund_WFV SELL'.
+WARNING:__main__.DriftObserver:          (Drift Warning) Feature='ADX', Wasserstein=0.2730 (Threshold: 0.10) (Fold 2)
+WARNING:__main__.DriftObserver:          [DRIFT ALERT] Feature='Gain_Z', Wasserstein=0.1009 (Threshold: 0.10) (Fold 2)
+WARNING:__main__.run_backtest_simulation_v34.Fold_2_UnnamedFund_WFV_BUY.BUY:Kill switch active at 2021-12-30 09:12:00. Closing any remaining orders & stopping new entries.
+  Sim (Fold_2_UnnamedFund_WFV_BUY, BUY):   0%|          | 0/295303 [00:00<?, ?it/s]
+11:30:44 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_2_UnnamedFund_WFV BUY:    No trades logged for 'Fold_2_UnnamedFund_WFV BUY'.
+  Sim (Fold_2_UnnamedFund_WFV_SELL, SELL):   0%|          | 0/295303 [00:00<?, ?it/s]
+11:36:56 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_2_UnnamedFund_WFV SELL:    No trades logged for 'Fold_2_UnnamedFund_WFV SELL'.
+WARNING:__main__.DriftObserver:          (Drift Warning) Feature='ADX', Wasserstein=0.2056 (Threshold: 0.10) (Fold 3)
+WARNING:__main__.run_backtest_simulation_v34.Fold_3_UnnamedFund_WFV_BUY.BUY:Kill switch active at 2022-10-28 02:00:00. Closing any remaining orders & stopping new entries.
+  Sim (Fold_3_UnnamedFund_WFV_BUY, BUY):   0%|          | 0/295303 [00:00<?, ?it/s]
+11:37:03 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_3_UnnamedFund_WFV BUY:    No trades logged for 'Fold_3_UnnamedFund_WFV BUY'.
+  Sim (Fold_3_UnnamedFund_WFV_SELL, SELL):   0%|          | 0/295303 [00:00<?, ?it/s]
+11:43:20 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_3_UnnamedFund_WFV SELL:    No trades logged for 'Fold_3_UnnamedFund_WFV SELL'.
+WARNING:__main__.run_backtest_simulation_v34.Fold_4_UnnamedFund_WFV_BUY.BUY:Kill switch active at 2023-08-30 01:49:00. Closing any remaining orders & stopping new entries.
+  Sim (Fold_4_UnnamedFund_WFV_BUY, BUY):   0%|          | 0/295303 [00:00<?, ?it/s]
+11:43:28 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_4_UnnamedFund_WFV BUY:    No trades logged for 'Fold_4_UnnamedFund_WFV BUY'.
+  Sim (Fold_4_UnnamedFund_WFV_SELL, SELL):   0%|          | 0/295303 [00:00<?, ?it/s]
+11:49:43 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_4_UnnamedFund_WFV SELL:    No trades logged for 'Fold_4_UnnamedFund_WFV SELL'.
+WARNING:__main__.DriftObserver:          (Drift Warning) Feature='ADX', Wasserstein=0.2834 (Threshold: 0.10) (Fold 5)
+WARNING:__main__.DriftObserver:          [DRIFT ALERT] Feature='ATR_14', Wasserstein=0.3353 (Threshold: 0.10) (Fold 5)
+WARNING:__main__.DriftObserver:          (Drift Warning) Feature='ATR_14_Rolling_Avg', Wasserstein=0.3352 (Threshold: 0.10) (Fold 5)
+WARNING:__main__.DriftObserver:          (Drift Warning) Feature='ATR_14_Shifted', Wasserstein=0.3353 (Threshold: 0.10) (Fold 5)
+WARNING:__main__.DriftObserver:          [DRIFT ALERT] Feature='Gain_Z', Wasserstein=0.1537 (Threshold: 0.10) (Fold 5)
+WARNING:__main__.run_backtest_simulation_v34.Fold_5_UnnamedFund_WFV_BUY.BUY:Kill switch active at 2024-07-01 02:34:00. Closing any remaining orders & stopping new entries.
+  Sim (Fold_5_UnnamedFund_WFV_BUY, BUY):   0%|          | 0/295303 [00:00<?, ?it/s]
+11:49:52 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_5_UnnamedFund_WFV BUY:    No trades logged for 'Fold_5_UnnamedFund_WFV BUY'.
+  Sim (Fold_5_UnnamedFund_WFV_SELL, SELL):   0%|          | 0/295303 [00:00<?, ?it/s]
+11:56:08 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_5_UnnamedFund_WFV SELL:    No trades logged for 'Fold_5_UnnamedFund_WFV SELL'.
+WARNING:__main__.calculate_metrics.Overall WF Sell (UnnamedFund_WFV):    No trades logged for 'Overall WF Sell (UnnamedFund_WFV)'.
+[RAM หลังรัน GoldAI (Sweep 1)] ใช้งาน 0.72 GB / 12.67 GB (7.9%)
+❌ No output files found in /content/drive/MyDrive/new/gold_ai_sweep/run_1_97e6568f3459
+
+
+========== PARAM SWEEP [2/3] (hash=660a1892812f3e433476c78c89199ac8) ==========
+{'risk_per_trade': 0.02, 'base_tp_multiplier': 1.5, 'max_holding_bars': 36, 'pipeline_id': '7775b6b66e71'}
+[RAM ก่อนรัน GoldAI (Sweep 2)] ใช้งาน 0.72 GB / 12.67 GB (7.9%)
+11:57:06 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 & 3] Initial StreamHandler for logger configured. FileHandler deferred to main().
+11:57:06 - INFO - [GoldAI_Enterprise_v4.9] - Gold AI Script Version: 4.9.164_FULL_PASS - Logger Initialized (Import Phase).
+11:57:06 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 1 (Manual)] Developer to review entire gold_ai2025.py for syntax errors.
+11:57:06 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 2 (Review)] Reviewing top-level imports and global scope code in gold_ai2025.py.
+11:57:06 - INFO - [GoldAI_Enterprise_v4.9] - 
+(Processing) Importing core libraries (with robust fallbacks)...
+11:57:06 - INFO - [GoldAI_Enterprise_v4.9] - [Patch AI Studio v4.9.49+] Setting optuna.logging.set_verbosity(optuna.logging.WARNING)
+11:57:08 - INFO - [GoldAI_Enterprise_v4.9] -    (Success) CatBoost components (Classifier, Pool) loaded. EShapCalcType: Found, EFeaturesSelectionAlgorithm: Found
+11:57:14 - INFO - [GoldAI_Enterprise_v4.9] - 
+(Processing) Setting up environment (Colab, GPU)...
+11:57:14 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 4] setup_gpu_acceleration() call deferred to __main__ block.
+11:57:14 - INFO - [GoldAI_Enterprise_v4.9] - Part 1/15 (Setup, Imports, Globals) Loaded. Script Version: 4.9.164_FULL_PASS
+11:57:14 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step 5 (Review)] Developer to review try-except ImportError blocks for specificity.
+Part 2: Is DEPRECATED. All tunable strategy parameters should be managed by StrategyConfig.
+11:57:14 - INFO - [GoldAI_Enterprise_v4.9] - Part 3 (New): Enterprise Classes & Config Loader Implemented with Feature Engineering and Default Signal Thresholds.
+11:57:15 - INFO - [GoldAI_Enterprise_v4.9] - Part 4 (Original Part 3): Helper Functions (Setup, Utils, Font, Config) Loaded.
+11:57:15 - INFO - [GoldAI_Enterprise_v4.9] - Part 5 (Original Part 4): Data Loading & Initial Preparation Functions Loaded.
+11:57:15 - INFO - [GoldAI_Enterprise_v4.9] - Part 6 (Original Part 5): Feature Engineering & Indicator Calculation Functions Loaded and Refactored to use StrategyConfig.
+11:57:15 - INFO - [GoldAI_Enterprise_v4.9] - Part 7 (Original Part 6): Machine Learning Configuration & Helpers Loaded and Refactored.
+11:57:15 - INFO - [GoldAI_Enterprise_v4.9] - [Patch AI Studio v4.9.49+] Setting optuna.logging.set_verbosity(optuna.logging.WARNING)
+11:57:15 - INFO - [GoldAI_Enterprise_v4.9] - Part 8 (Original Part 7): Model Training Function Loaded and Refactored with Optuna Integration.
+11:57:15 - INFO - [GoldAI_Enterprise_v4.9] - Part 9 (Original Part 8): Backtesting Engine (v4.9.23 - Added TSL/BE Helpers & _check_kill_switch) Loaded and Refactored.
+11:57:15 - INFO - [GoldAI_Enterprise_v4.9] - Part 10 (Original Part 9): Walk-Forward Orchestration & Analysis Functions (Fuller Logic v4.9.18 - Corrected WFV Type Hint) Loaded and Refactored.
+11:57:15 - INFO - [GoldAI_Enterprise_v4.9] - Part 11 (Original Part 10): Main Execution & Pipeline Control Loaded and Refactored with Full Data/Model Logic.
+11:57:15 - INFO - [GoldAI_Enterprise_v4.9] - [Patch - IMPORT ERROR FIX - Step MainBlock] Calling setup_gpu_acceleration() from __main__ block.
+[Patch][ConfigPath v4.9.155+] Config not found at 'config.yaml', fallback to '/content/drive/MyDrive/new/config.yaml'
+11:57:15 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.87] Using /content/drive/MyDrive/new as the only valid test path.
+[Patch][ConfigPath v4.9.155+] Config not found at 'config.yaml', fallback to '/content/drive/MyDrive/new/config.yaml'
+11:57:15 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.87] Using /content/drive/MyDrive/new as the only valid test path.
+[Patch][QA v4.9.158+] Drop 149 rows with NaN in ['Gain_Z', 'ATR_14', 'ATR_14_Shifted']
+          (Drift Warning) Feature='ADX', Wasserstein=0.4011 (Threshold: 0.10) (Fold 1)
+          [DRIFT ALERT] Feature='ATR_14', Wasserstein=0.1826 (Threshold: 0.10) (Fold 1)
+          (Drift Warning) Feature='ATR_14_Rolling_Avg', Wasserstein=0.1823 (Threshold: 0.10) (Fold 1)
+          (Drift Warning) Feature='ATR_14_Shifted', Wasserstein=0.1825 (Threshold: 0.10) (Fold 1)
+CRITICAL:__main__.RiskManager:[Patch][QA v4.9.164] Soft Kill ACTIVATED: DD=0.2776 >= 0.1500
+CRITICAL:__main__.RiskManager:[Patch][QA v4.9.164] Hard Kill Triggered! EQ=72.24, Peak=100.00, DD=0.2776 >= 0.2000
+CRITICAL:__main__.run_backtest_simulation_v34.Fold_1_UnnamedFund_WFV_BUY.BUY:KILL SWITCH (Drawdown from RiskManager) Triggered: [Patch AI Studio v4.9.59+] [Patch] [KILL SWITCH] Max Drawdown (27.76%) Triggered. System Stopped. at 2021-03-02 12:24:00
+WARNING:__main__.run_backtest_simulation_v34.Fold_1_UnnamedFund_WFV_BUY.BUY:Kill switch active at 2021-03-02 12:24:00. Closing any remaining orders & stopping new entries.
+  Sim (Fold_1_UnnamedFund_WFV_BUY, BUY):   0%|          | 0/295303 [00:00<?, ?it/s]
+11:58:22 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+  Sim (Fold_1_UnnamedFund_WFV_SELL, SELL):   0%|          | 0/295303 [00:00<?, ?it/s]
+12:04:33 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_1_UnnamedFund_WFV SELL:    No trades logged for 'Fold_1_UnnamedFund_WFV SELL'.
+WARNING:__main__.DriftObserver:          (Drift Warning) Feature='ADX', Wasserstein=0.2730 (Threshold: 0.10) (Fold 2)
+WARNING:__main__.DriftObserver:          [DRIFT ALERT] Feature='Gain_Z', Wasserstein=0.1009 (Threshold: 0.10) (Fold 2)
+WARNING:__main__.run_backtest_simulation_v34.Fold_2_UnnamedFund_WFV_BUY.BUY:Kill switch active at 2021-12-30 09:12:00. Closing any remaining orders & stopping new entries.
+  Sim (Fold_2_UnnamedFund_WFV_BUY, BUY):   0%|          | 0/295303 [00:00<?, ?it/s]
+12:04:39 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_2_UnnamedFund_WFV BUY:    No trades logged for 'Fold_2_UnnamedFund_WFV BUY'.
+  Sim (Fold_2_UnnamedFund_WFV_SELL, SELL):   0%|          | 0/295303 [00:00<?, ?it/s]
+12:10:47 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_2_UnnamedFund_WFV SELL:    No trades logged for 'Fold_2_UnnamedFund_WFV SELL'.
+WARNING:__main__.DriftObserver:          (Drift Warning) Feature='ADX', Wasserstein=0.2056 (Threshold: 0.10) (Fold 3)
+WARNING:__main__.run_backtest_simulation_v34.Fold_3_UnnamedFund_WFV_BUY.BUY:Kill switch active at 2022-10-28 02:00:00. Closing any remaining orders & stopping new entries.
+  Sim (Fold_3_UnnamedFund_WFV_BUY, BUY):   0%|          | 0/295303 [00:00<?, ?it/s]
+12:10:54 - INFO - [GoldAI_Enterprise_v4.9] - [Patch][QA v4.9.100] Forced entry audit: 0 modified | indices: []
+WARNING:__main__.calculate_metrics.Fold_3_UnnamedFund_WFV BUY:    No trades logged for 'Fold_3_UnnamedFund_WFV BUY'.
