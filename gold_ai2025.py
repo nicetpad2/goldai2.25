@@ -43,7 +43,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.158_FULL_PASS"  # [Patch][QA v4.9.158] NaN drop & config path improvements
+MINIMAL_SCRIPT_VERSION = "4.9.159_FULL_PASS"  # [Patch][QA v4.9.159] Auto-install for optional libs
 
 
 
@@ -502,7 +502,11 @@ def import_core_libraries() -> None:
     if ta_imported:
         ta = ta_module
 
-    optuna_module = try_import_with_install("optuna", success_flag_global_name="optuna_imported")
+    optuna_module = try_import_with_install(
+        "optuna",
+        pip_install_name="optuna",
+        success_flag_global_name="optuna_imported",
+    )
     optuna_imported = optuna_module is not None
     if optuna_imported:
         optuna = optuna_module
@@ -531,7 +535,11 @@ def import_core_libraries() -> None:
     Pool = None
     EShapCalcType = None
     EFeaturesSelectionAlgorithm = None
-    catboost_module = try_import_with_install("catboost", success_flag_global_name="catboost_imported")
+    catboost_module = try_import_with_install(
+        "catboost",
+        pip_install_name="catboost",
+        success_flag_global_name="catboost_imported",
+    )
     catboost_imported = catboost_module is not None
     if catboost_imported:
         try:
@@ -553,7 +561,12 @@ def import_core_libraries() -> None:
     if shap_imported:
         shap = shap_module
 
-    gputil_module = try_import_with_install("GPUtil", import_as_name="GPUtil", success_flag_global_name="gputil_imported")
+    gputil_module = try_import_with_install(
+        "GPUtil",
+        pip_install_name="gputil",
+        import_as_name="GPUtil",
+        success_flag_global_name="gputil_imported",
+    )
     gputil_imported = gputil_module is not None
     if gputil_imported:
         GPUtil = gputil_module

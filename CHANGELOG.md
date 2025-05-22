@@ -449,3 +449,7 @@
 - [Patch][QA v4.9.158] Default logger level changed to WARNING for PROD.
 - [Patch][QA v4.9.158] GPU unavailable message downgraded to info.
 - Version bump to `4.9.158_FULL_PASS`
+
+## [v4.9.159+] - 2025-07-xx
+- [Patch][QA v4.9.159] Added pip_install_name for optional libraries to enable automatic installation.
+- Version bump to `4.9.159_FULL_PASS`
