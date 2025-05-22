@@ -1,72 +1,42 @@
+# ==========================
+# STEP 0: ENVIRONMENT & LIBRARY SETUP
+# ==========================
+!pip install -U google-generativeai
+!pip install -q pytest pytest-cov pandas numpy matplotlib ta tqdm pyyaml
 
-"""Helper script for running GoldAI hyperparameter sweeps locally.
-
-This file was originally written for Google Colab and attempted to install
-`google-generativeai` using a notebook style command.  The execution
-environment here does not allow network access, so any installation or API
-calls to Gemini must be optional.  This patch removes the notebook install
-syntax and provides a lightweight fallback implementation when the
-`google-generativeai` package is unavailable.
-"""
-
-
-import subprocess
 import os
 import sys
+import subprocess
+import getpass
 import glob
 import time
 import json
 import hashlib
 import pandas as pd
-try:
-    import psutil
-except Exception:  # pragma: no cover - optional dependency
-    class _VMem:
-        used = total = percent = 0
-
-    class psutil:
-        @staticmethod
-        def virtual_memory():
-            return _VMem()
+import psutil
 import yaml
 import random
-try:
-    import google.generativeai as genai
-except Exception:  # noqa: E722 - broad exception for optional import
-    class _DummyGenAI:
-        @staticmethod
-        def configure(api_key=None):
-            pass
+import google.generativeai as genai
 
-        class GenerativeModel:
-            def __init__(self, *a, **kw):
-                pass
+# ==========================
+# STEP 1: CONFIGURATION
+# ==========================
+GOLD_AI_SCRIPT = "/content/drive/MyDrive/new/gold_ai2025.py"
+CFG_BASE = "/content/drive/MyDrive/new/"
+OUTPUT_BASE = "/content/drive/MyDrive/new/gold_ai_sweep/"
+REPORT_PATH = CFG_BASE + "goldai_sweep_qa_report.txt"
+CSV_RESULT_PATH = CFG_BASE + "goldai_sweep_qa_results.csv"
+MD_REPORT_PATH = CFG_BASE + "goldai_sweep_qa_report.md"
+CHANGELOG_PATH = CFG_BASE + "goldai_changelog.txt"
+LOG_PATH = CFG_BASE + "goldai_sweep_stdout.log"
+RAM_PATH = CFG_BASE + "goldai_sweep_max_ram.txt"
 
-            def generate_content(self, prompt):
-                class _Resp:
-                    text = "[offline] Gemini QA skipped"
+# ===== API Key (Secret) Handling =====
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") or getpass.getpass("🔑 ใส่ Gemini API Key (จะไม่โชว์): ")
 
-                return _Resp()
-
-    genai = _DummyGenAI()
-
-# ---------- CONFIG -------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-GOLD_AI_SCRIPT = os.path.join(BASE_DIR, "gold_ai2025.py")
-CFG_BASE = os.path.join(BASE_DIR, "sweep_configs")
-OUTPUT_BASE = os.path.join(BASE_DIR, "sweep_output")
-REPORT_PATH = os.path.join(CFG_BASE, "goldai_sweep_qa_report.txt")
-CSV_RESULT_PATH = os.path.join(CFG_BASE, "goldai_sweep_qa_results.csv")
-MD_REPORT_PATH = os.path.join(CFG_BASE, "goldai_sweep_qa_report.md")
-CHANGELOG_PATH = os.path.join(CFG_BASE, "goldai_changelog.txt")
-LOG_PATH = os.path.join(CFG_BASE, "goldai_sweep_stdout.log")
-RAM_PATH = os.path.join(CFG_BASE, "goldai_sweep_max_ram.txt")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-
-os.makedirs(CFG_BASE, exist_ok=True)
-os.makedirs(OUTPUT_BASE, exist_ok=True)
-
-# ---------- PARAM GRID (Hyperparameter Sweep) -------------
+# ==========================
+# STEP 2: PARAMETER GRID DEFINITION
+# ==========================
 PARAM_GRID = [
     {"risk_per_trade": 0.01, "base_tp_multiplier": 1.8, "max_holding_bars": 24},
     {"risk_per_trade": 0.02, "base_tp_multiplier": 1.5, "max_holding_bars": 36},
@@ -74,7 +44,9 @@ PARAM_GRID = [
     # เพิ่มชุด param อื่นๆ ได้ตามต้องการ
 ]
 
-# ---------- RAM Monitoring -------------
+# ==========================
+# STEP 3: RESOURCE MONITORING UTILITIES
+# ==========================
 def get_ram_usage_gb():
     vmem = psutil.virtual_memory()
     used_gb = vmem.used / (1024**3)
@@ -93,6 +65,9 @@ def print_ram_usage(label=""):
     used_gb, total_gb, percent = get_ram_usage_gb()
     print(f"[RAM {label}] ใช้งาน {used_gb:.2f} GB / {total_gb:.2f} GB ({percent:.1f}%)")
 
+# ==========================
+# STEP 4: CONFIG/ARTIFACT UTILITIES
+# ==========================
 def fail(msg):
     print(f"❌ {msg}")
     sys.exit(1)
@@ -114,23 +89,29 @@ def file_hash(path):
             h.update(b)
     return h.hexdigest()
 
-# ---------- Hyperparameter Sweep Loop -------------
+# ==========================
+# STEP 5: HYPERPARAMETER SWEEP & SIMULATION LOOP
+# ==========================
 all_sweep_results = []
 sweep_changelog = []
 max_ram_overall = 0.0
 
 for idx, param in enumerate(PARAM_GRID):
+    # ----- 5.1 CONFIG PREP -----
     config_path = CFG_BASE + f"config_sweep_{idx+1}.yaml"
     pipeline_id = hashlib.md5((str(time.time())+str(random.random())).encode()).hexdigest()[:12]
     param["pipeline_id"] = pipeline_id
     write_config(param, config_path)
-    print(f"\n\n========== PARAM SWEEP [{idx+1}/{len(PARAM_GRID)}] (hash={config_hash(param)}) ==========")
-    print(param)
     run_output_dir = os.path.join(OUTPUT_BASE, f"run_{idx+1}_{pipeline_id}")
     os.makedirs(run_output_dir, exist_ok=True)
+    print(f"\n\n========== PARAM SWEEP [{idx+1}/{len(PARAM_GRID)}] (hash={config_hash(param)}) ==========")
+    print(param)
 
+    # ----- 5.2 RAM USAGE BEFORE -----
     print_ram_usage(f"ก่อนรัน GoldAI (Sweep {idx+1})")
     ram_before = get_ram_usage_gb()[0]
+
+    # ----- 5.3 SIMULATE PRODUCTION PIPELINE -----
     process = subprocess.Popen(
         [sys.executable, GOLD_AI_SCRIPT, "--config", config_path, "--output_dir", run_output_dir],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
@@ -143,20 +124,23 @@ for idx, param in enumerate(PARAM_GRID):
     process.wait()
     with open(LOG_PATH, "a", encoding="utf-8") as f:
         f.write(f"\n\n======== Pipeline {pipeline_id} ========\n{all_log}\n")
+
+    # ----- 5.4 RAM USAGE AFTER -----
     print_ram_usage(f"หลังรัน GoldAI (Sweep {idx+1})")
     ram_after = get_ram_usage_gb()[0]
     if max_ram_used > max_ram_overall:
         max_ram_overall = max_ram_used
 
-    # Data Quality, Artifact, Outlier, Duplicate, Schema
+    # ----- 5.5 ARTIFACT QA & OUTLIER DETECTION -----
     output_files = glob.glob(os.path.join(run_output_dir, "*.csv")) + glob.glob(os.path.join(run_output_dir, "*.json"))
     if not output_files:
         print(f"❌ No output files found in {run_output_dir}")
         continue
-    # Outlier detection and QA summary
+
     qa_summary = ""
     for file in output_files:
         basename = os.path.basename(file)
+        # -- 5.5.1 CSV QA --
         if file.endswith(".csv"):
             try:
                 df = pd.read_csv(file)
@@ -173,7 +157,7 @@ for idx, param in enumerate(PARAM_GRID):
             except Exception as e:
                 print(f"⚠️ DataQuality fail: {basename}: {e}")
 
-        # LLM QA
+        # -- 5.5.2 LLM QA Review --
         if file.endswith(".json"):
             with open(file, encoding='utf-8') as f:
                 data = json.load(f)
@@ -191,16 +175,13 @@ for idx, param in enumerate(PARAM_GRID):
         else:
             continue
 
-        review_text = ""
-        if GEMINI_API_KEY:
-            genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel("gemini-1.5-pro-latest")
-            review_text = model.generate_content(prompt).text
-        else:
-            review_text = "[Gemini QA skipped]"
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel("gemini-1.5-pro-latest")
+        review_text = model.generate_content(prompt).text
         print(f"\n=== Gemini QA Review ({basename}) ===\n", review_text)
         qa_summary += f"\n--- {basename} ---\n{review_text}"
 
+    # ----- 5.6 RESULT LOGGING & EXPORT -----
     result = {
         "pipeline_id": pipeline_id,
         "param": param,
@@ -213,11 +194,12 @@ for idx, param in enumerate(PARAM_GRID):
     }
     all_sweep_results.append(result)
     sweep_changelog.append(f"{time.ctime()} | pipeline_id: {pipeline_id} | param: {param} | max_ram: {max_ram_used:.2f}GB")
-
     with open(f"{run_output_dir}/qa_review.md", "w", encoding="utf-8") as f:
         f.write(qa_summary)
 
-# ---- Export all sweep results (QA Table/Markdown/Changelog) ----
+# ==========================
+# STEP 6: AGGREGATE & EXPORT QA RESULTS
+# ==========================
 pd.DataFrame([
     {
         "pipeline_id": r["pipeline_id"],
@@ -250,7 +232,9 @@ with open(RAM_PATH, "w") as f:
     f.write(f"Max RAM used (any sweep): {max_ram_overall:.2f} GB\n")
 print(f"📝 Max RAM used (all sweep) saved to: {RAM_PATH}")
 
-# QA Fail-Pattern
+# ==========================
+# STEP 7: QA FAIL PATTERN & CI/CD EXIT CODE
+# ==========================
 RISK_WORDS = ["max drawdown", "consecutive sl", "fail", "error", "critical", "risk", "drawdown > 30%"]
 fail_flag = False
 for r in all_sweep_results:
@@ -263,3 +247,4 @@ if fail_flag:
     sys.exit(1)
 else:
     print("✅ Hyperparameter Sweep QA Passed ทุก run (exit code 0)")
+
