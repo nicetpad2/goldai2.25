@@ -462,3 +462,7 @@
 - [Patch][QA v4.9.161] Renamed `ATR_Shifted` to `ATR_14_Shifted` and introduced `ATR_14_Rolling_Avg`.
 - [Patch][QA v4.9.161] Added guideline to update CHANGELOG.md and AGENTS.md after each patch.
 - Version bump to `4.9.161_FULL_PASS`
+
+## [v4.9.162+] - 2025-07-xx
+- [Patch][QA v4.9.162] Unified `equity_tracker['history']` to always be a dictionary keyed by timestamp.
+- Version bump to `4.9.162_FULL_PASS`

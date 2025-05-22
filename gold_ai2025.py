@@ -43,7 +43,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.161_FULL_PASS"  # [Patch][QA v4.9.161] ATR rolling avg & doc updates
+MINIMAL_SCRIPT_VERSION = "4.9.162_FULL_PASS"  # [Patch][QA v4.9.162] equity history dict fix
 
 
 
@@ -4770,9 +4770,9 @@ def close_trade(
         default=np.nan,
         log_ctx="close_trade.history"
     )
-    if not isinstance(equity_tracker_dict_ct.get('history'), list):
-        equity_tracker_dict_ct['history'] = []
-    equity_tracker_dict_ct['history'].append(eq_val_hist)
+    if not isinstance(equity_tracker_dict_ct.get('history'), dict):
+        equity_tracker_dict_ct['history'] = {}
+    equity_tracker_dict_ct['history'][exit_time] = eq_val_hist
 
     # Update run summary
     if run_summary_dict_ct and _isinstance_safe(run_summary_dict_ct, dict): # pragma: no cover
