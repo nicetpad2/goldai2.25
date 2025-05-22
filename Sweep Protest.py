@@ -1,29 +1,32 @@
 # ==========================
 # STEP 0: ENVIRONMENT & LIBRARY SETUP
 # ==========================
-!pip install -U google-generativeai
-!pip install -q pytest pytest-cov pandas numpy matplotlib ta tqdm pyyaml
-
 import os
 import sys
 import subprocess
-import getpass
 import glob
 import time
 import json
 import hashlib
 import pandas as pd
-import psutil
+try:
+    import psutil
+except Exception:
+    psutil = None
 import yaml
 import random
-import google.generativeai as genai
+try:
+    import google.generativeai as genai  # Optional, may not be installed
+except Exception:
+    genai = None
 
 # ==========================
 # STEP 1: CONFIGURATION
 # ==========================
-GOLD_AI_SCRIPT = "/content/drive/MyDrive/new/gold_ai2025.py"
-CFG_BASE = "/content/drive/MyDrive/new/"
-OUTPUT_BASE = "/content/drive/MyDrive/new/gold_ai_sweep/"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+GOLD_AI_SCRIPT = os.path.join(BASE_DIR, "gold_ai2025.py")
+CFG_BASE = BASE_DIR + os.sep
+OUTPUT_BASE = os.path.join(BASE_DIR, "gold_ai_sweep") + os.sep
 REPORT_PATH = CFG_BASE + "goldai_sweep_qa_report.txt"
 CSV_RESULT_PATH = CFG_BASE + "goldai_sweep_qa_results.csv"
 MD_REPORT_PATH = CFG_BASE + "goldai_sweep_qa_report.md"
@@ -32,7 +35,7 @@ LOG_PATH = CFG_BASE + "goldai_sweep_stdout.log"
 RAM_PATH = CFG_BASE + "goldai_sweep_max_ram.txt"
 
 # ===== API Key (Secret) Handling =====
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") or getpass.getpass("🔑 ใส่ Gemini API Key (จะไม่โชว์): ")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 # ==========================
 # STEP 2: PARAMETER GRID DEFINITION
@@ -48,11 +51,28 @@ PARAM_GRID = [
 # STEP 3: RESOURCE MONITORING UTILITIES
 # ==========================
 def get_ram_usage_gb():
-    vmem = psutil.virtual_memory()
-    used_gb = vmem.used / (1024**3)
-    total_gb = vmem.total / (1024**3)
-    percent = vmem.percent
-    return used_gb, total_gb, percent
+    if psutil is not None:
+        vmem = psutil.virtual_memory()
+        used_gb = vmem.used / (1024**3)
+        total_gb = vmem.total / (1024**3)
+        percent = vmem.percent
+        return used_gb, total_gb, percent
+    # Fallback using /proc/meminfo
+    try:
+        info = {}
+        with open("/proc/meminfo") as f:
+            for line in f:
+                key, val = line.split(":", 1)
+                info[key.strip()] = int(val.strip().split()[0]) * 1024
+        total = info.get("MemTotal", 0)
+        free = info.get("MemFree", 0) + info.get("Buffers", 0) + info.get("Cached", 0)
+        used = total - free
+        total_gb = total / (1024**3)
+        used_gb = used / (1024**3)
+        percent = used / total * 100 if total else 0
+        return used_gb, total_gb, percent
+    except Exception:
+        return 0.0, 0.0, 0.0
 
 max_ram_used = 0.0
 def update_max_ram():
@@ -175,9 +195,15 @@ for idx, param in enumerate(PARAM_GRID):
         else:
             continue
 
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-1.5-pro-latest")
-        review_text = model.generate_content(prompt).text
+        if genai is not None and GEMINI_API_KEY:
+            try:
+                genai.configure(api_key=GEMINI_API_KEY)
+                model = genai.GenerativeModel("gemini-1.5-pro-latest")
+                review_text = model.generate_content(prompt).text
+            except Exception as e:
+                review_text = f"[GenAI error: {e}]"
+        else:
+            review_text = "[GenAI unavailable]"
         print(f"\n=== Gemini QA Review ({basename}) ===\n", review_text)
         qa_summary += f"\n--- {basename} ---\n{review_text}"
 
