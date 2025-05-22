@@ -3285,6 +3285,13 @@ class TestCoverageBooster(unittest.TestCase):
         result_fail = ga.export_trade_log_to_csv(log, "denied", "/no_such_dir", self.cfg)
         self.assertIsNone(result_fail)
 
+    def test_export_fold_qa_summary(self):
+        ga = self.ga
+        tmp_dir = "/tmp/gold_ai_test_export"
+        os.makedirs(tmp_dir, exist_ok=True)
+        result = ga.export_fold_qa_summary(1, "no_data", {"rows_after_clean": 0}, tmp_dir)
+        self.assertTrue(result and os.path.exists(result))
+
     def test_run_all_folds_with_threshold_empty_fold(self):
         pd = self.pd
         ga = self.ga
