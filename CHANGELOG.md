@@ -477,3 +477,8 @@
 - [Patch][QA v4.9.164] RiskManager logs drawdown updates and kill switch events.
 - Version bump to `4.9.164_FULL_PASS`
 =======
+
+## [v4.9.165+] - 2025-07-xx
+- [Patch][QA v4.9.165] CLI arg support for config and output dir overrides.
+- Version bump to `4.9.165_FULL_PASS`
+
