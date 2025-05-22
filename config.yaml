@@ -1,24 +1,202 @@
-risk_per_trade: 0.01
-max_lot: 5.0
-min_lot: 0.01
-kill_switch_dd: 0.20
-soft_kill_dd: 0.15
-max_holding_bars: 24
-enable_forced_entry: true
-enable_partial_tp: true
-use_reentry: true
-enable_spike_guard: true
+# Gold AI Strategy Configuration (config.yaml - v4.9.16 compatible)
+# ===========================
+
+# ===========================
+# 1. การบริหารความเสี่ยง (Risk & Lot Management)
+risk_per_trade: 0.01                # % ความเสี่ยงต่อเทรด (เช่น 0.01 = 1%)
+max_lot: 5.0                        # ล็อตสูงสุดที่อนุญาต
+min_lot: 0.01                       # ล็อตต่ำสุดที่เปิดได้
+
+# ===========================
+# 2. ระบบปิดอัตโนมัติ (Kill Switch & Recovery)
+kill_switch_dd: 0.20                # Hard kill หาก Drawdown แตะ 20%
+soft_kill_dd: 0.15                  # Soft kill (block เทรดใหม่) ที่ Drawdown 15%
+kill_switch_consecutive_losses: 7   # ปิดถาวรถ้าแพ้ติดกันเกิน 7 ไม้
+recovery_mode_consecutive_losses: 4 # เข้าสู่ Recovery Mode หลังแพ้ 4 ไม้ติด
+recovery_mode_lot_multiplier: 0.5   # Lot ใน Recovery Mode (ครึ่งนึง)
+
+# ===========================
+# 3. ข้อจำกัดการถือสถานะ (Trade Holding & Timing)
+max_holding_bars: 24                # ถือเทรดได้สูงสุดกี่แท่ง (M1) (ใส่ null/เว้นไว้ = ไม่จำกัด)
+
+# ===========================
+# 4. Forced Entry (ระบบบังคับเข้า)
+enable_forced_entry: True
+forced_entry_cooldown_minutes: 240  # เวลารอหลัง forced entry (นาที)
+forced_entry_score_min: 1.0         # สัญญาณขั้นต่ำสำหรับ forced entry
+forced_entry_max_atr_mult: 2.5      # ATR ปัจจุบันเทียบเฉลี่ย (กัน spike)
+forced_entry_min_gain_z_abs: 1.0    # |Gain_Z| ขั้นต่ำ
+forced_entry_allowed_regimes:       # รูปแบบตลาดที่อนุญาตให้ forced entry
+  - "Normal"
+  - "Breakout"
+  - "StrongTrend"
+fe_ml_filter_threshold: 0.40        # ML proba ขั้นต่ำสำหรับ forced entry
+forced_entry_max_consecutive_losses: 2 # ถ้า forced entry แพ้ติดกันเกินนี้ จะปิดชั่วคราว
+
+# ===========================
+# 5. Partial Take Profit (TP บางส่วน)
+enable_partial_tp: True
+partial_tp_levels:
+  - r_multiple: 0.8
+    close_pct: 0.5
+#  - r_multiple: 1.5
+#    close_pct: 0.3
+partial_tp_move_sl_to_entry: True   # TP แรกขยับ SL เข้า BE
+
+# ===========================
+# 6. ระบบ Re-Entry
+use_reentry: True
+reentry_cooldown_bars: 1            # Cooldown หลัง TP ก่อนเข้าใหม่ (หน่วย M1 bars)
+reentry_min_proba_thresh: 0.55      # ML proba ขั้นต่ำสำหรับ re-entry
+
+# ===========================
+# 7. Spike Guard (ป้องกันตลาดแกว่ง)
+enable_spike_guard: True
+spike_guard_score_threshold: 0.75   # threshold สำหรับ spike guard
+spike_guard_london_patterns:
+  - "Breakout"
+  - "StrongTrend"
+
+# ===========================
+# 8. เกณฑ์ ML / Feature (ML Thresholds & Features)
 meta_min_proba_thresh: 0.55
+meta_classifier_features: []        # ใส่ชื่อฟีเจอร์หลัก meta model
+spike_model_features: []            # ฟีเจอร์สำหรับ spike model
+cluster_model_features: []
+shap_importance_threshold: 0.01
+shap_noise_threshold: 0.005
+
+# ===========================
+# 9. พารามิเตอร์ Backtest
 initial_capital: 100.0
 commission_per_001_lot: 0.10
 spread_points: 2.0
 point_value: 0.1
 ib_commission_per_lot: 7.0
+
+# ===========================
+# 10. Path & ชื่อไฟล์สำคัญ (Paths & File Names)
 n_walk_forward_splits: 5
-output_base_dir: /content/drive/MyDrive/new
-output_dir_name: gold_ai_run
-data_file_path_m15: /content/drive/MyDrive/new/XAUUSD_M15.csv
-data_file_path_m1: /content/drive/MyDrive/new/XAUUSD_M1.csv
-config_file_path: /content/drive/MyDrive/new/config.yaml
-meta_classifier_filename: meta_classifier.pkl
-spike_model_filename: meta_classifier_spike.pkl
+output_base_dir: "/content/drive/MyDrive/new_gold_ai_output"
+output_dir_name: "run_default_config_yaml"
+data_file_path_m15: "/content/drive/MyDrive/new/XAUUSD_M15.csv"
+data_file_path_m1: "/content/drive/MyDrive/new/XAUUSD_M1_CLEAN.csv"  # ✅ อัปเดตใช้ไฟล์ที่ clean แล้ว
+config_file_path: "config.yaml"
+meta_classifier_filename: "meta_classifier.pkl"
+spike_model_filename: "meta_classifier_spike.pkl"
+cluster_model_filename: "meta_classifier_cluster.pkl"
+base_train_trade_log_path: "trade_log_v32_walkforward"
+base_train_m1_data_path: "final_data_m1_v32_walkforward"
+trade_log_filename_prefix: "trade_log"
+summary_filename_prefix: "run_summary"
+
+# ===========================
+# 11. Adaptive TSL (Trailing Stop Logic)
+adaptive_tsl_start_atr_mult: 1.5
+adaptive_tsl_default_step_r: 0.5
+adaptive_tsl_high_vol_ratio: 1.8
+adaptive_tsl_high_vol_step_r: 1.0
+adaptive_tsl_low_vol_ratio: 0.75
+adaptive_tsl_low_vol_step_r: 0.3
+
+# ===========================
+# 12. Base TP/BE (Take Profit / Breakeven)
+base_tp_multiplier: 1.8
+base_be_sl_r_threshold: 1.0
+default_sl_multiplier: 1.5
+
+# ===========================
+# 13. เกณฑ์สัญญาณเข้า
+min_signal_score_entry: 2.0
+
+# ===========================
+# 14. กำหนดเวลาตลาด (Session Times, UTC)
+session_times_utc:
+  Asia: [0, 8]
+  London: [7, 16]
+  NY: [13, 21]
+
+# ===========================
+# 15. Feature Engineering Parameters
+timeframe_minutes_m15: 15
+timeframe_minutes_m1: 1
+rolling_z_window_m1: 300
+atr_rolling_avg_period: 50
+pattern_breakout_z_thresh: 2.0
+pattern_reversal_body_ratio: 0.5
+pattern_strong_trend_z_thresh: 1.0
+pattern_choppy_candle_ratio: 0.3
+pattern_choppy_wick_ratio: 0.6
+m15_trend_ema_fast: 50
+m15_trend_ema_slow: 200
+m15_trend_rsi_period: 14
+m15_trend_rsi_up: 52
+m15_trend_rsi_down: 48
+m15_trend_merge_tolerance_minutes: 30
+
+# ===========================
+# 16. Signal Calculation Default (WFV)
+default_gain_z_thresh_fold: 0.3
+default_rsi_thresh_buy_fold: 50
+default_rsi_thresh_sell_fold: 50
+default_volatility_max_fold: 4.0
+default_ignore_rsi_scoring_fold: False
+
+# ===========================
+# 17. พารามิเตอร์ Model Training
+enable_dynamic_feature_selection: True
+feature_selection_method: 'shap'
+prelim_model_params: null
+enable_optuna_tuning: False
+optuna_n_trials: 50
+optuna_cv_splits: 5
+optuna_metric: "AUC"
+optuna_direction: "maximize"
+catboost_gpu_ram_part: 0.95
+optuna_n_jobs: -1
+sample_size_train: 60000
+features_to_drop_train: null
+early_stopping_rounds: 200
+permutation_importance_threshold: 0.001
+catboost_iterations: 3000
+catboost_learning_rate: 0.01
+catboost_depth: 4
+catboost_l2_leaf_reg: 30
+lag_features_config: null
+
+# ===========================
+# 18. Auto-Train Parameters
+auto_train_enable_optuna: False
+auto_train_enable_dynamic_features: True
+auto_train_spike_filter_threshold: 0.6
+auto_train_cluster_filter_value: 2
+
+# ===========================
+# 19. Drift Detection (จับข้อมูลหลุด)
+drift_wasserstein_threshold: 0.1
+drift_ttest_alpha: 0.05
+drift_min_data_points: 10
+drift_alert_features: ['Gain_Z', 'ATR_14', 'Candle_Speed', 'RSI']
+drift_warning_factor: 1.5
+drift_adjustment_sensitivity: 1.0
+drift_max_gain_z_thresh: 3.0
+drift_min_gain_z_thresh: 0.1
+m1_features_for_drift: null
+
+# ===========================
+# 20. Multi-Fund & WFV Parameters
+multi_fund_mode: False
+fund_profiles: {}
+default_fund_name: "DEFAULT_FUND"
+default_fund_name_for_prep_fallback: "PREP_DEFAULT"
+entry_config_per_fold: {}
+
+# ===========================
+# 21. อื่น ๆ / System Control
+use_gpu_acceleration: True
+train_meta_model_before_run: True
+max_nat_ratio_threshold: 0.05
+min_slippage_points: -5.0
+max_slippage_points: -1.0
+ttp2_atr_threshold_activate: 4.0
+soft_cooldown_lookback: 10
