@@ -44,7 +44,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.202_FULL_PASS"  # [Patch][QA v4.9.202] QA root cause enhancements
+MINIMAL_SCRIPT_VERSION = "4.9.204_FULL_PASS"  # [Patch][QA v4.9.204] QA root cause enhancements
 
 
 
@@ -6316,7 +6316,7 @@ def run_all_folds_with_threshold(
                     output_dir=output_dir_for_wfv,
                 )
                 wfv_logger.error(
-                    f"[Patch][QA v4.9.202+] Fold {fold_idx}: Simulation failed. {e_sim_fail}"
+                    f"[Patch][QA v4.9.204+] Fold {fold_idx}: Simulation failed. {e_sim_fail}"
                 )
                 sim_fail_this_fold = True
                 break
