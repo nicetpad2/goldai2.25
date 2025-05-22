@@ -43,7 +43,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.159_FULL_PASS"  # [Patch][QA v4.9.159] Auto-install for optional libs
+MINIMAL_SCRIPT_VERSION = "4.9.160_FULL_PASS"  # [Patch][QA v4.9.160] add use_meta_classifier default
 
 
 
@@ -913,6 +913,8 @@ class StrategyConfig:
         self.meta_classifier_features: List[str] = config_dict.get("meta_classifier_features", [])
         self.spike_model_features: List[str] = config_dict.get("spike_model_features", [])
         self.cluster_model_features: List[str] = config_dict.get("cluster_model_features", [])
+        # [Patch][QA v4.9.160] default to using meta classifier if field missing
+        self.use_meta_classifier: bool = config_dict.get("use_meta_classifier", True)
         self.shap_importance_threshold: float = config_dict.get("shap_importance_threshold", 0.01)
         self.shap_noise_threshold: float = config_dict.get("shap_noise_threshold", 0.005)
 
@@ -1253,6 +1255,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "config_file_path": "/content/drive/MyDrive/new/config.yaml",
     "meta_classifier_filename": "meta_classifier.pkl",
     "spike_model_filename": "meta_classifier_spike.pkl",
+    "use_meta_classifier": True,
 }
 
 # --- Configuration Loading Function ---

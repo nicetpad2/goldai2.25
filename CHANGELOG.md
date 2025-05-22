@@ -453,3 +453,7 @@
 ## [v4.9.159+] - 2025-07-xx
 - [Patch][QA v4.9.159] Added pip_install_name for optional libraries to enable automatic installation.
 - Version bump to `4.9.159_FULL_PASS`
+
+## [v4.9.160+] - 2025-07-xx
+- [Patch][QA v4.9.160] Added default `use_meta_classifier` to StrategyConfig to prevent AttributeError.
+- Version bump to `4.9.160_FULL_PASS`
