@@ -425,4 +425,7 @@
 
 ## [v4.9.154+] - 2025-07-xx
 - [Patch][QA v4.9.154] main merges M15 Trend Zone using only the 'Trend_Zone' column to avoid duplicate OHLC columns.
+- [Patch][QA v4.9.154] Forced English font for all plots and removed Thai font logic.
+- [Patch][QA v4.9.154] safe_load_csv_auto logs path/columns and validates OHLC columns.
+- [Patch][QA v4.9.154] engineer_m1_features logs input columns and enforces OHLC columns.
 - Version bump to `4.9.154_FULL_PASS`
