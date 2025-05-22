@@ -40,7 +40,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.146_FULL_PASS"  # [Patch][QA v4.9.146] multi-logic improvements
+MINIMAL_SCRIPT_VERSION = "4.9.151_FULL_PASS"  # [Patch][QA v4.9.151] strict enterprise behavior
 
 
 
@@ -1436,73 +1436,35 @@ def setup_fonts(output_dir: str | None = None): # output_dir is not used current
         font_setup_logger.error(f"   (Error) Critical error during font setup: {e}", exc_info=True)
 
 # --- Data Loading Helper ---
-def safe_load_csv_auto(file_path: str) -> pd.DataFrame | None:
+def safe_load_csv_auto(file_path: str) -> pd.DataFrame:
     """
-    Loads CSV or .csv.gz file using pandas, automatically handling gzip compression.
+    [Patch][QA v4.9.151][Enterprise] Loads CSV or .csv.gz file using pandas.
+    Fails immediately if file/column/data missing (No fallback DataFrame).
     """
     read_csv_kwargs = {"index_col": 0, "parse_dates": False, "low_memory": False}
     load_logger = logging.getLogger(f"{__name__}.safe_load_csv_auto")
-
     if not _isinstance_safe(file_path, str) or not file_path:
-        load_logger.error("[Patch][QA v4.9.100] (Error) Invalid file path provided to safe_load_csv_auto.")
-        return pd.DataFrame(columns=["Date", "Open", "High", "Low", "Close"])
-
-    load_logger.info(f"[Patch][QA v4.9.85] (safe_load) Attempting to load: {os.path.basename(file_path)}")
+        load_logger.critical("[Patch][QA v4.9.151][Enterprise] Invalid file path for safe_load_csv_auto. Raising error.")
+        raise ValueError("Invalid file path for safe_load_csv_auto")
     if not os.path.exists(file_path):
-        try:
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        except Exception as e:
-            load_logger.warning("[Patch][QA v4.9.100] Could not create directory for CSV: %r", e)
-            return pd.DataFrame(columns=["Date", "Open", "High", "Low", "Close"])
-        try:
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write("Date,Open,High,Low,Close\n")
-            load_logger.info("[Patch][QA v4.9.100] Created missing CSV at %s", file_path)
-            try:
-                df = pd.read_csv(file_path)
-                load_logger.info("[Patch][QA v4.9.100] Loaded new header-only CSV as DataFrame shape: %s", df.shape)
-                return df
-            except Exception as e2:
-                load_logger.warning("[Patch][QA v4.9.100] Fallback reading new CSV failed: %r", e2)
-                return pd.DataFrame(columns=["Date", "Open", "High", "Low", "Close"])
-        except Exception as e_write:
-            load_logger.warning("[Patch][QA v4.9.100] Could not write new CSV file: %r", e_write)
-            return pd.DataFrame(columns=["Date", "Open", "High", "Low", "Close"])
-
+        load_logger.critical("[Patch][QA v4.9.151][Enterprise] File not found: %s. Raising error.", file_path)
+        raise FileNotFoundError(f"File not found: {file_path}")
     try:
         if file_path.lower().endswith(".gz"):
-            load_logger.debug("[Patch][QA v4.9.85] Detected .gz extension, using gzip for file %r", file_path)
             with gzip.open(file_path, 'rt', encoding='utf-8') as f:
                 df = pd.read_csv(f, **read_csv_kwargs)
-                load_logger.info("[Patch][QA v4.9.85] Loaded gzipped file with utf-8 encoding.")
-                return df
         else:
-            load_logger.debug("[Patch][QA v4.9.85] No .gz extension, using standard pd.read_csv.")
-            try:
-                df = pd.read_csv(file_path, **read_csv_kwargs)
-                load_logger.info("[Patch][QA v4.9.85] Loaded csv with default encoding.")
-                return df
-            except UnicodeDecodeError:
-                try:
-                    df = pd.read_csv(file_path, encoding="utf-8", **read_csv_kwargs)
-                    load_logger.info("[Patch][QA v4.9.85] Loaded csv with utf-8 encoding.")
-                    return df
-                except UnicodeDecodeError as ude:
-                    load_logger.warning("[Patch][QA v4.9.85] UTF-8 decode failed, trying latin1 for file %r (%r)", file_path, ude)
-                    df = pd.read_csv(file_path, encoding="latin1", **read_csv_kwargs)
-                    load_logger.info("[Patch][QA v4.9.85] Loaded csv with latin1 encoding as fallback.")
-                    return df
+            df = pd.read_csv(file_path, **read_csv_kwargs)
+        if df.empty:
+            load_logger.critical("[Patch][QA v4.9.151][Enterprise] Loaded DataFrame is empty. Raising error.")
+            raise ValueError("Loaded DataFrame is empty.")
+        return df
     except pd.errors.EmptyDataError:
-        load_logger.warning("[Patch][QA v4.9.85] (Warning) File is empty: %s", file_path)
-        return pd.DataFrame()
-    except (OSError, PermissionError, UnicodeDecodeError) as e:
-        load_logger.error(
-            "[Patch][QA v4.9.85] (Error) Failed to load file '%s': %r",
-            file_path,
-            e,
-        )
-        # [Patch AI Studio v4.9.100+] Always return a DataFrame, never None
-        return pd.DataFrame(columns=["Date", "Open", "High", "Low", "Close"])
+        load_logger.critical("[Patch][QA v4.9.151][Enterprise] File is empty (no data): %s", file_path)
+        raise
+    except Exception as e:
+        load_logger.critical("[Patch][QA v4.9.151][Enterprise] Error loading file '%s': %r", file_path, e)
+        raise
 
 # === [Patch][QA v4.9.100] Robust forced entry audit: always post-process every trade_log entry (dict or DataFrame) ===
 def _audit_forced_entry_reason(trade_log):
@@ -2155,65 +2117,30 @@ def sma(series: pd.Series | Any, period: int) -> pd.Series:
         return pd.Series(np.nan, index=series.index, dtype='float32')
 
 def rsi(series: pd.Series | Any, period: int = 14) -> pd.Series:
-    """Calculates Relative Strength Index."""
+    """
+    [Patch][QA v4.9.151][Enterprise] RSI calculation (strict, no fallback).
+    If calculation fails or any NaN, raise error immediately.
+    """
+    import ta
     import numpy as np
     import pandas as pd
     rsi_logger = logging.getLogger(f"{__name__}.rsi")
     if series is None or (hasattr(series, "__len__") and len(series) == 0):
-        rsi_logger.debug("[Patch AI Studio v4.9.26] Empty input detected in rsi, returning empty pd.Series")
-        return pd.Series([], dtype=float)
+        rsi_logger.critical("[Patch][QA v4.9.151][Enterprise] Empty input for RSI calculation. Raising error.")
+        raise ValueError("Empty input for RSI calculation")
     if not _isinstance_safe(series, pd.Series):
-        rsi_logger.error(f"Input must be a pandas Series, got {type(series)}")
+        rsi_logger.critical("[Patch][QA v4.9.151][Enterprise] Input must be pandas Series. Raising error.")
         raise TypeError("Input must be a pandas Series.")
-    use_manual = False
-    if 'ta' not in globals() or ta is None:
-        rsi_logger.warning(
-            "[Patch AI Studio v4.9.67+] RSIIndicator missing library; using manual calculation."
-        )
-        use_manual = True
-    elif not hasattr(ta, "momentum") or not hasattr(ta.momentum, "RSIIndicator"):
-        rsi_logger.warning(
-            "[Patch AI Studio v4.9.67+] ta.momentum.RSIIndicator not available; using manual calculation."
-        )
-        use_manual = True
-    series_numeric = pd.to_numeric(series, errors='coerce').replace([np.inf, -np.inf], np.nan).dropna()
-    # [Patch AI Studio v4.9.73+] RSI fallback robust (manual fallback and short/all NaN fallback)
-    if use_manual or series_numeric.empty or len(series_numeric) < period:
-        rsi_logger.warning(
-            f"[Patch AI Studio v4.9.73+] (Warning) RSI calculation fallback to default 50 (manual/series too short/all NaN); all values set to 50."
-        )
-        result = pd.Series([50] * len(series), index=series.index, dtype='float32')
-        result = result.fillna(50).astype('float32')
-        assert result.notna().all(), "[Patch AI Studio v4.9.73+] [Patch] RSI fallback result must have no NaN"
-        assert (result == 50).all(), "[Patch AI Studio v4.9.73+] [Patch] RSI fallback must be all 50"
-        rsi_logger.info("[Patch AI Studio v4.9.73+] [Patch] RSI fallback manual returned all 50 with correct index/dtype")
-        return result
-    rsi_values = None
-    if not use_manual:
-        try:
-            rsi_indicator = ta.momentum.RSIIndicator(close=series_numeric, window=period, fillna=False)  # type: ignore
-            rsi_values = rsi_indicator.rsi()
-        except Exception as e:  # pragma: no cover
-            rsi_logger.warning(
-                f"[Patch AI Studio v4.9.67+] TA RSIIndicator failed: {e}. Falling back to manual calculation."
-            )
-            rsi_values = None
-    if rsi_values is None:
-        delta = series_numeric.diff()
-        up = delta.clip(lower=0.0)
-        down = -delta.clip(upper=0.0)
-        roll_up = up.ewm(alpha=1 / period, adjust=False, min_periods=period).mean()
-        roll_down = down.ewm(alpha=1 / period, adjust=False, min_periods=period).mean()
-        rs = roll_up / roll_down.replace(0, np.nan)
-        rsi_values = 100 - 100 / (1 + rs)
-    rsi_final = rsi_values.reindex(series.index).ffill().astype('float32')
-    # [Patch AI Studio v4.9.73+] Audit: Ensure no NaN in prod (should not fail, but for robustness)
-    if not rsi_final.notna().all():
-        rsi_logger.warning("[Patch AI Studio v4.9.73+] RSI output contained NaN; fallback all 50")
-        rsi_final[:] = 50
-    del series_numeric, rsi_values
-    gc.collect()
-    return rsi_final
+    try:
+        rsi_indicator = ta.momentum.RSIIndicator(close=series, window=period, fillna=False)
+        rsi_values = rsi_indicator.rsi()
+    except Exception as e:
+        rsi_logger.critical(f"[Patch][QA v4.9.151][Enterprise] RSI calculation failed: {e}")
+        raise
+    if rsi_values.isna().any():
+        rsi_logger.critical("[Patch][QA v4.9.151][Enterprise] RSI result contains NaN. Raising error.")
+        raise ValueError("RSI result contains NaN")
+    return rsi_values.astype('float32')
 
 def _test_rsi_manual_fallback_coverage():
     """[Patch AI Studio v4.9.73+] Coverage for rare fallback/manual RSI path (for audit, not production)"""
@@ -2507,121 +2434,35 @@ def get_session_tag(timestamp: pd.Timestamp, session_times_utc_config: dict) -> 
         session_logger.error(f"   (Error) Error in get_session_tag for {timestamp}: {e}", exc_info=True)
         return "Error_Tagging"
 
-def engineer_m1_features(df_m1: pd.DataFrame, config: 'StrategyConfig', lag_features_config: dict | None = None) -> pd.DataFrame:  # type: ignore
-    """Engineers features for M1 data using parameters from StrategyConfig."""
-    eng_m1_logger = logging.getLogger(f"{__name__}.engineer_m1_features")
-    eng_m1_logger.info("(Processing) กำลังสร้าง Features M1 (using StrategyConfig)...")
-    if not _isinstance_safe(df_m1, pd.DataFrame):
-        eng_m1_logger.error("Input must be a pandas DataFrame.")
-        raise TypeError("Input must be a pandas DataFrame.")
-    if df_m1.empty: # pragma: no cover
-        eng_m1_logger.error("   (Error) [Patch] ข้ามการสร้าง Features M1: DataFrame ว่างเปล่า.")
-        return df_m1.copy()
-
-    # Access parameters from config
-    rolling_z_window_m1 = config.rolling_z_window_m1
-    atr_rolling_avg_period = config.atr_rolling_avg_period
-    timeframe_minutes_m1 = config.timeframe_minutes_m1
-
-    df = df_m1.copy()
-    # [Patch][QA v4.9.90] Fallback for missing ATR_14
-    if 'ATR_14' not in df.columns or df['ATR_14'].isna().all():
-        eng_m1_logger.error(
-            "[Patch][QA v4.9.90] engineer_m1_features: ATR_14 missing or all NaN, fallback to pd.Series([np.nan]*len(df))."
-        )
-        df['ATR_14'] = pd.Series([np.nan] * len(df), index=df.index)
-        df['ATR_14_Shifted'] = pd.Series([np.nan] * len(df), index=df.index)
-        # [Patch] ตรวจสอบและแจ้งเตือนว่าข้อมูลสำคัญไม่ครบ
-        eng_m1_logger.warning(
-            "[Patch][ATR_Missing] ไม่พบข้อมูล ATR_14 หรือข้อมูลไม่เพียงพอ กรุณาตรวจสอบขั้นตอนเตรียมข้อมูลหรือเตรียมคอลัมน์ราคาให้ครบ"
-        )
+def engineer_m1_features(df: pd.DataFrame, config: Optional["StrategyConfig"] = None) -> pd.DataFrame:
+    """
+    [Patch][QA v4.9.151][Enterprise] Feature engineering (no patch/fallback allowed).
+    If any required column missing or NaN, raise error immediately.
+    """
+    import ta
+    import pandas as pd
+    import numpy as np
+    logger = logging.getLogger(f"{__name__}.engineer_m1_features")
     price_cols = ["Open", "High", "Low", "Close"]
-    normalized_map = {c.lower(): c for c in df.columns}
-    for pcol in price_cols:
-        if pcol not in df.columns and pcol.lower() in normalized_map:
-            df.rename(columns={normalized_map[pcol.lower()]: pcol}, inplace=True)
-    if any(col not in df.columns for col in price_cols):  # pragma: no cover
-        eng_m1_logger.info("   Missing price columns in M1 Data. Filling with NaN.")
-        base_feature_cols = [
-            "Candle_Body", "Candle_Range", "Gain", "Candle_Ratio", "Upper_Wick", "Lower_Wick",
-            "Wick_Length", "Wick_Ratio", "Gain_Z", "MACD_line", "MACD_signal", "MACD_hist",
-            "MACD_hist_smooth", "ATR_14", "ATR_14_Shifted", "ATR_14_Rolling_Avg", "Candle_Speed",
-            'Volatility_Index', 'ADX', 'RSI', 'cluster', 'spike_score', 'session', 'Pattern_Label',
-            'model_tag']
-        for col in base_feature_cols:
-            if col not in df.columns:
-                df[col] = np.nan if 'Label' not in col and 'session' not in col and 'tag' not in col else "N/A"
-    else:
-        # Standard feature calculation
-        for col in price_cols: # Ensure numeric, handle inf/nan
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-        df.dropna(subset=price_cols, inplace=True) # Drop rows where essential prices are NaN
-        if df.empty: # pragma: no cover
-            eng_m1_logger.warning("   (Warning) M1 DataFrame ว่างเปล่าหลังลบราคา NaN.")
-            return df.reindex(df_m1.index) # Return empty df with original index
-
-        df["Candle_Body"] = abs(df["Close"] - df["Open"]).astype('float32')
-        df["Candle_Range"] = (df["High"] - df["Low"]).astype('float32')
-        df["Gain"] = (df["Close"] - df["Open"]).astype('float32')
-        df["Candle_Ratio"] = np.where(df["Candle_Range"].abs() > 1e-9, df["Candle_Body"] / df["Candle_Range"], 0.0).astype('float32')
-        df["Upper_Wick"] = (df["High"] - np.maximum(df["Open"], df["Close"])).astype('float32')
-        df["Lower_Wick"] = (np.minimum(df["Open"], df["Close"]) - df["Low"]).astype('float32')
-        df["Wick_Length"] = (df["Upper_Wick"] + df["Lower_Wick"]).astype('float32')
-        df["Wick_Ratio"] = np.where(df["Candle_Range"].abs() > 1e-9, df["Wick_Length"] / df["Candle_Range"], 0.0).astype('float32')
-        df["Gain_Z"] = rolling_zscore(df["Gain"].fillna(0), window=rolling_z_window_m1)
-        df["MACD_line"], df["MACD_signal"], df["MACD_hist"] = macd(df["Close"])
-        if "MACD_hist" in df.columns and df["MACD_hist"].notna().any():
-            df["MACD_hist_smooth"] = df["MACD_hist"].rolling(window=5, min_periods=1).mean().fillna(0).astype('float32')
-        else: # pragma: no cover
-            df["MACD_hist_smooth"] = np.nan
-            eng_m1_logger.warning("      (Warning) ไม่สามารถคำนวณ MACD_hist_smooth.")
-        # [Patch AI Studio v4.9.82] Robust sys.modules guard for ATR fallback
-        import sys
-        atr_module = sys.modules.get(__name__)
-        atr_func = getattr(atr_module, "atr", None) if atr_module else None
-        if atr_func is None:
-            eng_m1_logger.error("[Patch][QA v4.9.86] ATR import failed")
-            df["ATR_14"] = pd.Series([np.nan] * len(df), index=df.index)
-            df["ATR_14_Shifted"] = pd.Series([np.nan] * len(df), index=df.index)
-            print("[Patch][QA] ATR fallback set to NaN: import failed")
-        elif not callable(atr_func):
-            eng_m1_logger.error("[Patch][QA v4.9.86] atr function not callable")
-            df["ATR_14"] = pd.Series([np.nan] * len(df), index=df.index)
-            df["ATR_14_Shifted"] = pd.Series([np.nan] * len(df), index=df.index)
-            print("[Patch][QA] ATR fallback set to NaN: not callable")
-        else:
-            df = atr_func(df, 14)
-        if "ATR_14" in df.columns and df["ATR_14"].notna().any():
-            df["ATR_14_Rolling_Avg"] = sma(df["ATR_14"], atr_rolling_avg_period)
-        else: # pragma: no cover
-            df["ATR_14_Rolling_Avg"] = np.nan
-            eng_m1_logger.warning("      (Warning) ไม่สามารถคำนวณ ATR_14_Rolling_Avg.")
-        df["Candle_Speed"] = (df["Gain"] / max(timeframe_minutes_m1, 1e-6)).astype('float32') # Avoid division by zero
-        df["RSI"] = rsi(df["Close"], period=14)
-
-    # Lagged features (using resolved config)
-    actual_lag_config = lag_features_config if lag_features_config is not None else config.lag_features_config
-    if actual_lag_config and _isinstance_safe(actual_lag_config, dict): # pragma: no cover
-        eng_m1_logger.info(f"   Applying Lag Features based on config: {actual_lag_config}")
-        for feature_name_lag in actual_lag_config.get('features', []):
-            if feature_name_lag in df.columns and pd.api.types.is_numeric_dtype(df[feature_name_lag]):
-                for lag_val_item in actual_lag_config.get('lags', []):
-                    if _isinstance_safe(lag_val_item, int) and lag_val_item > 0:
-                        df[f"{feature_name_lag}_lag{lag_val_item}"] = df[feature_name_lag].shift(lag_val_item).astype('float32')
-            else:
-                eng_m1_logger.warning(f"      Cannot create lag for '{feature_name_lag}': not found or not numeric.")
-
-    # Volatility Index
-    if 'ATR_14_Rolling_Avg' not in df.columns or df['ATR_14_Rolling_Avg'].isna().all():
-        if 'ATR_14' in df.columns and df['ATR_14'].notna().any():
-            df['ATR_14_Rolling_Avg'] = sma(df['ATR_14'], atr_rolling_avg_period)
-        else:
-            df['ATR_14_Rolling_Avg'] = 1.0
-    if 'ATR_14' in df.columns:
-        df['Volatility_Index'] = np.where(df['ATR_14_Rolling_Avg'].abs() > 1e-9, df['ATR_14'] / df['ATR_14_Rolling_Avg'], 1.0)
-    else:
-        df['Volatility_Index'] = 1.0
-    df['Volatility_Index'] = pd.to_numeric(df['Volatility_Index'], errors='coerce').fillna(1.0).astype('float32')
+    missing_cols = [c for c in price_cols if c not in df.columns]
+    if missing_cols:
+        logger.critical(f"[Patch][QA v4.9.151][Enterprise] Missing core columns: {missing_cols}. Raising error.")
+        raise ValueError(f"Missing core columns: {missing_cols}")
+    df = df.copy()
+    df["ATR_14"] = ta.volatility.AverageTrueRange(
+        high=df["High"], low=df["Low"], close=df["Close"], window=14, fillna=False
+    ).average_true_range()
+    if df["ATR_14"].isna().any():
+        logger.critical("[Patch][QA v4.9.151][Enterprise] ATR_14 has NaN after calculation. Raising error.")
+        raise ValueError("ATR_14 has NaN after calculation.")
+    window = 300
+    mean = df["Close"].rolling(window=window, min_periods=window // 2).mean()
+    std = df["Close"].rolling(window=window, min_periods=window // 2).std()
+    df["Gain_Z"] = ((df["Close"] - mean) / std)
+    if df["Gain_Z"].isna().any():
+        logger.critical("[Patch][QA v4.9.151][Enterprise] Gain_Z has NaN after calculation. Raising error.")
+        raise ValueError("Gain_Z has NaN after calculation.")
+    return df
 
     # ADX
     if all(c in df.columns for c in ['High', 'Low', 'Close']):

@@ -407,3 +407,8 @@
 - [Patch][QA v4.9.146] Multi-logic QA updates: ATR fallback warning, font setup flag, improved Colab drive detection, config path fallback
 - Version bump to `4.9.146_FULL_PASS`
 
+## [v4.9.151+] - 2025-07-01
+- [Patch][QA v4.9.151] Strict enterprise mode for data loading and feature engineering.
+- Updated safe_load_csv_auto, engineer_m1_features, and rsi to raise errors on any invalid input or empty data.
+- Version bump to `4.9.151_FULL_PASS`
+
