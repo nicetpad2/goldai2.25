@@ -496,3 +496,8 @@
 - Updated data validation threshold for folds (<50 rows).
 - Version bump to `4.9.202_FULL_PASS`
 
+## [v4.9.204+] - 2025-07-xx
+- [Patch][QA v4.9.204] Added comprehensive audit helpers for data, signals, simulation, and artifacts.
+- Integrated new audits in walk-forward loop and data prep.
+- Version bump to `4.9.204_FULL_PASS`
+

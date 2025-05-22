@@ -3292,6 +3292,30 @@ class TestCoverageBooster(unittest.TestCase):
         result = ga.export_fold_qa_summary(1, "no_data", {"rows_after_clean": 0}, tmp_dir)
         self.assertTrue(result and os.path.exists(result))
 
+    def test_audit_helpers(self):
+        ga = self.ga
+        pd = self.pd
+        tmp_dir = "/tmp/gold_ai_test_export"
+        os.makedirs(tmp_dir, exist_ok=True)
+
+        df_ok = pd.DataFrame({"Open": [1, 2, 3, 4, 5], "High": [1,2,3,4,5], "Low": [1,2,3,4,5], "Close": [1,2,3,4,5]})
+        self.assertTrue(ga.pre_fe_data_audit(df_ok, 0, tmp_dir, min_rows=5))
+        df_bad = df_ok.iloc[:2]
+        self.assertFalse(ga.pre_fe_data_audit(df_bad, 1, tmp_dir, min_rows=5))
+
+        self.assertTrue(ga.post_fe_audit(df_ok, 2, tmp_dir, min_rows=5))
+        self.assertFalse(ga.post_fe_audit(df_bad, 3, tmp_dir, min_rows=5))
+
+        df_signal_fail = pd.DataFrame({"Entry_Long": [0,0], "Entry_Short": [0,0], "Signal_Score": [0.1,0.2]})
+        self.assertFalse(ga.signal_mask_audit(df_signal_fail, 4, tmp_dir))
+        df_signal_pass = pd.DataFrame({"Entry_Long": [1], "Entry_Short": [0], "Signal_Score": [0.5]})
+        self.assertTrue(ga.signal_mask_audit(df_signal_pass, 5, tmp_dir))
+
+        self.assertFalse(ga.simulation_audit([], 6, tmp_dir))
+        self.assertTrue(ga.simulation_audit([{"a":1}], 7, tmp_dir))
+
+        self.assertFalse(ga.artifact_audit("/no/such/file.csv", 8, "BUY", tmp_dir))
+
     def test_run_all_folds_with_threshold_empty_fold(self):
         pd = self.pd
         ga = self.ga

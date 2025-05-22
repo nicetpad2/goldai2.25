@@ -5392,7 +5392,7 @@ def export_run_summary_to_json(run_summary_exp: Dict[str, Any], label: str, outp
         return None  # pragma: no cover
 
 def export_fold_qa_summary(fold_id: int, root_cause: str, detail_dict: Dict[str, Any], output_dir: str = "./"):
-    """[Patch][QA v4.9.201+] Export QA root cause summary for a fold."""
+    """[Patch][QA v4.9.204+] Export QA root cause summary for a fold."""
     qa_logger = logging.getLogger(f"{__name__}.export_fold_qa_summary")
     summary = {
         "fold_id": fold_id,
@@ -5405,12 +5405,94 @@ def export_fold_qa_summary(fold_id: int, root_cause: str, detail_dict: Dict[str,
         with open(summary_path, "w", encoding="utf-8") as f_json:
             json.dump(summary, f_json, ensure_ascii=False, indent=2)
         qa_logger.warning(
-            f"[Patch][QA v4.9.201+] Exported QA summary: {fname} (root_cause={root_cause}) | {detail_dict}"
+            f"[Patch][QA v4.9.204+] Exported QA summary: {fname} (root_cause={root_cause}) | {detail_dict}"
         )
         return summary_path
     except Exception as e_export_qa:  # pragma: no cover
         qa_logger.error(f"[Patch][QA v4.9.201+] Failed exporting QA summary {fname}: {e_export_qa}")
         return None
+
+
+def pre_fe_data_audit(df_raw: pd.DataFrame, fold_id: int, output_dir: str, min_rows: int = 500) -> bool:
+    """[Patch][QA v4.9.204+] Data quality audit before feature engineering."""
+    required_cols = ["Open", "High", "Low", "Close"]
+    audit_log = {
+        "rows_initial": int(len(df_raw)),
+        "num_nan": int(df_raw[required_cols].isna().sum().sum()) if all(c in df_raw for c in required_cols) else -1,
+        "num_ohlc_le_zero": int((df_raw[required_cols] <= 0).sum().sum()) if all(c in df_raw for c in required_cols) else -1,
+        "num_duplicate_time": int(df_raw.duplicated(subset=["Date", "Timestamp"]).sum()) if "Date" in df_raw and "Timestamp" in df_raw else -1,
+    }
+    if audit_log["rows_initial"] < min_rows:
+        logger.error(
+            f"[Patch][QA v4.9.204+] Data Quality Fail: Not enough rows ({audit_log['rows_initial']}) for rolling/FE. Need at least {min_rows}."
+        )
+        export_fold_qa_summary(fold_id, "data_too_short_for_fe", audit_log, output_dir=output_dir)
+        return False
+    if audit_log["num_nan"] > 0 or audit_log["num_ohlc_le_zero"] > 0:
+        logger.warning(
+            f"[Patch][QA v4.9.204+] Data Quality Issue: NaN/invalid OHLC detected. nan={audit_log['num_nan']}, ohlc_le_zero={audit_log['num_ohlc_le_zero']}"
+        )
+    if audit_log["num_duplicate_time"] > 0:
+        logger.warning(
+            f"[Patch][QA v4.9.204+] Data Quality Issue: Duplicate Date+Timestamp rows={audit_log['num_duplicate_time']}"
+        )
+    return True
+
+
+def post_fe_audit(df_features: pd.DataFrame, fold_id: int, output_dir: str, min_rows: int = 50) -> bool:
+    """[Patch][QA v4.9.204+] Feature engineering output audit."""
+    if len(df_features) < min_rows:
+        logger.error(
+            f"[Patch][QA v4.9.204+] FE Output too short ({len(df_features)}) after drop/rolling. Skipping fold."
+        )
+        export_fold_qa_summary(fold_id, "no_data_after_fe", {"rows_after_fe": len(df_features)}, output_dir=output_dir)
+        return False
+    return True
+
+
+def signal_mask_audit(df_signal: pd.DataFrame, fold_id: int, output_dir: str) -> bool:
+    """[Patch][QA v4.9.204+] Entry mask/signal QA."""
+    entry_mask = (df_signal["Entry_Long"] == 1) | (df_signal["Entry_Short"] == 1)
+    signal_stat = {
+        "signal_score_min": float(df_signal["Signal_Score"].min()),
+        "signal_score_max": float(df_signal["Signal_Score"].max()),
+        "entry_pass_count": int(entry_mask.sum()),
+        "rows_total": len(df_signal),
+    }
+    if entry_mask.sum() == 0:
+        logger.warning(f"[Patch][QA v4.9.204+] No entry mask pass. Signal stat: {signal_stat}")
+        export_fold_qa_summary(fold_id, "no_entry_pass", signal_stat, output_dir=output_dir)
+        return False
+    return True
+
+
+def simulation_audit(trades: Any, fold_id: int, output_dir: str) -> bool:
+    """[Patch][QA v4.9.204+] Simulation QA."""
+    length = len(trades) if hasattr(trades, "__len__") else 0
+    if trades is None or length == 0:
+        logger.warning("[Patch][QA v4.9.204+] Simulation ran, but no trade executed.")
+        export_fold_qa_summary(
+            fold_id,
+            "simulation_no_trade",
+            {"note": "Simulation ran, but no trade executed."},
+            output_dir=output_dir,
+        )
+        return False
+    return True
+
+
+def artifact_audit(trade_log_path: str, fold_id: int, param: Any, output_dir: str) -> bool:
+    """[Patch][QA v4.9.204+] Artifact QA."""
+    if not os.path.exists(trade_log_path):
+        logger.warning("[Patch][QA v4.9.204+] No trade log artifact produced.")
+        export_fold_qa_summary(
+            fold_id,
+            "no_trade_log_artifact",
+            {"param": param, "output_dir": output_dir},
+            output_dir=output_dir,
+        )
+        return False
+    return True
 
 logger.info("Part 9 (Original Part 8): Backtesting Engine (v4.9.23 - Added TSL/BE Helpers & _check_kill_switch) Loaded and Refactored.")
 # === END OF PART 9/15 ===
@@ -6143,14 +6225,7 @@ def run_all_folds_with_threshold(
         df_train_current_fold = df_m1_final_for_wfv.iloc[train_indices].copy()
         df_test_current_fold_orig = df_m1_final_for_wfv.iloc[test_indices].copy()
 
-        if df_test_current_fold_orig is None or len(df_test_current_fold_orig) < 50:  # pragma: no cover
-            wfv_logger.warning(f"   Skipping {fold_label}: Test data insufficient after clean ({len(df_test_current_fold_orig)} rows).")
-            export_fold_qa_summary(
-                fold_idx,
-                "no_data_after_clean",
-                {"rows_after_clean": len(df_test_current_fold_orig)},
-                output_dir=output_dir_for_wfv,
-            )
+        if not post_fe_audit(df_test_current_fold_orig, fold_idx, output_dir_for_wfv, min_rows=50):
             all_fold_metrics_list.append({})  # Keep list length consistent
             continue
         if fold_idx == 0 and first_fold_test_data_output is None: # Save first fold test data for later SHAP
@@ -6182,23 +6257,7 @@ def run_all_folds_with_threshold(
             fold_specific_config=fold_config_wfv,
             strategy_config=config_obj
         )
-        entry_mask = (
-            (df_test_current_fold_with_signals.get("Entry_Long") == 1)
-            | (df_test_current_fold_with_signals.get("Entry_Short") == 1)
-        )
-        signal_stat = {
-            "signal_score_min": float(df_test_current_fold_with_signals["Signal_Score"].min()),
-            "signal_score_max": float(df_test_current_fold_with_signals["Signal_Score"].max()),
-            "entry_pass_count": int(entry_mask.sum()),
-            "rows_total": len(df_test_current_fold_with_signals),
-        }
-        if entry_mask.sum() == 0:
-            export_fold_qa_summary(
-                fold_idx,
-                "no_entry_pass",
-                signal_stat,
-                output_dir=output_dir_for_wfv,
-            )
+        if not signal_mask_audit(df_test_current_fold_with_signals, fold_idx, output_dir_for_wfv):
             all_fold_metrics_list.append({})
             continue
         wfv_logger.debug(f"   Test data for {fold_label} after signal calculation: {df_test_current_fold_with_signals.shape}")
@@ -6279,15 +6338,13 @@ def run_all_folds_with_threshold(
 
             trade_path = None
             if not trade_log_side.empty:  # pragma: no cover
-                trade_path = export_trade_log_to_csv(trade_log_side, f"{fold_label}_{side_wfv}", output_dir_for_wfv, config_obj)  # type: ignore
-            export_run_summary_to_json(metrics_side_fold, f"{fold_label}_{side_wfv}_metrics", output_dir_for_wfv, config_obj)  # type: ignore
-            if trade_log_side.empty and trade_path is None:
-                export_fold_qa_summary(
-                    fold_idx,
-                    "no_trade_log_artifact",
-                    {"param": side_wfv, "output_dir": output_dir_for_wfv},
-                    output_dir=output_dir_for_wfv,
-                )
+                trade_path = export_trade_log_to_csv(
+                    trade_log_side, f"{fold_label}_{side_wfv}", output_dir_for_wfv, config_obj
+                )  # type: ignore
+            export_run_summary_to_json(
+                metrics_side_fold, f"{fold_label}_{side_wfv}_metrics", output_dir_for_wfv, config_obj
+            )  # type: ignore
+            artifact_audit(trade_path or "", fold_idx, side_wfv, output_dir_for_wfv)
 
             # Update chained capital and KS state for the next fold for this side
             if side_wfv == "BUY":
@@ -6306,12 +6363,7 @@ def run_all_folds_with_threshold(
             all_fold_metrics_list.append({})
             continue
         if trades_made_in_fold == 0:
-            export_fold_qa_summary(
-                fold_idx,
-                "simulation_no_trade",
-                {"note": "Simulation ran, but no trade executed."},
-                output_dir=output_dir_for_wfv,
-            )
+            simulation_audit([], fold_idx, output_dir_for_wfv)
 
         all_fold_metrics_list.append(fold_metrics_this_run) # List of dicts, each dict has 'buy' and 'sell' keys
         previous_fold_metrics_data = fold_metrics_this_run # For potential future use
@@ -6805,6 +6857,8 @@ def main(
             del df_m1_raw # Free memory
             gc.collect()
             main_exec_logger_func.info(f"   M1 data prepared. Shape: {df_m1_prepared.shape}")
+
+            pre_fe_data_audit(df_m1_prepared, 0, OUTPUT_DIR)
 
             main_exec_logger_func.info("   Merging M15 Trend Zone into M1 data...")
             if df_m15_trend_zone is None or df_m15_trend_zone.empty: # pragma: no cover
