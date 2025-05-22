@@ -43,7 +43,7 @@ from typing import Union, Optional, Callable, Any, Dict, List, Tuple, NamedTuple
 
 
 
-MINIMAL_SCRIPT_VERSION = "4.9.154_FULL_PASS"  # [Patch][QA v4.9.154] strict enterprise behavior
+MINIMAL_SCRIPT_VERSION = "4.9.155_FULL_PASS"  # [Patch][QA v4.9.155] embedded config defaults
 
 
 
@@ -1206,6 +1206,34 @@ class TradeManager:
         return True
 
 
+# --- Embedded default configuration ---
+DEFAULT_CONFIG: Dict[str, Any] = {
+    "risk_per_trade": 0.01,
+    "max_lot": 5.0,
+    "min_lot": 0.01,
+    "kill_switch_dd": 0.20,
+    "soft_kill_dd": 0.15,
+    "max_holding_bars": 24,
+    "enable_forced_entry": True,
+    "enable_partial_tp": True,
+    "use_reentry": True,
+    "enable_spike_guard": True,
+    "meta_min_proba_thresh": 0.55,
+    "initial_capital": 100.0,
+    "commission_per_001_lot": 0.10,
+    "spread_points": 2.0,
+    "point_value": 0.1,
+    "ib_commission_per_lot": 7.0,
+    "n_walk_forward_splits": 5,
+    "output_base_dir": "/content/drive/MyDrive/new",
+    "output_dir_name": "gold_ai_run",
+    "data_file_path_m15": "/content/drive/MyDrive/new/XAUUSD_M15.csv",
+    "data_file_path_m1": "/content/drive/MyDrive/new/XAUUSD_M1.csv",
+    "config_file_path": "/content/drive/MyDrive/new/config.yaml",
+    "meta_classifier_filename": "meta_classifier.pkl",
+    "spike_model_filename": "meta_classifier_spike.pkl",
+}
+
 # --- Configuration Loading Function ---
 def load_config_from_yaml(path: str = "config.yaml") -> StrategyConfig:
     config_loader_logger = logging.getLogger(f"{__name__}.load_config_from_yaml")
@@ -1218,24 +1246,24 @@ def load_config_from_yaml(path: str = "config.yaml") -> StrategyConfig:
             chosen_path = try_path
             break
     if chosen_path is None:
-        config_loader_logger.warning("[Patch][ConfigPath] No config.yaml found in project or drive path. Using default config values.")
-        return StrategyConfig({})
+        config_loader_logger.warning("[Patch][ConfigPath v4.9.155+] No config.yaml found in project or drive path. Using embedded defaults.")
+        return StrategyConfig(DEFAULT_CONFIG)
     if chosen_path != path:
-        config_loader_logger.warning(f"[Patch][ConfigPath] Config not found at '{path}', fallback to '{chosen_path}'")
+        config_loader_logger.warning(f"[Patch][ConfigPath v4.9.155+] Config not found at '{path}', fallback to '{chosen_path}'")
     try:
         with open(chosen_path, 'r', encoding='utf-8') as f:
             raw_config = yaml.safe_load(f)
         if raw_config is None:
-            config_loader_logger.warning(f"[Patch][ConfigPath] Config file '{chosen_path}' is empty or invalid. Using default config values.")
-            return StrategyConfig({})
+            config_loader_logger.warning(f"[Patch][ConfigPath v4.9.155+] Config file '{chosen_path}' is empty or invalid. Using embedded defaults.")
+            return StrategyConfig(DEFAULT_CONFIG)
         config_loader_logger.info(f"Successfully loaded configuration from: {chosen_path}")
         return StrategyConfig(raw_config)
     except yaml.YAMLError as e_yaml:
-        config_loader_logger.error(f"[Patch][ConfigPath] Failed to parse YAML from '{chosen_path}': {e_yaml}. Using default config values.")
-        return StrategyConfig({})
+        config_loader_logger.error(f"[Patch][ConfigPath v4.9.155+] Failed to parse YAML from '{chosen_path}': {e_yaml}. Using embedded defaults.")
+        return StrategyConfig(DEFAULT_CONFIG)
     except Exception as e:
-        config_loader_logger.error(f"[Patch][ConfigPath] Failed to load config from '{chosen_path}', using defaults. Reason: {e}", exc_info=True)
-        return StrategyConfig({})
+        config_loader_logger.error(f"[Patch][ConfigPath v4.9.155+] Failed to load config from '{chosen_path}', using defaults. Reason: {e}", exc_info=True)
+        return StrategyConfig(DEFAULT_CONFIG)
 
 def load_config(config_path: str | None = None) -> str:
     """Return usable config path, defaulting to drive location if exists."""
