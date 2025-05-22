@@ -412,3 +412,8 @@
 - Updated safe_load_csv_auto, engineer_m1_features, and rsi to raise errors on any invalid input or empty data.
 - Version bump to `4.9.151_FULL_PASS`
 
+## [v4.9.152+] - 2025-07-xx
+- [Patch][QA v4.9.151] engineer_m1_features now accepts optional `lag_features_setting` for compatibility with production/main.
+- Added logging of all arguments and ignore message when lag_features_setting is provided.
+- Version bump to `4.9.152_FULL_PASS`
+
