@@ -9,6 +9,7 @@
 [Patch][QA v4.9.139] - เพิ่ม coverage booster tests for additional safe_set_datetime branches
 [Patch][QA v4.9.145] - Verify engineer_m1_features logging uses module logger
 [Patch][QA v4.9.156] - Ensure engineer_m1_features fills NaN Gain_Z values
+[Patch][QA v4.9.160] - Ensure default `use_meta_classifier` present in StrategyConfig
 """
 
 import importlib
